@@ -8,8 +8,7 @@ import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
 import { ProjectCard } from '@/components/projects/ProjectCard';
-import { ProjectWithOwner } from '@/lib/types';
-
+import { ProjectWithOwner, AlumniProfileType } from '@/lib/types'; // Import AlumniProfileType
 import LogoutButtonClient from '@/components/AuthButton'; // Import Client Component untuk Logout Button
 
 // Definisikan tipe kustom untuk pengguna
@@ -22,13 +21,12 @@ interface CustomUserForProjectCard {
 export default async function HomePage() { // Jadikan fungsi ini async
   const cookieStore = await cookies();
 
-  // --- Mengambil informasi pengguna dari HEADER yang di-inject oleh middleware ---
+  // --- Mengambil informasi pengguna yang sedang login dari HEADER ---
   const headersList = await headers();
   const userId = headersList.get('x-user-id');
   const userEmail = headersList.get('x-user-email');
   const userRole = headersList.get('x-user-role');
   
-  // Buat objek user kustom yang sesuai
   const currentUser: CustomUserForProjectCard | null = userId && userEmail
     ? { id: userId, email: userEmail, role: userRole || null }
     : null;
@@ -38,6 +36,23 @@ export default async function HomePage() { // Jadikan fungsi ini async
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     { cookies: { get: (name: string) => cookieStore.get(name)?.value } }
   );
+
+  // --- Ambil nama panggilan pengguna yang sedang login dari database ---
+  let userNickname: string | null = null;
+  if (userId) {
+    const { data: alumniProfile, error: profileError } = await supabase
+      .from('alumni_db') // Asumsi nama panggilan ada di tabel alumni_db
+      .select('nama_panggilan')
+      .eq('id', userId)
+      .single() as { data: Pick<AlumniProfileType, 'nama_panggilan'> | null, error: any };
+
+    if (profileError) {
+      console.error("Error fetching user nickname:", profileError);
+    } else if (alumniProfile) {
+      userNickname = alumniProfile.nama_panggilan;
+    }
+  }
+  // --- Akhir pengambilan nama panggilan ---
 
   const { data: projects, error } = await supabase
     .from('projects')
@@ -63,13 +78,12 @@ export default async function HomePage() { // Jadikan fungsi ini async
     <div className="container mx-auto py-8">
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold tracking-tight">
-          Selamat Datang{userEmail ? `, ${userEmail.split('@')[0]}` : ''}!
+          Selamat Datang{userNickname ? `, ${userNickname}` : ''}! {/* Ucapan selamat datang dengan nama panggilan */}
         </h1>
         <p className="text-lg text-muted-foreground mt-3 max-w-2xl mx-auto">
           Temukan peluang kolaborasi atau cari talenta terbaik untuk proyek Anda selanjutnya.
         </p>
         
-        {/* --- Bagian BARU: Tautan ke Profil Pengguna yang Sedang Login --- */}
         {currentUser && (
           <div className="mt-6">
             <Link href={`/profile/${currentUser.id}`} passHref>
@@ -79,7 +93,6 @@ export default async function HomePage() { // Jadikan fungsi ini async
             </Link>
           </div>
         )}
-        {/* --- Akhir Bagian BARU --- */}
 
       </div>
 
@@ -93,10 +106,10 @@ export default async function HomePage() { // Jadikan fungsi ini async
         
         {projects && projects.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {projects.map((project) => (
+            {projects.map((project: ProjectWithOwner) => (
               <ProjectCard 
                 key={project.id} 
-                project={project as unknown as ProjectWithOwner} 
+                project={project} 
                 user={currentUser} 
               />
             ))}
@@ -118,7 +131,7 @@ export default async function HomePage() { // Jadikan fungsi ini async
           <p className="text-gray-700">User ID: <span className="font-semibold">{currentUser.id}</span></p>
           <p className="text-gray-700">Email: <span className="font-semibold">{currentUser.email}</span></p>
           {currentUser.role && <p className="text-gray-700">Peran: <span className="font-semibold">{currentUser.role}</span></p>}
-          <LogoutButtonClient /> {/* Client Component untuk Logout Button */}
+          <LogoutButtonClient />
         </div>
       )}
     </div>
