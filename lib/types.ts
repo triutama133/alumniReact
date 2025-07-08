@@ -1,65 +1,191 @@
 // lib/types.ts
 
-export type ProjectWithOwner = {
+// --- Tipe Project (pertahankan jika ada) ---
+export interface ProjectWithOwner {
   id: string;
   created_at: string;
   title: string;
   description: string;
-  required_skills: string[] | null;
+  required_skills: string[];
   status: string;
-  // 'owner' adalah sebuah array dari objek
-  owner: {
-    id: string;
-    nama_lengkap: string;
-  }[] | null;
-};
-
-// Definisikan bentuk data untuk kartu hasil pencarian alumni
-export type AlumniSearchResult = {
-  id: string; // Sebenarnya UUID, tapi kita gunakan string untuk aman
-  nama_lengkap: string | null;
-  nama_panggilan: string | null;
-  aktivitas: string | null;
-  skill_gabungan: string | null;
-  fakultas_jurusan: string | null;
-};
-
-export interface AlumniProfileType {
-  id: string; // Asumsi ID alumni_db juga string (UUID) atau sesuaikan dengan bigint jika itu
-  created_at: string;
-  email: string;
-  password_hash: string | null; // Hanya jika Anda masih punya ini di alumni_db
-  username: string | null;
-  role: string;
-  last_login: string | null;
-  // Kolom dari alumni_db
-  nama_lengkap: string;
-  nama_panggilan: string | null;
-  angkatan: number | null;
-  fakultas_jurusan: string | null;
-  aktivitas: 'Pekerja' | 'Bisnis' | 'Rumah Tangga' | null;
-  skill_gabungan: string | null; // Keterampilan dipisahkan koma
-
-  // Sub-relasi dari join
-  alumni_pekerja: Array<{
-    nama_instansi: string;
-    posisi: string;
-    // ... kolom alumni_pekerja lainnya
-  }>;
-  alumni_bisnis: Array<{
-    nama_usaha: string;
-    bidang_usaha: string;
-    // ... kolom alumni_bisnis lainnya
-  }>;
-  alumni_rumah_tangga: Array<{
-    bidang_minat: string;
-    // ... kolom alumni_rumah_tangga lainnya
-  }>;
+  owner: Array<{ id: string; nama_lengkap: string; }>;
 }
 
-// Tipe kustom untuk user yang login (dari header/JWT)
+// --- Tipe User Kustom (pertahankan jika ada) ---
 export interface CustomUserForProjectCard {
   id: string;
   email: string;
   role: string | null;
+}
+
+// --- Tipe untuk Pendidikan (Q8-Q11) ---
+export type PendidikanTerakhir = 'SD' | 'SMP' | 'SMA/SMK' | 'D1' | 'D2' | 'D3' | 'D4' | 'S1' | 'S2' | 'S3';
+
+// --- Tipe untuk Aktivitas/Pekerjaan (Q17) ---
+export type AktivitasPekerjaan = 
+  'Profesional Institusi' | 
+  'Entrepreneur/Wirausaha' | 
+  'Pekerja Sosial/NGO' | 
+  'Content Creator/Pekerja Kreatif Digital' | 
+  'Belum Bekerja' | 
+  'Pekerja Informal/Freelance/Harian' | 
+  'Petani/Nelayan/Peternak' | 
+  'Guru/Tenaga Pendidik' |
+  'Ibu Rumah Tangga' |
+  'Mahasiswa dan FG'; // Mahasiswa dan Fresh Graduate
+
+// --- Tipe untuk Jenis Dukungan (Q18) ---
+export type JenisDukungan = 
+  'Peluang kerja' | 
+  'Kolaborasi proyek' | 
+  'Mentor' | 
+  'Pendamping usaha' | 
+  'Relasi profesional' | 
+  'Akses pasar' | 
+  'Lainnya';
+
+// --- Tipe untuk Bidang Kontribusi (Q19) ---
+export type BidangKontribusi = 
+  'Pendidikan' | 
+  'Lingkungan' | 
+  'Ekonomi' | 'Teknologi' | 'Kesehatan' | 'Komunitas' | 'Kreatif' |
+  'Pertanian/Pangan' | 'Perikanan' | 'Peternakan';
+
+// --- Tipe untuk Relasi Pekerjaan (alumni_pekerja) ---
+export interface AlumniPekerjaType {
+  id?: number; 
+  nama_instansi: string | null; // Bisa null
+  posisi: string | null; // Bisa null
+  pengalaman_proyek: string | null;
+  akses_jejaring: boolean | null;
+  pengalaman_bermitra: boolean | null;
+}
+
+// --- Tipe untuk Relasi Bisnis (alumni_bisnis) ---
+export interface AlumniBisnisType {
+  id?: number;
+  keahlian_wirausahaan: string | null;
+  produk_layanan_utama: string | null;
+  nama_usaha: string | null;
+  skala_usaha: string | null;
+  kendala_bisnis: string | null;
+  target_pasar: 'B2C' | 'B2B' | 'B2C dan B2B' | null; // Bisa null
+}
+
+// --- Tipe untuk Relasi Filantropi/NGO (alumni_sosial) ---
+export interface AlumniSosialType {
+  id?: number;
+  keahlian_sosial: string | null;
+  pengalaman_proyek_sosial: string | null;
+  isu_fokus: string | null;
+  nama_organisasi: string | null;
+  pengalaman_bermitra_sosial: boolean | null;
+}
+
+// --- Tipe untuk Relasi Content Creator (alumni_kreatif) ---
+export interface AlumniKreatifType {
+  id?: number;
+  keahlian_kreatif: string | null;
+  platform_digital_utama: string | null;
+  jenis_konten: string | null;
+  total_jangkauan: string | null;
+  kisaran_rate_card: string | null;
+  demografi_followers: string | null;
+}
+
+// --- Tipe untuk Relasi Ibu Rumah Tangga (alumni_rumah_tangga) ---
+export interface AlumniRumahTanggaType {
+  id?: number;
+  keahlian_irt: string | null;
+  kegiatan_organisasi_irt: string | null;
+  pengalaman_tim_irt: boolean | null;
+  mencari_pekerjaan_kolaborasi_irt: boolean | null;
+}
+
+// --- Tipe untuk Relasi Mahasiswa dan FG (alumni_mahasiswa) ---
+export interface AlumniMahasiswaType {
+  id?: number;
+  keahlian_mahasiswa: string | null;
+  kegiatan_organisasi_mahasiswa: string | null;
+  pengalaman_tim_mahasiswa: boolean | null;
+  mencari_pekerjaan_kolaborasi_mahasiswa: boolean | null;
+  pengalaman_magang: string | null;
+}
+
+// --- Tipe untuk Relasi Pekerja Informal/Freelance/Harian (alumni_informal) ---
+export interface AlumniInformalType {
+  id?: number;
+  keahlian_informal: string | null;
+  pengalaman_tim_informal: boolean | null;
+  pernah_rekrut_memimpin: boolean | null;
+}
+
+// --- Tipe untuk Relasi Petani/Nelayan/Peternak (alumni_agri) ---
+export interface AlumniAgriType {
+  id?: number;
+  keahlian_agri: string | null;
+  komoditas_utama: string | null;
+  tergabung_kelompok: boolean | null;
+  skala_usaha_agri: string | null;
+  nilai_tambah_diterapkan: string | null;
+  kendala_dihadapi_agri: string | null;
+}
+
+// --- Tipe untuk Relasi Guru/Tenaga Pendidik (alumni_pendidik) ---
+export interface AlumniPendidikType {
+  id?: number;
+  keahlian_pendidik: string | null;
+  jenjang_pendidikan: string | null;
+  mata_pelajaran: string | null;
+  inovasi_pembelajaran: string | null;
+  mengajar_bimbel: boolean | null;
+}
+
+
+// --- Tipe Utama AlumniProfileType (alumni_db) ---
+export interface AlumniProfileType {
+  id: string; // ID dari user (string, karena dari JWT/params)
+  created_at: string;
+  email: string | null;
+  username: string | null;
+  role: string;
+  last_login: string | null;
+
+  // Q1-Q16 (General Information)
+  nama_lengkap: string | null; // Bisa null
+  nama_panggilan: string | null; // Bisa null
+  tahun_lahir: number | null; // Bisa null
+  jenis_kelamin: 'Laki-laki' | 'Perempuan' | null; // Bisa null
+  kota_domisili: string | null; // Bisa null
+  nomor_handphone: string | null; // Bisa null
+  pendidikan_terakhir: PendidikanTerakhir | null; // Bisa null
+  nama_institusi_pendidikan_terakhir: string | null; // Bisa null
+  jurusan_studi: string | null; // Bisa null
+  tahun_kelulusan: number | null; // Bisa null
+  skill_gabungan: string | null; // Ini adalah STRING comma-separated dari DB
+  bahasa_dikuasai: string | null; // Ini adalah STRING comma-separated dari DB
+  sertifikasi: string | null; // Bisa null
+  instagram_link: string | null;
+  linkedin_link: string | null;
+  portofolio_link: string | null;
+
+  // Q17 (Aktivitas/Pekerjaan - Disimpan sebagai string comma-separated di DB)
+  aktivitas: string | null; // Ini adalah STRING comma-separated dari DB
+  
+  // Q18 (Jenis Dukungan - Disimpan sebagai string comma-separated di DB)
+  jenis_dukungan_dibutuhkan: string | null; // Ini adalah STRING comma-separated dari DB
+
+  // Q19 (Bidang Kontribusi - Disimpan sebagai string comma-separated di DB)
+  bidang_kontribusi_minat: string | null; // Ini adalah STRING comma-separated dari DB
+
+  // Relasi Data (Conditional - Q17 Follow-up)
+  alumni_pekerja: AlumniPekerjaType[];
+  alumni_bisnis: AlumniBisnisType[];
+  alumni_sosial: AlumniSosialType[];
+  alumni_kreatif: AlumniKreatifType[];
+  alumni_rumah_tangga: AlumniRumahTanggaType[];
+  alumni_mahasiswa: AlumniMahasiswaType[];
+  alumni_informal: AlumniInformalType[];
+  alumni_agri: AlumniAgriType[];
+  alumni_pendidik: AlumniPendidikType[];
 }
