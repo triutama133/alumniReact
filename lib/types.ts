@@ -21,6 +21,20 @@ export interface CustomUserForProjectCard {
 // --- Tipe untuk Pendidikan (Q8-Q11) ---
 export type PendidikanTerakhir = 'SD' | 'SMP' | 'SMA/SMK' | 'D1' | 'D2' | 'D3' | 'D4' | 'S1' | 'S2' | 'S3';
 
+// --- Tipe untuk Durasi Aktivitas (Baru) ---
+export type AktivitasStatusDurasi = 
+  'Masih aktif' | 
+  '1 tahun lalu' | 
+  '2-3 tahun lalu' | 
+  '3-5 tahun lalu' | 
+  '>5 tahun';
+
+  // --- Tipe untuk Detail Aktivitas (Baru) ---
+export interface AktivitasDetailType {
+  name: AktivitasPekerjaan;
+  duration: AktivitasStatusDurasi;
+}
+
 // --- Tipe untuk Aktivitas/Pekerjaan (Q17) ---
 export type AktivitasPekerjaan = 
   'Profesional Institusi' | 
@@ -53,7 +67,8 @@ export type BidangKontribusi =
 
 // --- Tipe untuk Relasi Pekerjaan (alumni_pekerja) ---
 export interface AlumniPekerjaType {
-  id?: number; 
+  id?: number;
+  keahlian_pekerja: string | null;
   nama_instansi: string | null; // Bisa null
   posisi: string | null; // Bisa null
   pengalaman_proyek: string | null;
@@ -170,7 +185,9 @@ export interface AlumniProfileType {
   portofolio_link: string | null;
 
   // Q17 (Aktivitas/Pekerjaan - Disimpan sebagai string comma-separated di DB)
+  
   aktivitas: string | null; // Ini adalah STRING comma-separated dari DB
+  aktivitas_status_durasi: AktivitasDetailType[] | null; // <-- TAMBAH BARIS INI
   
   // Q18 (Jenis Dukungan - Disimpan sebagai string comma-separated di DB)
   jenis_dukungan_dibutuhkan: string | null; // Ini adalah STRING comma-separated dari DB

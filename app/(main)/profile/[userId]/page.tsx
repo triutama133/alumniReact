@@ -42,6 +42,7 @@ export default async function ProfilePage({ params }: { params: { userId: string
     .from('alumni_db')
     .select(`
       *,
+      user(*),
       alumni_pekerja(*),
       alumni_bisnis(*),
       alumni_rumah_tangga(*),

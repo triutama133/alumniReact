@@ -53,6 +53,7 @@ const serverFormSchema = z.object({
 
   // Conditional Schemas (perhatikan ini adalah array, tapi mungkin hanya ada satu entri)
   alumni_pekerja: z.array(z.object({
+    keahlian_pekerja: z.string().min(1),
     nama_instansi: z.string().min(1),
     posisi: z.string().min(1),
     pengalaman_proyek: z.string().min(1),

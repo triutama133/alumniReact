@@ -38,6 +38,7 @@ export async function GET(req: NextRequest) {
       .from('alumni_db')
       .select(`
         *,
+        user(*),
         alumni_pekerja(*),
         alumni_bisnis(*),
         alumni_sosial(*),
@@ -48,6 +49,7 @@ export async function GET(req: NextRequest) {
         alumni_agri(*),
         alumni_pendidik(*)
       `)
+      
       .eq('id', userId)
       .single() as { data: AlumniProfileType | null, error: unknown }; // Tetap type assertion ke unknown
 

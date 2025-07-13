@@ -1,4 +1,3 @@
-// app/(auth)/complete-profile/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -16,9 +15,28 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
-import { AlumniProfileType, PendidikanTerakhir, AktivitasPekerjaan, JenisDukungan, BidangKontribusi } from '@/lib/types';
+import { AlumniProfileType, PendidikanTerakhir, AktivitasPekerjaan, JenisDukungan, BidangKontribusi, AktivitasStatusDurasi, AktivitasDetailType } from '@/lib/types';
 
-// --- Zod Schema untuk Validasi Form ---
+const durasiOptions: AktivitasStatusDurasi[] = ['Masih aktif', '1 tahun lalu', '2-3 tahun lalu', '3-5 tahun lalu', '>5 tahun'];
+
+// Helper untuk mendapatkan semua opsi aktivitas
+const allAktivitasOptions = [
+  'Profesional Institusi', 'Entrepreneur/Wirausaha', 'Pekerja Sosial/NGO', 'Content Creator/Pekerja Kreatif Digital',
+  'Belum Bekerja', 'Pekerja Informal/Freelance/Harian', 'Petani/Nelayan/Peternak', 'Guru/Tenaga Pendidik',
+  'Ibu Rumah Tangga', 'Mahasiswa dan FG'
+] as const; // <-- Tambahkan 'as const' di sini
+
+// Helper untuk mendapatkan semua opsi bidang kontribusi
+const allBidangKontribusiOptions = [
+  'Pendidikan', 'Lingkungan', 'Ekonomi', 'Teknologi', 'Kesehatan', 'Komunitas', 'Kreatif',
+  'Pertanian/Pangan', 'Perikanan', 'Peternakan'
+] as const; // <-- Tambahkan 'as const' di sini
+
+// Helper untuk mendapatkan semua opsi jenis dukungan
+const allJenisDukunganOptions = [
+  'Peluang kerja', 'Kolaborasi proyek', 'Mentor', 'Pendamping usaha', 'Relasi profesional', 'Akses pasar', 'Lainnya'
+] as const; // <-- Tambahkan 'as const' di sini
+
 const formSchema = z.object({
   nama_lengkap: z.string().min(1, 'Nama lengkap wajib diisi.'),
   nama_panggilan: z.string().min(1, 'Nama panggilan wajib diisi.'),
@@ -30,27 +48,42 @@ const formSchema = z.object({
   nama_institusi_pendidikan_terakhir: z.string().min(1, 'Nama institusi wajib diisi.'),
   jurusan_studi: z.string().min(1, 'Jurusan/program studi wajib diisi.'),
   tahun_kelulusan: z.number().int().min(1900, 'Tahun kelulusan tidak valid.').max(new Date().getFullYear() + 5, 'Tahun kelulusan tidak boleh terlalu jauh di masa depan.'),
-  skill_gabungan: z.string().min(1, 'Keahlian wajib diisi (pisahkan dengan koma).'),
+  skill_gabungan: z.array(z.string().min(1, 'Keahlian tidak boleh kosong.')).min(1, 'Pilih minimal satu keahlian.'),
   bahasa_dikuasai: z.string().min(1, 'Bahasa yang dikuasai wajib diisi (pisahkan dengan koma).'),
   sertifikasi: z.string().optional().nullable(),
   instagram_link: z.string().url('Format URL Instagram tidak valid.').or(z.literal('')).optional().nullable(),
   linkedin_link: z.string().url('Format URL LinkedIn tidak valid.').or(z.literal('')).optional().nullable(),
   portofolio_link: z.string().url('Format URL portofolio tidak valid.').or(z.literal('')).optional().nullable(),
 
-  aktivitas: z.array(z.enum([
-    'Profesional Institusi', 'Entrepreneur/Wirausaha', 'Pekerja Sosial/NGO', 'Content Creator/Pekerja Kreatif Digital',
-    'Belum Bekerja', 'Pekerja Informal/Freelance/Harian', 'Petani/Nelayan/Peternak', 'Guru/Tenaga Pendidik',
-    'Ibu Rumah Tangga', 'Mahasiswa dan FG'
-  ])).min(1, 'Pilih minimal satu aktivitas/pekerjaan.'),
+  aktivitas: z.array(z.enum(allAktivitasOptions)).min(1, 'Pilih minimal satu aktivitas/pekerjaan.'),
 
-  jenis_dukungan_dibutuhkan: z.array(z.enum([
-    'Peluang kerja', 'Kolaborasi proyek', 'Mentor', 'Pendamping usaha', 'Relasi profesional', 'Akses pasar', 'Lainnya'
-  ])).min(1, 'Pilih minimal satu jenis dukungan.'),
+  aktivitas_status_durasi: z.array(z.object({
+    name: z.nativeEnum(z.enum(allAktivitasOptions)), // Menggunakan z.nativeEnum dengan ZodEnum
+    duration: z.nativeEnum(z.enum(durasiOptions)), // Menggunakan z.nativeEnum dengan ZodEnum
+  })).optional().refine((data, ctx) => { // ctx untuk akses form
+    const currentAktivitas = ctx.parent.aktivitas as AktivitasPekerjaan[]; // Akses aktivitas dari parent context
+    for (const aktivitas of allAktivitasOptions) {
+      if (currentAktivitas.includes(aktivitas) && aktivitas !== 'Belum Bekerja') {
+        const item = data?.find(d => d.name === aktivitas);
+        if (!item || !durasiOptions.includes(item.duration)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Durasi untuk "${aktivitas}" wajib dipilih.`,
+            path: ['aktivitas_status_durasi', aktivitas.replace(/\s/g, '_')], // Path lebih spesifik
+          });
+          return false;
+        }
+      }
+    }
+    return true;
+  }, {
+    message: 'Durasi aktivitas wajib dipilih untuk setiap aktivitas yang aktif (kecuali Belum Bekerja).',
+    // path: ['aktivitas_status_durasi'], // Path ini bisa dihapus jika custom issue path sudah cukup
+  }),
 
-  bidang_kontribusi_minat: z.array(z.enum([
-    'Pendidikan', 'Lingkungan', 'Ekonomi', 'Teknologi', 'Kesehatan', 'Komunitas', 'Kreatif',
-    'Pertanian/Pangan', 'Perikanan', 'Peternakan'
-  ])).min(1, 'Pilih minimal satu bidang kontribusi.'),
+  jenis_dukungan_dibutuhkan: z.array(z.enum(allJenisDukunganOptions)).min(1, 'Pilih minimal satu jenis dukungan.'),
+
+  bidang_kontribusi_minat: z.array(z.enum(allBidangKontribusiOptions)).min(1, 'Pilih minimal satu bidang kontribusi.'),
 
   alumni_pekerja: z.array(z.object({
     nama_instansi: z.string().min(1, 'Nama instansi wajib diisi.'),
@@ -58,61 +91,56 @@ const formSchema = z.object({
     pengalaman_proyek: z.string().min(1, 'Pengalaman proyek wajib diisi.'),
     akses_jejaring: z.boolean(),
     pengalaman_bermitra: z.boolean(),
+    relevant_skills: z.array(z.string()).optional(), // <-- KOLOM BARU, menggantikan keahlian_pekerja
   })).optional(),
   alumni_bisnis: z.array(z.object({
-    keahlian_wirausahaan: z.string().min(1, 'Keahlian kewirausahaan wajib diisi.'),
     produk_layanan_utama: z.string().min(1, 'Produk/layanan utama wajib diisi.'),
     nama_usaha: z.string().min(1, 'Nama usaha wajib diisi.'),
     skala_usaha: z.string().min(1, 'Skala usaha wajib diisi.'),
-    kendala_bisnis: z.string().min(1, 'Kendala bisnis wajib diisi.'),
+    kendala_bisnis: z.string().min(1, 'Kendala yang Dihadapi wajib diisi.'),
     target_pasar: z.enum(['B2C', 'B2B', 'B2C dan B2B'], { message: 'Target pasar wajib dipilih.' }),
+    relevant_skills: z.array(z.string()).optional(),
   })).optional(),
   alumni_sosial: z.array(z.object({
-    keahlian_sosial: z.string().min(1, 'Keahlian sosial wajib diisi.'),
-    pengalaman_proyek_sosial: z.string().min(1, 'Pengalaman proyek sosial wajib diisi.'),
-    isu_fokus: z.string().min(1, 'Isu sosial/lingkungan fokus wajib diisi.'),
-    nama_organisasi: z.string().min(1, 'Nama organisasi wajib diisi.'),
+    pengalaman_proyek_sosial: z.string().min(1, 'Pengalaman program/proyek kerja wajib diisi.'),
+    isu_fokus: z.string().min(1, 'Isu sosial/lingkungan fokus utama wajib diisi.'),
+    nama_organisasi: z.string().min(1, 'Nama organisasi/lembaga wajib diisi.'),
     pengalaman_bermitra_sosial: z.boolean(),
+    relevant_skills: z.array(z.string()).optional(),
   })).optional(),
   alumni_kreatif: z.array(z.object({
-    keahlian_kreatif: z.string().min(1, 'Keahlian kreatif wajib diisi.'),
     platform_digital_utama: z.string().min(1, 'Platform digital utama wajib diisi.'),
     jenis_konten: z.string().min(1, 'Jenis konten wajib diisi.'),
     total_jangkauan: z.string().min(1, 'Total jangkauan wajib diisi.'),
     kisaran_rate_card: z.string().min(1, 'Kisaran rate-card wajib diisi.'),
-    demografi_followers: z.string().min(1),
+    demografi_followers: z.string().min(1, 'Demografi followers/subscribers wajib diisi.'),
   })).optional(),
   alumni_rumah_tangga: z.array(z.object({
-    keahlian_irt: z.string().min(1),
-    kegiatan_organisasi_irt: z.string().min(1),
+    kegiatan_organisasi_irt: z.string().min(1, 'Kegiatan/organisasi yang pernah diikuti wajib diisi.'),
     pengalaman_tim_irt: z.boolean(),
     mencari_pekerjaan_kolaborasi_irt: z.boolean(),
   })).optional(),
   alumni_mahasiswa: z.array(z.object({
-    keahlian_mahasiswa: z.string().min(1),
-    kegiatan_organisasi_mahasiswa: z.string().min(1),
+    kegiatan_organisasi_mahasiswa: z.string().min(1, 'Kegiatan/organisasi yang pernah diikuti wajib diisi.'),
     pengalaman_tim_mahasiswa: z.boolean(),
     mencari_pekerjaan_kolaborasi_mahasiswa: z.boolean(),
-    pengalaman_magang: z.string().min(1),
+    pengalaman_magang: z.string().min(1, 'Pengalaman magang wajib diisi.'),
   })).optional(),
   alumni_informal: z.array(z.object({
-    keahlian_informal: z.string().min(1),
     pengalaman_tim_informal: z.boolean(),
     pernah_rekrut_memimpin: z.boolean(),
   })).optional(),
   alumni_agri: z.array(z.object({
-    keahlian_agri: z.string().min(1),
-    komoditas_utama: z.string().min(1),
+    komoditas_utama: z.string().min(1, 'Komoditas utama wajib diisi.'),
     tergabung_kelompok: z.boolean(),
-    skala_usaha_agri: z.string().min(1),
-    nilai_tambah_diterapkan: z.string().min(1),
-    kendala_dihadapi_agri: z.string().min(1),
+    skala_usaha_agri: z.string().min(1, 'Skala usaha wajib diisi.'),
+    nilai_tambah_diterapkan: z.string().min(1, 'Nilai tambah yang diterapkan wajib diisi.'),
+    kendala_dihadapi_agri: z.string().min(1, 'Kendala yang dihadapi wajib diisi.'),
   })).optional(),
   alumni_pendidik: z.array(z.object({
-    keahlian_pendidik: z.string().min(1),
-    jenjang_pendidikan: z.string().min(1),
-    mata_pelajaran: z.string().min(1),
-    inovasi_pembelajaran: z.string().min(1),
+    jenjang_pendidikan: z.string().min(1, 'Jenjang pendidikan mengajar wajib diisi.'),
+    mata_pelajaran: z.string().min(1, 'Mata pelajaran/bidang pendidikan wajib diisi.'),
+    inovasi_pembelajaran: z.string().min(1, 'Inovasi pembelajaran yang diterapkan wajib diisi.'),
     mengajar_bimbel: z.boolean(),
   })).optional(),
 });
@@ -130,13 +158,14 @@ const defaultValues: Partial<ProfileFormValues> = {
   nama_institusi_pendidikan_terakhir: '',
   jurusan_studi: '',
   tahun_kelulusan: undefined,
-  skill_gabungan: '',
+  skill_gabungan: [],
   bahasa_dikuasai: '',
   sertifikasi: '',
   instagram_link: '',
   linkedin_link: '',
   portofolio_link: '',
   aktivitas: [],
+  aktivitas_status_durasi: [],
   jenis_dukungan_dibutuhkan: [],
   bidang_kontribusi_minat: [],
   alumni_pekerja: [],
@@ -166,6 +195,100 @@ export default function CompleteProfilePage() {
   const { handleSubmit, register, control, watch, setValue, formState: { errors, isSubmitting } } = form;
 
   const selectedAktivitas = watch('aktivitas');
+  const aktivitasStatusDurasi = watch('aktivitas_status_durasi') || [];
+  const allSkillsInput = watch('skill_gabungan');
+  const availableSkills = allSkillsInput || [];
+
+  const getAktivitasDuration = (name: AktivitasPekerjaan) => {
+    return aktivitasStatusDurasi.find(item => item.name === name)?.duration;
+  };
+
+  const setAktivitasDuration = (name: AktivitasPekerjaan, duration: AktivitasStatusDurasi | undefined) => {
+    const updatedDurasi = aktivitasStatusDurasi.filter(item => item.name !== name);
+    if (duration) {
+      updatedDurasi.push({ name, duration });
+    }
+    setValue('aktivitas_status_durasi', updatedDurasi);
+  };
+
+  // Helper untuk mendapatkan skill yang relevan untuk aktivitas tertentu
+  const getRelevantSkills = (aktivitasType: keyof ProfileFormValues) => {
+    const data = watch(aktivitasType);
+    if (Array.isArray(data) && data.length > 0 && 'relevant_skills' in data[0]) {
+      return (data[0] as any).relevant_skills || [];
+    }
+    return [];
+  };
+
+  // Helper untuk mengatur skill yang relevan untuk aktivitas tertentu
+  const setRelevantSkills = (aktivitasType: keyof ProfileFormValues, skills: string[]) => {
+    const currentData = form.getValues(aktivitasType);
+    if (Array.isArray(currentData) && currentData.length > 0) {
+      setValue(`${aktivitasType}.0.relevant_skills`, skills as any);
+    } else {
+      // Inisialisasi objek default untuk relasi jika array kosong
+      const defaultRelationObject: any = {};
+      // Perbaikan: Gunakan type assertion untuk memastikan tipe yang benar saat Object.assign
+      if (aktivitasType === 'alumni_pekerja') {
+        Object.assign(defaultRelationObject, { nama_instansi: '', posisi: '', pengalaman_proyek: '', akses_jejaring: false, pengalaman_bermitra: false, relevant_skills: [] });
+      } else if (aktivitasType === 'alumni_bisnis') {
+        Object.assign(defaultRelationObject, { produk_layanan_utama: '', nama_usaha: '', skala_usaha: '', kendala_bisnis: '', target_pasar: undefined, relevant_skills: [] });
+      } else if (aktivitasType === 'alumni_sosial') {
+        Object.assign(defaultRelationObject, { pengalaman_proyek_sosial: '', isu_fokus: '', nama_organisasi: '', pengalaman_bermitra_sosial: false, relevant_skills: [] });
+      } else if (aktivitasType === 'alumni_kreatif') {
+        Object.assign(defaultRelationObject, { platform_digital_utama: '', jenis_konten: '', total_jangkauan: '', kisaran_rate_card: '', demografi_followers: '', relevant_skills: [] });
+      } else if (aktivitasType === 'alumni_rumah_tangga') {
+        Object.assign(defaultRelationObject, { kegiatan_organisasi_irt: '', pengalaman_tim_irt: false, mencari_pekerjaan_kolaborasi_irt: false, relevant_skills: [] });
+      } else if (aktivitasType === 'alumni_mahasiswa') {
+        Object.assign(defaultRelationObject, { kegiatan_organisasi_mahasiswa: '', pengalaman_tim_mahasiswa: false, mencari_pekerjaan_kolaborasi_mahasiswa: false, pengalaman_magang: '', relevant_skills: [] });
+      } else if (aktivitasType === 'alumni_informal') {
+        Object.assign(defaultRelationObject, { pengalaman_tim_informal: false, pernah_rekrut_memimpin: false, relevant_skills: [] });
+      } else if (aktivitasType === 'alumni_agri') {
+        Object.assign(defaultRelationObject, { komoditas_utama: '', tergabung_kelompok: false, skala_usaha_agri: '', nilai_tambah_diterapkan: '', kendala_dihadapi_agri: '', relevant_skills: [] });
+      } else if (aktivitasType === 'alumni_pendidik') {
+        Object.assign(defaultRelationObject, { jenjang_pendidikan: '', mata_pelajaran: '', inovasi_pembelajaran: '', mengajar_bimbel: false, relevant_skills: [] });
+      }
+      setValue(aktivitasType, [{ ...defaultRelationObject, relevant_skills: skills }] as any);
+    }
+  };
+
+
+  useEffect(() => {
+    allAktivitasOptions.forEach(aktivitas => {
+      if (!selectedAktivitas.includes(aktivitas)) {
+        setAktivitasDuration(aktivitas, undefined);
+        const activityKey = getAlumniActivityKey(aktivitas);
+        if (activityKey) {
+          const currentRelationData = form.getValues(activityKey);
+          if (Array.isArray(currentRelationData) && currentRelationData.length > 0) {
+            // Inisialisasi objek default untuk relasi jika array kosong
+            const defaultRelationObject: any = {};
+            if (activityKey === 'alumni_pekerja') {
+              Object.assign(defaultRelationObject, { nama_instansi: '', posisi: '', pengalaman_proyek: '', akses_jejaring: false, pengalaman_bermitra: false, relevant_skills: [] });
+            } else if (activityKey === 'alumni_bisnis') {
+              Object.assign(defaultRelationObject, { produk_layanan_utama: '', nama_usaha: '', skala_usaha: '', kendala_bisnis: '', target_pasar: undefined, relevant_skills: [] });
+            } else if (activityKey === 'alumni_sosial') {
+              Object.assign(defaultRelationObject, { pengalaman_proyek_sosial: '', isu_fokus: '', nama_organisasi: '', pengalaman_bermitra_sosial: false, relevant_skills: [] });
+            } else if (activityKey === 'alumni_kreatif') {
+              Object.assign(defaultRelationObject, { platform_digital_utama: '', jenis_konten: '', total_jangkauan: '', kisaran_rate_card: '', demografi_followers: '', relevant_skills: [] });
+            } else if (activityKey === 'alumni_rumah_tangga') {
+              Object.assign(defaultRelationObject, { kegiatan_organisasi_irt: '', pengalaman_tim_irt: false, mencari_pekerjaan_kolaborasi_irt: false, relevant_skills: [] });
+            } else if (activityKey === 'alumni_mahasiswa') {
+              Object.assign(defaultRelationObject, { kegiatan_organisasi_mahasiswa: '', pengalaman_tim_mahasiswa: false, mencari_pekerjaan_kolaborasi_mahasiswa: false, pengalaman_magang: '' });
+            } else if (activityKey === 'alumni_informal') {
+              Object.assign(defaultRelationObject, { pengalaman_tim_informal: false, pernah_rekrut_memimpin: false, relevant_skills: [] });
+            } else if (activityKey === 'alumni_agri') {
+              Object.assign(defaultRelationObject, { komoditas_utama: '', tergabung_kelompok: false, skala_usaha_agri: '', nilai_tambah_diterapkan: '', kendala_dihadapi_agri: '' });
+            } else if (activityKey === 'alumni_pendidik') {
+              Object.assign(defaultRelationObject, { jenjang_pendidikan: '', mata_pelajaran: '', inovasi_pembelajaran: '', mengajar_bimbel: false, relevant_skills: [] });
+            }
+            setValue(activityKey, [{ ...defaultRelationObject, relevant_skills: [] }] as any);
+          }
+        }
+      }
+    });
+  }, [selectedAktivitas, setValue, form]);
+
 
   useEffect(() => {
     async function fetchProfileData() {
@@ -179,9 +302,37 @@ export default function CompleteProfilePage() {
         
         Object.keys(data).forEach(key => {
           if (key in defaultValues) {
-            if (Array.isArray(defaultValues[key as keyof typeof defaultValues]) && typeof (data as any)[key] === 'string') {
-              setValue(key as keyof ProfileFormValues, ((data as any)[key] as string).split(',').map(s => s.trim()).filter(Boolean) as any);
-            } else {
+            if (key === 'aktivitas' || key === 'jenis_dukungan_dibutuhkan' || key === 'bidang_kontribusi_minat') {
+              if (typeof (data as any)[key] === 'string') {
+                setValue(key as keyof ProfileFormValues, ((data as any)[key] as string).split(',').map((s: string) => s.trim()).filter(Boolean) as any);
+              } else if (Array.isArray((data as any)[key])) {
+                setValue(key as keyof ProfileFormValues, (data as any)[key] as any);
+              }
+            }
+            else if (key === 'aktivitas_status_durasi' && typeof (data as any)[key] === 'object' && (data as any)[key] !== null) {
+              setValue(key as keyof ProfileFormValues, (data as any)[key] as AktivitasDetailType[]);
+            }
+            else if (key === 'skill_gabungan') {
+              if (typeof (data as any)[key] === 'string') {
+                setValue(key as keyof ProfileFormValues, ((data as any)[key] as string).split(',').map((s: string) => s.trim()).filter(Boolean) as any);
+              } else if (Array.isArray((data as any)[key])) {
+                setValue(key as keyof ProfileFormValues, (data as any)[key] as string[]);
+              }
+            }
+            else if (typeof defaultValues[key as keyof typeof defaultValues] === 'object' && defaultValues[key as keyof typeof defaultValues] !== null && Array.isArray(defaultValues[key as keyof typeof defaultValues])) {
+              const relationData = (data as any)[key];
+              if (Array.isArray(relationData) && relationData.length > 0) {
+                if ('relevant_skills' in relationData[0]) {
+                  if (typeof relationData[0].relevant_skills === 'string') {
+                    setValue(`${key}.0.relevant_skills`, (relationData[0].relevant_skills as string).split(',').map((s: string) => s.trim()).filter(Boolean) as any);
+                  } else if (Array.isArray(relationData[0].relevant_skills)) {
+                    setValue(`${key}.0.relevant_skills`, relationData[0].relevant_skills as any);
+                  }
+                }
+                setValue(key as keyof ProfileFormValues, relationData as any);
+              }
+            }
+            else {
               setValue(key as keyof ProfileFormValues, (data as any)[key] as any);
             }
           }
@@ -203,33 +354,51 @@ export default function CompleteProfilePage() {
     setSuccessMessage(null);
     console.log('Form Data:', data);
 
-    // --- Transformasi data sebelum dikirim ke API ---
-    // Buat objek baru untuk menghindari masalah 'delete' pada properti wajib
     const {
       aktivitas,
       jenis_dukungan_dibutuhkan,
       bidang_kontribusi_minat,
+      aktivitas_status_durasi,
+      skill_gabungan,
       ...restOfData
     } = data;
 
     const transformedData: Record<string, any> = {
       ...restOfData,
-      aktivitas_db: aktivitas.join(','),
-      jenis_dukungan_dibutuhkan_db: jenis_dukungan_dibutuhkan.join(','),
-      bidang_kontribusi_minat_db: bidang_kontribusi_minat.join(','),
+      aktivitas: aktivitas.join(','),
+      jenis_dukungan_dibutuhkan: jenis_dukungan_dibutuhkan.join(','),
+      bidang_kontribusi_minat: bidang_kontribusi_minat.join(','),
+      aktivitas_status_durasi: aktivitas_status_durasi, 
+      skill_gabungan: skill_gabungan.join(','), // Kirim skill_gabungan sebagai string comma-separated
     };
 
-    // Pastikan properti relasi juga disalin dengan benar
-    if (data.alumni_pekerja) transformedData.alumni_pekerja = data.alumni_pekerja;
-    if (data.alumni_bisnis) transformedData.alumni_bisnis = data.alumni_bisnis;
-    if (data.alumni_sosial) transformedData.alumni_sosial = data.alumni_sosial;
-    if (data.alumni_kreatif) transformedData.alumni_kreatif = data.alumni_kreatif;
-    if (data.alumni_rumah_tangga) transformedData.alumni_rumah_tangga = data.alumni_rumah_tangga;
-    if (data.alumni_mahasiswa) transformedData.alumni_mahasiswa = data.alumni_mahasiswa;
-    if (data.alumni_informal) transformedData.alumni_informal = data.alumni_informal;
-    if (data.alumni_agri) transformedData.alumni_agri = data.alumni_agri;
-    if (data.alumni_pendidik) transformedData.alumni_pendidik = data.alumni_pendidik;
-    // --- Akhir transformasi data ---
+    const transformAndFilterRelationData = (
+      relationData: any[] | undefined,
+      aktivitasName: AktivitasPekerjaan,
+      activityKey: keyof ProfileFormValues
+    ) => {
+      if (relationData && selectedAktivitas.includes(aktivitasName) && getAktivitasDuration(aktivitasName) !== '>5 tahun') {
+        if (relationData[0] && 'relevant_skills' in relationData[0] && Array.isArray(relationData[0].relevant_skills)) {
+          return [{
+            ...relationData[0],
+            relevant_skills: relationData[0].relevant_skills.join(',')
+          }];
+        }
+        // Jika tidak ada relevant_skills (misal: alumni_pekerja)
+        return relationData;
+      }
+      return [];
+    };
+
+    transformedData.alumni_pekerja = transformAndFilterRelationData(data.alumni_pekerja, 'Profesional Institusi', 'alumni_pekerja');
+    transformedData.alumni_bisnis = transformAndFilterRelationData(data.alumni_bisnis, 'Entrepreneur/Wirausaha', 'alumni_bisnis');
+    transformedData.alumni_sosial = transformAndFilterRelationData(data.alumni_sosial, 'Pekerja Sosial/NGO', 'alumni_sosial');
+    transformedData.alumni_kreatif = transformAndFilterRelationData(data.alumni_kreatif, 'Content Creator/Pekerja Kreatif Digital', 'alumni_kreatif');
+    transformedData.alumni_rumah_tangga = transformAndFilterRelationData(data.alumni_rumah_tangga, 'Ibu Rumah Tangga', 'alumni_rumah_tangga');
+    transformedData.alumni_mahasiswa = transformAndFilterRelationData(data.alumni_mahasiswa, 'Mahasiswa dan FG', 'alumni_mahasiswa');
+    transformedData.alumni_informal = transformAndFilterRelationData(data.alumni_informal, 'Pekerja Informal/Freelance/Harian', 'alumni_informal');
+    transformedData.alumni_agri = transformAndFilterRelationData(data.alumni_agri, 'Petani/Nelayan/Peternak', 'alumni_agri');
+    transformedData.alumni_pendidik = transformAndFilterRelationData(data.alumni_pendidik, 'Guru/Tenaga Pendidik', 'alumni_pendidik');
 
     try {
       const response = await fetch('/api/complete-profile', {
@@ -262,6 +431,22 @@ export default function CompleteProfilePage() {
       </div>
     );
   }
+
+  // Helper untuk memetakan nama aktivitas ke kunci relasi di formValues
+  const getAlumniActivityKey = (aktivitasName: AktivitasPekerjaan): keyof ProfileFormValues | null => {
+    switch (aktivitasName) {
+      case 'Profesional Institusi': return 'alumni_pekerja';
+      case 'Entrepreneur/Wirausaha': return 'alumni_bisnis';
+      case 'Pekerja Sosial/NGO': return 'alumni_sosial';
+      case 'Content Creator/Pekerja Kreatif Digital': return 'alumni_kreatif';
+      case 'Ibu Rumah Tangga': return 'alumni_rumah_tangga';
+      case 'Mahasiswa dan FG': return 'alumni_mahasiswa';
+      case 'Pekerja Informal/Freelance/Harian': return 'alumni_informal';
+      case 'Petani/Nelayan/Peternak': return 'alumni_agri';
+      case 'Guru/Tenaga Pendidik': return 'alumni_pendidik';
+      default: return null;
+    }
+  };
 
   return (
     <div className="flex items-center justify-center min-h-screen p-4">
@@ -357,7 +542,11 @@ export default function CompleteProfilePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="skill_gabungan">Keahlian (pisahkan dengan koma)</Label>
-                <Textarea id="skill_gabungan" {...register('skill_gabungan')} />
+                <Input
+                  id="skill_gabungan"
+                  value={allSkillsInput.join(', ')}
+                  onChange={(e) => setValue('skill_gabungan', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+                />
                 {errors.skill_gabungan && <p className="text-red-500 text-sm">{errors.skill_gabungan.message}</p>}
               </div>
               <div className="space-y-2">
@@ -389,31 +578,52 @@ export default function CompleteProfilePage() {
 
             <h3 className="text-lg font-semibold border-b pb-2 mt-6">Aktivitas & Kebutuhan</h3>
             <div className="space-y-2">
-              <Label>Apa saja aktivitas atau pekerjaan yang sedang Anda jalani saat ini?</Label>
+              <Label>Apa saja aktivitas atau pekerjaan yang pernah Anda lakukan?</Label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {(['Profesional Institusi', 'Entrepreneur/Wirausaha', 'Pekerja Sosial/NGO', 'Content Creator/Pekerja Kreatif Digital',
-                  'Belum Bekerja', 'Pekerja Informal/Freelance/Harian', 'Petani/Nelayan/Peternak', 'Guru/Tenaga Pendidik',
-                  'Ibu Rumah Tangga', 'Mahasiswa dan FG'] as AktivitasPekerjaan[]).map((aktivitas) => (
-                  <Label key={aktivitas} className="flex items-center space-x-2 font-normal">
-                    <Checkbox
-                      checked={selectedAktivitas.includes(aktivitas)}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setValue('aktivitas', [...selectedAktivitas, aktivitas]);
-                        } else {
-                          setValue('aktivitas', selectedAktivitas.filter((item) => item !== aktivitas));
-                        }
-                      }}
-                    />
-                    <span>{aktivitas}</span>
-                  </Label>
+                {allAktivitasOptions.map((aktivitas) => (
+                  <div key={aktivitas} className="flex flex-col space-y-2 border p-2 rounded-md">
+                    <Label className="flex items-center space-x-2 font-normal">
+                      <Checkbox
+                        checked={selectedAktivitas.includes(aktivitas)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setValue('aktivitas', [...selectedAktivitas, aktivitas]);
+                            setAktivitasDuration(aktivitas, 'Masih aktif');
+                          } else {
+                            setValue('aktivitas', selectedAktivitas.filter((item) => item !== aktivitas));
+                            setAktivitasDuration(aktivitas, undefined);
+                          }
+                        }}
+                      />
+                      <span>{aktivitas}</span>
+                    </Label>
+
+                    {selectedAktivitas.includes(aktivitas) && aktivitas !== 'Belum Bekerja' && (
+                      <div className="ml-6 mt-2 space-y-1">
+                        <Label className="text-sm text-muted-foreground">Status Aktivitas:</Label>
+                        <RadioGroup 
+                          value={getAktivitasDuration(aktivitas)}
+                          onValueChange={(value) => setAktivitasDuration(aktivitas, value as AktivitasStatusDurasi)}
+                          className="flex flex-col space-y-1"
+                        >
+                          {durasiOptions.map(option => (
+                            <Label key={option} className="flex items-center space-x-2 text-sm font-normal">
+                              <RadioGroupItem value={option} id={`${aktivitas}-${option.replace(/\s/g, '-')}`} />
+                              <span>{option}</span>
+                            </Label>
+                          ))}
+                        </RadioGroup>
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
               {errors.aktivitas && <p className="text-red-500 text-sm">{errors.aktivitas.message}</p>}
+              {errors.aktivitas_status_durasi && <p className="text-red-500 text-sm">{errors.aktivitas_status_durasi.message}</p>}
             </div>
 
-            {/* --- Conditional Fields berdasarkan Aktivitas --- */}
-            {selectedAktivitas.includes('Profesional Institusi') && (
+            {/* --- Conditional Fields berdasarkan Aktivitas & Durasi --- */}
+            {selectedAktivitas.includes('Profesional Institusi') && getAktivitasDuration('Profesional Institusi') !== '>5 tahun' && (
               <div className="space-y-2 border p-4 rounded-md">
                 <h4 className="font-semibold">Detail Profesional Institusi</h4>
                 <div className="space-y-2">
@@ -431,6 +641,33 @@ export default function CompleteProfilePage() {
                   <Textarea id="alumni_pekerja.0.pengalaman_proyek" {...register('alumni_pekerja.0.pengalaman_proyek')} />
                   {errors.alumni_pekerja?.[0]?.pengalaman_proyek && <p className="text-red-500 text-sm">{errors.alumni_pekerja[0].pengalaman_proyek.message}</p>}
                 </div>
+                {/* Relevant Skills for Profesional Institusi */}
+                <div className="space-y-2">
+                  <Label>Keahlian Relevan untuk Profesional Institusi</Label>
+                  {availableSkills.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {availableSkills.map((skill) => (
+                        <Label key={skill} className="flex items-center space-x-2 font-normal">
+                          <Checkbox
+                            checked={getRelevantSkills('alumni_pekerja').includes(skill)}
+                            onCheckedChange={(checked) => {
+                              const currentRelevantSkills = getRelevantSkills('alumni_pekerja');
+                              if (checked) {
+                                setRelevantSkills('alumni_pekerja', [...currentRelevantSkills, skill]);
+                              } else {
+                                setRelevantSkills('alumni_pekerja', currentRelevantSkills.filter(s => s !== skill));
+                              }
+                            }}
+                          />
+                          <span>{skill}</span>
+                        </Label>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Isi keahlian di bagian atas terlebih dahulu.</p>
+                  )}
+                  {errors.alumni_pekerja?.[0]?.relevant_skills && <p className="text-red-500 text-sm">{errors.alumni_pekerja[0].relevant_skills.message}</p>}
+                </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox id="alumni_pekerja.0.akses_jejaring" {...register('alumni_pekerja.0.akses_jejaring')} />
                   <Label htmlFor="alumni_pekerja.0.akses_jejaring">Memiliki akses jejaring/koneksi strategis?</Label>
@@ -442,14 +679,9 @@ export default function CompleteProfilePage() {
               </div>
             )}
 
-            {selectedAktivitas.includes('Entrepreneur/Wirausaha') && (
+            {selectedAktivitas.includes('Entrepreneur/Wirausaha') && getAktivitasDuration('Entrepreneur/Wirausaha') !== '>5 tahun' && (
               <div className="space-y-2 border p-4 rounded-md">
                 <h4 className="font-semibold">Detail Entrepreneur/Wirausaha</h4>
-                <div className="space-y-2">
-                  <Label htmlFor="alumni_bisnis.0.keahlian_wirausahaan">Keahlian Utama Kewirausahaan</Label>
-                  <Textarea id="alumni_bisnis.0.keahlian_wirausahaan" {...register('alumni_bisnis.0.keahlian_wirausahaan')} />
-                  {errors.alumni_bisnis?.[0]?.keahlian_wirausahaan && <p className="text-red-500 text-sm">{errors.alumni_bisnis[0].keahlian_wirausahaan.message}</p>}
-                </div>
                 <div className="space-y-2">
                   <Label htmlFor="alumni_bisnis.0.produk_layanan_utama">Produk/Layanan Utama</Label>
                   <Input id="alumni_bisnis.0.produk_layanan_utama" {...register('alumni_bisnis.0.produk_layanan_utama')} />
@@ -490,17 +722,39 @@ export default function CompleteProfilePage() {
                   </RadioGroup>
                   {errors.alumni_bisnis?.[0]?.target_pasar && <p className="text-red-500 text-sm">{errors.alumni_bisnis[0].target_pasar.message}</p>}
                 </div>
+                {/* Relevant Skills for Entrepreneur/Wirausaha */}
+                <div className="space-y-2">
+                  <Label>Keahlian Relevan untuk Entrepreneur/Wirausaha</Label>
+                  {availableSkills.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {availableSkills.map((skill) => (
+                        <Label key={skill} className="flex items-center space-x-2 font-normal">
+                          <Checkbox
+                            checked={getRelevantSkills('alumni_bisnis').includes(skill)}
+                            onCheckedChange={(checked) => {
+                              const currentRelevantSkills = getRelevantSkills('alumni_bisnis');
+                              if (checked) {
+                                setRelevantSkills('alumni_bisnis', [...currentRelevantSkills, skill]);
+                              } else {
+                                setRelevantSkills('alumni_bisnis', currentRelevantSkills.filter(s => s !== skill));
+                              }
+                            }}
+                          />
+                          <span>{skill}</span>
+                        </Label>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Isi keahlian di bagian atas terlebih dahulu.</p>
+                  )}
+                  {errors.alumni_bisnis?.[0]?.relevant_skills && <p className="text-red-500 text-sm">{errors.alumni_bisnis[0].relevant_skills.message}</p>}
+                </div>
               </div>
             )}
 
-            {selectedAktivitas.includes('Pekerja Sosial/NGO') && (
+            {selectedAktivitas.includes('Pekerja Sosial/NGO') && getAktivitasDuration('Pekerja Sosial/NGO') !== '>5 tahun' && (
               <div className="space-y-2 border p-4 rounded-md">
                 <h4 className="font-semibold">Detail Pekerja Sosial/NGO</h4>
-                <div className="space-y-2">
-                  <Label htmlFor="alumni_sosial.0.keahlian_sosial">Keahlian Utama</Label>
-                  <Textarea id="alumni_sosial.0.keahlian_sosial" {...register('alumni_sosial.0.keahlian_sosial')} />
-                  {errors.alumni_sosial?.[0]?.keahlian_sosial && <p className="text-red-500 text-sm">{errors.alumni_sosial[0].keahlian_sosial.message}</p>}
-                </div>
                 <div className="space-y-2">
                   <Label htmlFor="alumni_sosial.0.pengalaman_proyek_sosial">Pengalaman Program/Proyek Kerja</Label>
                   <Textarea id="alumni_sosial.0.pengalaman_proyek_sosial" {...register('alumni_sosial.0.pengalaman_proyek_sosial')} />
@@ -520,17 +774,39 @@ export default function CompleteProfilePage() {
                   <Checkbox id="alumni_sosial.0.pengalaman_bermitra_sosial" {...register('alumni_sosial.0.pengalaman_bermitra_sosial')} />
                   <Label htmlFor="alumni_sosial.0.pengalaman_bermitra_sosial">Memiliki pengalaman bermitra dengan sektor lain?</Label>
                 </div>
+                {/* Relevant Skills for Pekerja Sosial/NGO */}
+                <div className="space-y-2">
+                  <Label>Keahlian Relevan untuk Pekerja Sosial/NGO</Label>
+                  {availableSkills.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {availableSkills.map((skill) => (
+                        <Label key={skill} className="flex items-center space-x-2 font-normal">
+                          <Checkbox
+                            checked={getRelevantSkills('alumni_sosial').includes(skill)}
+                            onCheckedChange={(checked) => {
+                              const currentRelevantSkills = getRelevantSkills('alumni_sosial');
+                              if (checked) {
+                                setRelevantSkills('alumni_sosial', [...currentRelevantSkills, skill]);
+                              } else {
+                                setRelevantSkills('alumni_sosial', currentRelevantSkills.filter(s => s !== skill));
+                              }
+                            }}
+                          />
+                          <span>{skill}</span>
+                        </Label>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Isi keahlian di bagian atas terlebih dahulu.</p>
+                  )}
+                  {errors.alumni_sosial?.[0]?.relevant_skills && <p className="text-red-500 text-sm">{errors.alumni_sosial[0].relevant_skills.message}</p>}
+                </div>
               </div>
             )}
 
-            {selectedAktivitas.includes('Content Creator/Pekerja Kreatif Digital') && (
+            {selectedAktivitas.includes('Content Creator/Pekerja Kreatif Digital') && getAktivitasDuration('Content Creator/Pekerja Kreatif Digital') !== '>5 tahun' && (
               <div className="space-y-2 border p-4 rounded-md">
                 <h4 className="font-semibold">Detail Content Creator/Pekerja Kreatif Digital</h4>
-                <div className="space-y-2">
-                  <Label htmlFor="alumni_kreatif.0.keahlian_kreatif">Keahlian Utama</Label>
-                  <Textarea id="alumni_kreatif.0.keahlian_kreatif" {...register('alumni_kreatif.0.keahlian_kreatif')} />
-                  {errors.alumni_kreatif?.[0]?.keahlian_kreatif && <p className="text-red-500 text-sm">{errors.alumni_kreatif[0].keahlian_kreatif.message}</p>}
-                </div>
                 <div className="space-y-2">
                   <Label htmlFor="alumni_kreatif.0.platform_digital_utama">Platform Digital Utama</Label>
                   <Input id="alumni_kreatif.0.platform_digital_utama" {...register('alumni_kreatif.0.platform_digital_utama')} />
@@ -556,17 +832,39 @@ export default function CompleteProfilePage() {
                   <Textarea id="alumni_kreatif.0.demografi_followers" {...register('alumni_kreatif.0.demografi_followers')} />
                   {errors.alumni_kreatif?.[0]?.demografi_followers && <p className="text-red-500 text-sm">{errors.alumni_kreatif[0].demografi_followers.message}</p>}
                 </div>
+                {/* Relevant Skills for Content Creator/Pekerja Kreatif Digital */}
+                <div className="space-y-2">
+                  <Label>Keahlian Relevan untuk Content Creator/Pekerja Kreatif Digital</Label>
+                  {availableSkills.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {availableSkills.map((skill) => (
+                        <Label key={skill} className="flex items-center space-x-2 font-normal">
+                          <Checkbox
+                            checked={getRelevantSkills('alumni_kreatif').includes(skill)}
+                            onCheckedChange={(checked) => {
+                              const currentRelevantSkills = getRelevantSkills('alumni_kreatif');
+                              if (checked) {
+                                setRelevantSkills('alumni_kreatif', [...currentRelevantSkills, skill]);
+                              } else {
+                                setRelevantSkills('alumni_kreatif', currentRelevantSkills.filter(s => s !== skill));
+                              }
+                            }}
+                          />
+                          <span>{skill}</span>
+                        </Label>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Isi keahlian di bagian atas terlebih dahulu.</p>
+                  )}
+                  {errors.alumni_kreatif?.[0]?.relevant_skills && <p className="text-red-500 text-sm">{errors.alumni_kreatif[0].relevant_skills.message}</p>}
+                </div>
               </div>
             )}
 
-            {selectedAktivitas.includes('Ibu Rumah Tangga') && (
+            {selectedAktivitas.includes('Ibu Rumah Tangga') && getAktivitasDuration('Ibu Rumah Tangga') !== '>5 tahun' && (
               <div className="space-y-2 border p-4 rounded-md">
                 <h4 className="font-semibold">Detail Ibu Rumah Tangga</h4>
-                <div className="space-y-2">
-                  <Label htmlFor="alumni_rumah_tangga.0.keahlian_irt">Keahlian Utama</Label>
-                  <Textarea id="alumni_rumah_tangga.0.keahlian_irt" {...register('alumni_rumah_tangga.0.keahlian_irt')} />
-                  {errors.alumni_rumah_tangga?.[0]?.keahlian_irt && <p className="text-red-500 text-sm">{errors.alumni_rumah_tangga[0].keahlian_irt.message}</p>}
-                </div>
                 <div className="space-y-2">
                   <Label htmlFor="alumni_rumah_tangga.0.kegiatan_organisasi_irt">Kegiatan/Organisasi yang Pernah Diikuti</Label>
                   <Textarea id="alumni_rumah_tangga.0.kegiatan_organisasi_irt" {...register('alumni_rumah_tangga.0.kegiatan_organisasi_irt')} />
@@ -580,17 +878,39 @@ export default function CompleteProfilePage() {
                   <Checkbox id="alumni_rumah_tangga.0.mencari_pekerjaan_kolaborasi_irt" {...register('alumni_rumah_tangga.0.mencari_pekerjaan_kolaborasi_irt')} />
                   <Label htmlFor="alumni_rumah_tangga.0.mencari_pekerjaan_kolaborasi_irt">Mencari pekerjaan atau peluang kolaborasi?</Label>
                 </div>
+                {/* Relevant Skills for Ibu Rumah Tangga */}
+                <div className="space-y-2">
+                  <Label>Keahlian Relevan untuk Ibu Rumah Tangga</Label>
+                  {availableSkills.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {availableSkills.map((skill) => (
+                        <Label key={skill} className="flex items-center space-x-2 font-normal">
+                          <Checkbox
+                            checked={getRelevantSkills('alumni_rumah_tangga').includes(skill)}
+                            onCheckedChange={(checked) => {
+                              const currentRelevantSkills = getRelevantSkills('alumni_rumah_tangga');
+                              if (checked) {
+                                setRelevantSkills('alumni_rumah_tangga', [...currentRelevantSkills, skill]);
+                              } else {
+                                setRelevantSkills('alumni_rumah_tangga', currentRelevantSkills.filter(s => s !== skill));
+                              }
+                            }}
+                          />
+                          <span>{skill}</span>
+                        </Label>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Isi keahlian di bagian atas terlebih dahulu.</p>
+                  )}
+                  {errors.alumni_rumah_tangga?.[0]?.relevant_skills && <p className="text-red-500 text-sm">{errors.alumni_rumah_tangga[0].relevant_skills.message}</p>}
+                </div>
               </div>
             )}
 
-            {selectedAktivitas.includes('Mahasiswa dan FG') && (
+            {selectedAktivitas.includes('Mahasiswa dan FG') && getAktivitasDuration('Mahasiswa dan FG') !== '>5 tahun' && (
               <div className="space-y-2 border p-4 rounded-md">
                 <h4 className="font-semibold">Detail Mahasiswa & Fresh Graduate</h4>
-                <div className="space-y-2">
-                  <Label htmlFor="alumni_mahasiswa.0.keahlian_mahasiswa">Keahlian Utama</Label>
-                  <Textarea id="alumni_mahasiswa.0.keahlian_mahasiswa" {...register('alumni_mahasiswa.0.keahlian_mahasiswa')} />
-                  {errors.alumni_mahasiswa?.[0]?.keahlian_mahasiswa && <p className="text-red-500 text-sm">{errors.alumni_mahasiswa[0].keahlian_mahasiswa.message}</p>}
-                </div>
                 <div className="space-y-2">
                   <Label htmlFor="alumni_mahasiswa.0.kegiatan_organisasi_mahasiswa">Kegiatan/Organisasi yang Pernah Diikuti</Label>
                   <Textarea id="alumni_mahasiswa.0.kegiatan_organisasi_mahasiswa" {...register('alumni_mahasiswa.0.kegiatan_organisasi_mahasiswa')} />
@@ -609,10 +929,37 @@ export default function CompleteProfilePage() {
                   <Textarea id="alumni_mahasiswa.0.pengalaman_magang" {...register('alumni_mahasiswa.0.pengalaman_magang')} />
                   {errors.alumni_mahasiswa?.[0]?.pengalaman_magang && <p className="text-red-500 text-sm">{errors.alumni_mahasiswa[0].pengalaman_magang.message}</p>}
                 </div>
+                {/* Relevant Skills for Mahasiswa dan FG */}
+                <div className="space-y-2">
+                  <Label>Keahlian Relevan untuk Mahasiswa & Fresh Graduate</Label>
+                  {availableSkills.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {availableSkills.map((skill) => (
+                        <Label key={skill} className="flex items-center space-x-2 font-normal">
+                          <Checkbox
+                            checked={getRelevantSkills('alumni_mahasiswa').includes(skill)}
+                            onCheckedChange={(checked) => {
+                              const currentRelevantSkills = getRelevantSkills('alumni_mahasiswa');
+                              if (checked) {
+                                setRelevantSkills('alumni_mahasiswa', [...currentRelevantSkills, skill]);
+                              } else {
+                                setRelevantSkills('alumni_mahasiswa', currentRelevantSkills.filter(s => s !== skill));
+                              }
+                            }}
+                          />
+                          <span>{skill}</span>
+                        </Label>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Isi keahlian di bagian atas terlebih dahulu.</p>
+                  )}
+                  {errors.alumni_mahasiswa?.[0]?.relevant_skills && <p className="text-red-500 text-sm">{errors.alumni_mahasiswa[0].relevant_skills.message}</p>}
+                </div>
               </div>
             )}
 
-            {selectedAktivitas.includes('Pekerja Informal/Freelance/Harian') && (
+            {selectedAktivitas.includes('Pekerja Informal/Freelance/Harian') && getAktivitasDuration('Pekerja Informal/Freelance/Harian') !== '>5 tahun' && (
               <div className="space-y-2 border p-4 rounded-md">
                 <h4 className="font-semibold">Detail Pekerja Informal/Freelance/Harian</h4>
                 <div className="space-y-2">
@@ -628,17 +975,39 @@ export default function CompleteProfilePage() {
                   <Checkbox id="alumni_informal.0.pernah_rekrut_memimpin" {...register('alumni_informal.0.pernah_rekrut_memimpin')} />
                   <Label htmlFor="alumni_informal.0.pernah_rekrut_memimpin">Pernah merekrut atau memimpin orang lain?</Label>
                 </div>
+                {/* Relevant Skills for Pekerja Informal/Freelance/Harian */}
+                <div className="space-y-2">
+                  <Label>Keahlian Relevan untuk Pekerja Informal/Freelance/Harian</Label>
+                  {availableSkills.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {availableSkills.map((skill) => (
+                        <Label key={skill} className="flex items-center space-x-2 font-normal">
+                          <Checkbox
+                            checked={getRelevantSkills('alumni_informal').includes(skill)}
+                            onCheckedChange={(checked) => {
+                              const currentRelevantSkills = getRelevantSkills('alumni_informal');
+                              if (checked) {
+                                setRelevantSkills('alumni_informal', [...currentRelevantSkills, skill]);
+                              } else {
+                                setRelevantSkills('alumni_informal', currentRelevantSkills.filter(s => s !== skill));
+                              }
+                            }}
+                          />
+                          <span>{skill}</span>
+                        </Label>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Isi keahlian di bagian atas terlebih dahulu.</p>
+                  )}
+                  {errors.alumni_informal?.[0]?.relevant_skills && <p className="text-red-500 text-sm">{errors.alumni_informal[0].relevant_skills.message}</p>}
+                </div>
               </div>
             )}
 
-            {selectedAktivitas.includes('Petani/Nelayan/Peternak') && (
+            {selectedAktivitas.includes('Petani/Nelayan/Peternak') && getAktivitasDuration('Petani/Nelayan/Peternak') !== '>5 tahun' && (
               <div className="space-y-2 border p-4 rounded-md">
                 <h4 className="font-semibold">Detail Petani/Nelayan/Peternak</h4>
-                <div className="space-y-2">
-                  <Label htmlFor="alumni_agri.0.keahlian_agri">Keahlian Utama</Label>
-                  <Textarea id="alumni_agri.0.keahlian_agri" {...register('alumni_agri.0.keahlian_agri')} />
-                  {errors.alumni_agri?.[0]?.keahlian_agri && <p className="text-red-500 text-sm">{errors.alumni_agri[0].keahlian_agri.message}</p>}
-                </div>
                 <div className="space-y-2">
                   <Label htmlFor="alumni_agri.0.komoditas_utama">Komoditas Utama</Label>
                   <Input id="alumni_agri.0.komoditas_utama" {...register('alumni_agri.0.komoditas_utama')} />
@@ -663,17 +1032,39 @@ export default function CompleteProfilePage() {
                   <Textarea id="alumni_agri.0.kendala_dihadapi_agri" {...register('alumni_agri.0.kendala_dihadapi_agri')} />
                   {errors.alumni_agri?.[0]?.kendala_dihadapi_agri && <p className="text-red-500 text-sm">{errors.alumni_agri[0].kendala_dihadapi_agri.message}</p>}
                 </div>
+                {/* Relevant Skills for Petani/Nelayan/Peternak */}
+                <div className="space-y-2">
+                  <Label>Keahlian Relevan untuk Petani/Nelayan/Peternak</Label>
+                  {availableSkills.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {availableSkills.map((skill) => (
+                        <Label key={skill} className="flex items-center space-x-2 font-normal">
+                          <Checkbox
+                            checked={getRelevantSkills('alumni_agri').includes(skill)}
+                            onCheckedChange={(checked) => {
+                              const currentRelevantSkills = getRelevantSkills('alumni_agri');
+                              if (checked) {
+                                setRelevantSkills('alumni_agri', [...currentRelevantSkills, skill]);
+                              } else {
+                                setRelevantSkills('alumni_agri', currentRelevantSkills.filter(s => s !== skill));
+                              }
+                            }}
+                          />
+                          <span>{skill}</span>
+                        </Label>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Isi keahlian di bagian atas terlebih dahulu.</p>
+                  )}
+                  {errors.alumni_agri?.[0]?.relevant_skills && <p className="text-red-500 text-sm">{errors.alumni_agri[0].relevant_skills.message}</p>}
+                </div>
               </div>
             )}
 
-            {selectedAktivitas.includes('Guru/Tenaga Pendidik') && (
+            {selectedAktivitas.includes('Guru/Tenaga Pendidik') && getAktivitasDuration('Guru/Tenaga Pendidik') !== '>5 tahun' && (
               <div className="space-y-2 border p-4 rounded-md">
                 <h4 className="font-semibold">Detail Guru/Tenaga Pendidik</h4>
-                <div className="space-y-2">
-                  <Label htmlFor="alumni_pendidik.0.keahlian_pendidik">Keahlian Utama</Label>
-                  <Textarea id="alumni_pendidik.0.keahlian_pendidik" {...register('alumni_pendidik.0.keahlian_pendidik')} />
-                  {errors.alumni_pendidik?.[0]?.keahlian_pendidik && <p className="text-red-500 text-sm">{errors.alumni_pendidik[0].keahlian_pendidik.message}</p>}
-                </div>
                 <div className="space-y-2">
                   <Label htmlFor="alumni_pendidik.0.jenjang_pendidikan">Jenjang Pendidikan Mengajar</Label>
                   <Input id="alumni_pendidik.0.jenjang_pendidikan" {...register('alumni_pendidik.0.jenjang_pendidikan')} />
@@ -693,6 +1084,33 @@ export default function CompleteProfilePage() {
                   <Checkbox id="alumni_pendidik.0.mengajar_bimbel" {...register('alumni_pendidik.0.mengajar_bimbel')} />
                   <Label htmlFor="alumni_pendidik.0.mengajar_bimbel">Mengajar bimbel?</Label>
                 </div>
+                {/* Relevant Skills for Guru/Tenaga Pendidik */}
+                <div className="space-y-2">
+                  <Label>Keahlian Relevan untuk Guru/Tenaga Pendidik</Label>
+                  {availableSkills.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {availableSkills.map((skill) => (
+                        <Label key={skill} className="flex items-center space-x-2 font-normal">
+                          <Checkbox
+                            checked={getRelevantSkills('alumni_pendidik').includes(skill)}
+                            onCheckedChange={(checked) => {
+                              const currentRelevantSkills = getRelevantSkills('alumni_pendidik');
+                              if (checked) {
+                                setRelevantSkills('alumni_pendidik', [...currentRelevantSkills, skill]);
+                              } else {
+                                setRelevantSkills('alumni_pendidik', currentRelevantSkills.filter(s => s !== skill));
+                              }
+                            }}
+                          />
+                          <span>{skill}</span>
+                        </Label>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Isi keahlian di bagian atas terlebih dahulu.</p>
+                  )}
+                  {errors.alumni_pendidik?.[0]?.relevant_skills && <p className="text-red-500 text-sm">{errors.alumni_pendidik[0].relevant_skills.message}</p>}
+                </div>
               </div>
             )}
             {/* --- Akhir Conditional Fields --- */}
@@ -700,7 +1118,7 @@ export default function CompleteProfilePage() {
             <div className="space-y-2">
               <Label>Jenis dukungan apa yang paling Anda butuhkan saat ini?</Label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {(['Peluang kerja', 'Kolaborasi proyek', 'Mentor', 'Pendamping usaha', 'Relasi profesional', 'Akses pasar', 'Lainnya'] as JenisDukungan[]).map((dukungan) => (
+                {allJenisDukunganOptions.map((dukungan) => (
                   <Label key={dukungan} className="flex items-center space-x-2 font-normal">
                     <Checkbox
                       checked={watch('jenis_dukungan_dibutuhkan').includes(dukungan)}
@@ -722,7 +1140,7 @@ export default function CompleteProfilePage() {
             <div className="space-y-2">
               <Label>Bidang apa yang paling tertarik untuk berkontribusi? (minat pengembangan diri/karir)</Label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {(['Pendidikan', 'Lingkungan', 'Ekonomi', 'Teknologi', 'Kesehatan', 'Komunitas', 'Kreatif', 'Pertanian/Pangan', 'Perikanan', 'Peternakan'] as BidangKontribusi[]).map((bidang) => (
+                {allBidangKontribusiOptions.map((bidang) => (
                   <Label key={bidang} className="flex items-center space-x-2 font-normal">
                     <Checkbox
                       checked={watch('bidang_kontribusi_minat').includes(bidang)}
