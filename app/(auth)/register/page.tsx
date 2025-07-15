@@ -4,8 +4,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-// createClient tidak digunakan untuk pendaftaran ini lagi
-// import { createClient } from '@/lib/supabaseClient' 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -27,7 +25,6 @@ export default function RegisterPage() {
     setIsLoading(true)
 
     try {
-      // Kirim kredensial ke API Route pendaftaran kustom Anda
       const response = await fetch('/api/register', {
         method: 'POST',
         headers: {
@@ -42,17 +39,15 @@ export default function RegisterPage() {
         setError(data.error || 'Terjadi kesalahan saat pendaftaran.');
         console.error('API Register Error:', data.error);
       } else {
-        setSuccessMessage(data.message || 'Pendaftaran berhasil! Silakan login.');
-        // Opsional: kosongkan form setelah sukses
-        setEmail('');
-        setPassword('');
-        setUsername('');
-        // router.push('/login?message=' + encodeURIComponent(data.message || 'Pendaftaran berhasil! Silakan login.'));
+        setSuccessMessage(data.message || 'Pendaftaran berhasil!');
+        // Perbaikan: Arahkan ke halaman complete-profile setelah pendaftaran berhasil
+        console.log('[CLIENT] Pendaftaran berhasil. Mengarahkan ke halaman lengkapi profil...');
+        router.push('/complete-profile'); // Arahkan ke halaman complete-profile
       }
 
-    } catch (err: any) {
+    } catch (err: unknown) { // Perbaikan: Ganti 'any' dengan 'unknown'
       setError('Terjadi kesalahan jaringan atau yang tidak terduga saat pendaftaran.');
-      console.error('Unexpected error during registration process:', err);
+      console.error('[CLIENT] Unexpected error during registration process:', (err as Error).message);
     } finally {
       setIsLoading(false);
     }

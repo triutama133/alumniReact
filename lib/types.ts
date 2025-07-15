@@ -1,4 +1,4 @@
-// lib/types.ts
+// src/lib/types.ts
 
 // --- Tipe Project (pertahankan jika ada) ---
 export interface ProjectWithOwner {
@@ -21,20 +21,6 @@ export interface CustomUserForProjectCard {
 // --- Tipe untuk Pendidikan (Q8-Q11) ---
 export type PendidikanTerakhir = 'SD' | 'SMP' | 'SMA/SMK' | 'D1' | 'D2' | 'D3' | 'D4' | 'S1' | 'S2' | 'S3';
 
-// --- Tipe untuk Durasi Aktivitas (Baru) ---
-export type AktivitasStatusDurasi = 
-  'Masih aktif' | 
-  '1 tahun lalu' | 
-  '2-3 tahun lalu' | 
-  '3-5 tahun lalu' | 
-  '>5 tahun';
-
-  // --- Tipe untuk Detail Aktivitas (Baru) ---
-export interface AktivitasDetailType {
-  name: AktivitasPekerjaan;
-  duration: AktivitasStatusDurasi;
-}
-
 // --- Tipe untuk Aktivitas/Pekerjaan (Q17) ---
 export type AktivitasPekerjaan = 
   'Profesional Institusi' | 
@@ -46,7 +32,21 @@ export type AktivitasPekerjaan =
   'Petani/Nelayan/Peternak' | 
   'Guru/Tenaga Pendidik' |
   'Ibu Rumah Tangga' |
-  'Mahasiswa dan FG'; // Mahasiswa dan Fresh Graduate
+  'Mahasiswa dan FG';
+
+// --- Tipe untuk Status Durasi Aktivitas ---
+export type AktivitasStatusDurasi = 
+  "Masih aktif" | 
+  "1 tahun lalu" | 
+  "2-3 tahun lalu" | 
+  "3-5 tahun lalu" | 
+  ">5 tahun";
+
+// --- Tipe untuk Detail Aktivitas (untuk aktivitas_status_durasi) ---
+export interface AktivitasDetailType {
+  name: AktivitasPekerjaan;
+  duration: AktivitasStatusDurasi;
+}
 
 // --- Tipe untuk Jenis Dukungan (Q18) ---
 export type JenisDukungan = 
@@ -68,12 +68,12 @@ export type BidangKontribusi =
 // --- Tipe untuk Relasi Pekerjaan (alumni_pekerja) ---
 export interface AlumniPekerjaType {
   id?: number;
-  keahlian_pekerja: string | null;
-  nama_instansi: string | null; // Bisa null
-  posisi: string | null; // Bisa null
+  nama_instansi: string | null;
+  posisi: string | null;
   pengalaman_proyek: string | null;
   akses_jejaring: boolean | null;
   pengalaman_bermitra: boolean | null;
+  relevant_skills: string | null; // Disimpan sebagai string comma-separated di DB
 }
 
 // --- Tipe untuk Relasi Bisnis (alumni_bisnis) ---
@@ -84,7 +84,8 @@ export interface AlumniBisnisType {
   nama_usaha: string | null;
   skala_usaha: string | null;
   kendala_bisnis: string | null;
-  target_pasar: 'B2C' | 'B2B' | 'B2C dan B2B' | null; // Bisa null
+  target_pasar: 'B2C' | 'B2B' | 'B2C dan B2B' | null;
+  relevant_skills: string | null; // Disimpan sebagai string comma-separated di DB
 }
 
 // --- Tipe untuk Relasi Filantropi/NGO (alumni_sosial) ---
@@ -95,6 +96,7 @@ export interface AlumniSosialType {
   isu_fokus: string | null;
   nama_organisasi: string | null;
   pengalaman_bermitra_sosial: boolean | null;
+  relevant_skills: string | null; // Disimpan sebagai string comma-separated di DB
 }
 
 // --- Tipe untuk Relasi Content Creator (alumni_kreatif) ---
@@ -106,6 +108,7 @@ export interface AlumniKreatifType {
   total_jangkauan: string | null;
   kisaran_rate_card: string | null;
   demografi_followers: string | null;
+  relevant_skills: string | null; // Disimpan sebagai string comma-separated di DB
 }
 
 // --- Tipe untuk Relasi Ibu Rumah Tangga (alumni_rumah_tangga) ---
@@ -115,6 +118,7 @@ export interface AlumniRumahTanggaType {
   kegiatan_organisasi_irt: string | null;
   pengalaman_tim_irt: boolean | null;
   mencari_pekerjaan_kolaborasi_irt: boolean | null;
+  relevant_skills: string | null; // Disimpan sebagai string comma-separated di DB
 }
 
 // --- Tipe untuk Relasi Mahasiswa dan FG (alumni_mahasiswa) ---
@@ -125,6 +129,7 @@ export interface AlumniMahasiswaType {
   pengalaman_tim_mahasiswa: boolean | null;
   mencari_pekerjaan_kolaborasi_mahasiswa: boolean | null;
   pengalaman_magang: string | null;
+  relevant_skills: string | null; // Disimpan sebagai string comma-separated di DB
 }
 
 // --- Tipe untuk Relasi Pekerja Informal/Freelance/Harian (alumni_informal) ---
@@ -133,6 +138,7 @@ export interface AlumniInformalType {
   keahlian_informal: string | null;
   pengalaman_tim_informal: boolean | null;
   pernah_rekrut_memimpin: boolean | null;
+  relevant_skills: string | null; // Disimpan sebagai string comma-separated di DB
 }
 
 // --- Tipe untuk Relasi Petani/Nelayan/Peternak (alumni_agri) ---
@@ -144,6 +150,7 @@ export interface AlumniAgriType {
   skala_usaha_agri: string | null;
   nilai_tambah_diterapkan: string | null;
   kendala_dihadapi_agri: string | null;
+  relevant_skills: string | null; // Disimpan sebagai string comma-separated di DB
 }
 
 // --- Tipe untuk Relasi Guru/Tenaga Pendidik (alumni_pendidik) ---
@@ -154,6 +161,7 @@ export interface AlumniPendidikType {
   mata_pelajaran: string | null;
   inovasi_pembelajaran: string | null;
   mengajar_bimbel: boolean | null;
+  relevant_skills: string | null; // Disimpan sebagai string comma-separated di DB
 }
 
 
@@ -167,33 +175,31 @@ export interface AlumniProfileType {
   last_login: string | null;
 
   // Q1-Q16 (General Information)
-  nama_lengkap: string | null; // Bisa null
-  nama_panggilan: string | null; // Bisa null
-  tahun_lahir: number | null; // Bisa null
-  jenis_kelamin: 'Laki-laki' | 'Perempuan' | null; // Bisa null
-  kota_domisili: string | null; // Bisa null
-  nomor_handphone: string | null; // Bisa null
-  pendidikan_terakhir: PendidikanTerakhir | null; // Bisa null
-  nama_institusi_pendidikan_terakhir: string | null; // Bisa null
-  jurusan_studi: string | null; // Bisa null
-  tahun_kelulusan: number | null; // Bisa null
+  nama_lengkap: string | null;
+  nama_panggilan: string | null;
+  tahun_lahir: number | null;
+  jenis_kelamin: 'Laki-laki' | 'Perempuan' | null;
+  kota_domisili: string | null;
+  nomor_handphone: string | null;
+  pendidikan_terakhir: PendidikanTerakhir | null;
+  nama_institusi_pendidikan_terakhir: string | null;
+  jurusan_studi: string | null;
+  tahun_kelulusan: number | null;
   skill_gabungan: string | null; // Ini adalah STRING comma-separated dari DB
   bahasa_dikuasai: string | null; // Ini adalah STRING comma-separated dari DB
-  sertifikasi: string | null; // Bisa null
+  sertifikasi: string | null;
   instagram_link: string | null;
   linkedin_link: string | null;
   portofolio_link: string | null;
 
-  // Q17 (Aktivitas/Pekerjaan - Disimpan sebagai string comma-separated di DB)
-  
+  // Q17 (Aktivitas/Pekerjaan - Multi-select, disimpan sebagai string di DB)
   aktivitas: string | null; // Ini adalah STRING comma-separated dari DB
-  aktivitas_status_durasi: AktivitasDetailType[] | null; // <-- TAMBAH BARIS INI
   
-  // Q18 (Jenis Dukungan - Disimpan sebagai string comma-separated di DB)
-  jenis_dukungan_dibutuhkan: string | null; // Ini adalah STRING comma-separated dari DB
+  // Q18 (Jenis Dukungan - Multi-select, disimpan sebagai string di DB)
+  jenis_dukungan_dibutuhkan: string | null;
 
-  // Q19 (Bidang Kontribusi - Disimpan sebagai string comma-separated di DB)
-  bidang_kontribusi_minat: string | null; // Ini adalah STRING comma-separated dari DB
+  // Q19 (Bidang Kontribusi - Multi-select, disimpan sebagai string di DB)
+  bidang_kontribusi_minat: string | null;
 
   // Relasi Data (Conditional - Q17 Follow-up)
   alumni_pekerja: AlumniPekerjaType[];
