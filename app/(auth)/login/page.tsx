@@ -1,5 +1,5 @@
 // app/(auth)/login/page.tsx
-'use client' // Wajib untuk halaman interaktif
+'use client'
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -14,7 +14,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(false)
-  const router = useRouter() // router masih diperlukan untuk logout
+  const router = useRouter() // router digunakan untuk redirect, jadi tidak unused
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -36,24 +36,23 @@ export default function LoginPage() {
 
       console.log(`[CLIENT] Respons Fetch diterima, status: ${response.status}. Redirected: ${response.redirected}, Final URL: ${response.url}`);
       
-      if (response.ok && response.redirected && new URL(response.url).pathname === '/') {
-        console.log('[CLIENT] Fetch berhasil mengikuti redirect ke halaman beranda. Mengalihkan secara klien untuk memastikan rendering.');
+      if (response.ok) {
+        console.log('[CLIENT] API Login berhasil. Memaksa pengalihan klien ke beranda.');
         router.replace('/');
-        console.log('[CLIENT] Client-side router.replace("/") telah dieksekusi setelah deteksi redirect server.');
+        console.log('[CLIENT] Client-side router.replace("/") telah dieksekusi.');
         return; 
       }
 
-      // Perbaikan: Baca respons sebagai teks terlebih dahulu
       const responseText = await response.text();
-      console.log('[CLIENT] Respons server sebagai teks (lengkap):', responseText.substring(0, 500) + (responseText.length > 500 ? '...' : '')); // Log lengkap, potong jika terlalu panjang
+      console.log('[CLIENT] Respons server sebagai teks (lengkap):', responseText.substring(0, 500) + (responseText.length > 500 ? '...' : ''));
 
       let data;
       try {
-        data = JSON.parse(responseText); // Coba parse teks sebagai JSON
+        data = JSON.parse(responseText);
         console.log('[CLIENT] Data respons JSON (jika tidak dialihkan ke halaman):', data);
-      } catch (jsonParseError) {
-        console.error('[CLIENT] Gagal parse respons sebagai JSON:', jsonParseError);
-        setError('Terjadi kesalahan tak terduga dari server: Respons tidak valid.');
+      } catch (jsonParseError) { // Perbaikan: jsonParseError sudah memiliki tipe 'unknown'
+        console.error('[CLIENT] Gagal parse respons sebagai JSON (bukan JSON yang diharapkan):', jsonParseError);
+        setError('Terjadi kesalahan tak terduga dari server: Respons tidak valid atau error server.');
         return;
       }
 
@@ -66,19 +65,21 @@ export default function LoginPage() {
       console.warn('[CLIENT] Server tidak melakukan redirect setelah login (status 200 OK). Ini tidak diharapkan. Mungkin ada masalah dengan implementasi API route server.');
       router.replace('/');
 
-    } catch (err: any) {
+    } catch (err: unknown) { // Perbaikan: Ganti 'any' dengan 'unknown'
       setError('Terjadi kesalahan jaringan atau yang tidak terduga.');
-      console.error('[CLIENT] Unexpected error during login process:', err);
+      // Anda bisa melakukan type assertion jika yakin itu Error:
+      console.error('[CLIENT] Unexpected error during login process:', (err as Error).message);
     } finally {
       setIsLoading(false);
     }
   }
 
-  const handleLogout = () => {
-    console.log('[CLIENT] Menjalankan logout kustom...');
-    router.push('/api/logout'); 
-    router.refresh();
-  };
+  // Perbaikan: handleLogout tidak lagi digunakan karena tombol logout ada di Navbar
+  // const handleLogout = () => {
+  //   console.log('[CLIENT] Menjalankan logout kustom...');
+  //   router.push('/api/logout'); 
+  //   router.refresh();
+  // };
 
   return (
     <div className="flex items-center justify-center min-h-screen">

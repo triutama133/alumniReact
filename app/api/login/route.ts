@@ -1,20 +1,15 @@
-// app/api/login/route.ts
-// Ini adalah kode sisi server yang TIDAK AKAN PERNAH dijalankan di browser.
-// Kunci Supabase Service Role dan JWT_SECRET disimpan di sini dengan aman.
-
+// app/api/register/route.ts
+import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import { createClient } from '@supabase/supabase-js';
+import { v4 as uuidv4 } from 'uuid'; // Perbaikan: uuidv4 sekarang digunakan
 
-// Mendapatkan variabel lingkungan
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const jwtSecret = process.env.JWT_SECRET!;
 
-if (!supabaseUrl || !supabaseServiceRoleKey || !jwtSecret) {
-  console.error('ERROR: Variabel lingkungan SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, atau JWT_SECRET tidak ditemukan.');
-  throw new Error('Missing environment variables for API route.');
+if (!supabaseUrl || !supabaseServiceRoleKey) {
+  console.error('ERROR: Variabel lingkungan Supabase (URL atau Service Role Key) tidak ditemukan untuk route register.');
+  throw new Error('Missing environment variables for register API route.');
 }
 
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
@@ -26,67 +21,66 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
 });
 
 export async function POST(req: NextRequest) {
-  console.log('--- Memulai Permintaan Login API ---');
+  console.log('--- Memulai Permintaan Register API ---');
   try {
-    const { email, password } = await req.json();
-    console.log(`[LOG] Menerima permintaan login untuk email: ${email}`);
+    const { email, password, username } = await req.json();
 
-    if (!email || !password) {
-      console.log('[LOG] Email atau password tidak ada.');
-      return NextResponse.json({ error: 'Email dan password wajib diisi.' }, { status: 400 });
+    if (!email || !password || !username) {
+      console.log('[LOG] Email, password, atau username tidak ada.');
+      return NextResponse.json({ error: 'Email, password, dan username wajib diisi.' }, { status: 400 });
     }
 
-    const { data: userFromPublic, error: userFetchError } = await supabaseAdmin
+    console.log(`[LOG] Memeriksa ketersediaan email: ${email} dan username: ${username}`);
+    const { data: existingUsers, error: checkError } = await supabaseAdmin
       .from('user')
-      .select('id, email, password_hash, username, role')
-      .eq('email', email)
-      .single();
+      .select('id, email, username')
+      .or(`email.eq.${email},username.eq.${username}`);
 
-    if (userFetchError || !userFromPublic) {
-      console.error('Error fetching user from public.user or user not found:', userFetchError?.message || 'User not found');
-      return NextResponse.json({ error: 'Kredensial tidak valid.' }, { status: 401 });
+    if (checkError) {
+      console.error('[LOG] ERROR saat memeriksa pengguna yang sudah ada:', checkError.message);
+      return NextResponse.json({ error: 'Terjadi kesalahan saat memeriksa pengguna.' }, { status: 500 });
     }
 
-    const isPasswordValid = await bcrypt.compare(password, userFromPublic.password_hash || '');
-
-    if (!isPasswordValid) {
-      console.warn(`[LOG] PERINGATAN: Password tidak cocok untuk email: ${email}`);
-      return NextResponse.json({ error: 'Kredensial tidak valid.' }, { status: 401 });
+    if (existingUsers && existingUsers.length > 0) {
+      if (existingUsers.some(u => u.email === email)) {
+        console.log(`[LOG] Pendaftaran gagal: Email ${email} sudah terdaftar.`);
+        return NextResponse.json({ error: 'Email sudah terdaftar.' }, { status: 409 });
+      }
+      if (existingUsers.some(u => u.username === username)) {
+        console.log(`[LOG] Pendaftaran gagal: Username ${username} sudah digunakan.`);
+        return NextResponse.json({ error: 'Username sudah digunakan.' }, { status: 409 });
+      }
     }
 
-    console.log('[LOG] Password berhasil diverifikasi!');
+    console.log('[LOG] Menghash password...');
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    console.log('[LOG] Password berhasil dihash.');
 
-    const payload = {
-      sub: userFromPublic.id,
-      aud: 'authenticated',
-      exp: Math.floor(Date.now() / 1000) + (60 * 60), // Token valid selama 1 jam
-      iat: Math.floor(Date.now() / 1000),
-      email: userFromPublic.email,
-      username: userFromPublic.username,
-      role: userFromPublic.role,
+    const newUser = {
+      // id: uuidv4(), // Gunakan ini jika 'id' adalah UUID dan Anda perlu membuatnya manual
+      email: email,
+      password_hash: hashedPassword,
+      username: username,
+      role: 'alumni',
     };
 
-    const customToken = jwt.sign(payload, jwtSecret);
-    console.log(`[LOG] Custom JWT berhasil dibuat. Token dimulai dengan: ${customToken.substring(0, 30)}...`);
+    console.log('[LOG] Menyisipkan pengguna baru ke public.user...');
+    const { error: insertError } = await supabaseAdmin
+      .from('user')
+      .insert([newUser]);
 
-    // --- BAGIAN PENTING: Melakukan Redirect dari Server ---
-    const redirectUrl = new URL('/', req.url); // Alihkan ke halaman beranda
-    const response = NextResponse.redirect(redirectUrl);
-    
-    // Set cookie sebelum redirect
-    response.cookies.set('auth_token', customToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // true di produksi (HTTPS), false di pengembangan (HTTP)
-      path: '/',
-      maxAge: 60 * 60, // 1 jam dalam detik
-      sameSite: 'lax',
-    });
+    if (insertError) {
+      console.error('[LOG] ERROR saat menyisipkan pengguna baru ke public.user:', insertError.message);
+      return NextResponse.json({ error: 'Gagal mendaftar pengguna.' }, { status: 500 });
+    }
 
-    console.log('[LOG] Custom JWT berhasil disimpan di HTTP-Only Cookie dan mengalihkan ke beranda. --- Permintaan Login API Selesai ---');
-    return response;
+    console.log(`[LOG] Pengguna ${email} berhasil didaftarkan di public.user.`);
+    console.log('--- Permintaan Register API Selesai ---');
+    return NextResponse.json({ message: 'Pendaftaran berhasil!' }, { status: 201 });
 
-  } catch (error: any) {
-    console.error('[LOG] ERROR FATAL di Login API Route:', error.message);
+  } catch (error: unknown) { // Perbaikan: Ganti 'any' dengan 'unknown'
+    console.error('[LOG] ERROR FATAL di Register API Route:', (error as Error).message); // Perbaikan: Type assertion
     return NextResponse.json({ error: 'Terjadi kesalahan internal server.' }, { status: 500 });
   }
 }
