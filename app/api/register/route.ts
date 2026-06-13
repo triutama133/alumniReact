@@ -7,26 +7,29 @@ import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid'; // Untuk menghasilkan ID unik jika public.user.id bukan serial
 
 // Mendapatkan variabel lingkungan
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-if (!supabaseUrl || !supabaseServiceRoleKey) {
-  console.error('ERROR: Variabel lingkungan Supabase (URL atau Service Role Key) tidak ditemukan untuk route register.');
-  throw new Error('Missing environment variables for register API route.');
-}
-
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-    detectSessionInUrl: false,
-  },
-});
+// Create Supabase client at runtime inside handler to avoid build-time throws
+// when environment variables are not available during static analysis.
 
 export async function POST(req: NextRequest) {
   console.log('--- Memulai Permintaan Register API ---');
   try {
     const { email, password, username } = await req.json(); // Asumsi menerima username juga
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      console.error('ERROR: Variabel lingkungan Supabase (URL atau Service Role Key) tidak ditemukan untuk route register.');
+      return NextResponse.json({ error: 'Server misconfigured: missing environment variables.' }, { status: 500 });
+    }
+
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false,
+      },
+    });
 
     if (!email || !password || !username) {
       console.log('[LOG] Email, password, atau username tidak ada.');

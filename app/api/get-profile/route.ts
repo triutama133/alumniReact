@@ -5,35 +5,46 @@ import { headers } from 'next/headers'; // Untuk mendapatkan userId dari header
 
 import { AlumniProfileType } from '@/lib/types'; // Import tipe AlumniProfileType
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+// NOTE: Supabase client is created inside the handler to avoid forcing environment
+// variable resolution at module-evaluation time (which breaks `next build` when
+// env vars are not available during static analysis).
 
-if (!supabaseUrl || !supabaseServiceRoleKey) {
-  console.error('ERROR: Variabel lingkungan Supabase tidak ditemukan untuk route get-profile.');
-  throw new Error('Missing environment variables for get-profile API route.');
-}
-
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-    detectSessionInUrl: false,
-  },
-});
-
-export async function GET(req: NextRequest) {
+export async function GET() {
   console.log('--- Memulai Permintaan Get Profile API ---');
   try {
     const headersList = headers();
-    const userId = (await headersList).get('x-user-id'); // Dapatkan userId dari header
+    const userIdString = (await headersList).get('x-user-id'); // Dapatkan userId dari header
 
-    if (!userId) {
+    if (!userIdString) {
       console.log('[GET_PROFILE_API] User ID tidak ditemukan di header.');
       return NextResponse.json({ error: 'Autentikasi gagal: User ID tidak ditemukan.' }, { status: 401 });
     }
 
-    // Ambil profil lengkap pengguna dari database
+    // Convert string to bigint/number for database operations
+    const userId = parseInt(userIdString, 10);
+    if (isNaN(userId)) {
+      console.log('[GET_PROFILE_API] User ID tidak valid.');
+      return NextResponse.json({ error: 'User ID tidak valid.' }, { status: 400 });
+    }
+
+    // Create Supabase admin client at runtime (avoids build-time errors)
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      console.error('ERROR: Variabel lingkungan Supabase tidak ditemukan untuk route get-profile.');
+      return NextResponse.json({ error: 'Server misconfigured: missing environment variables.' }, { status: 500 });
+    }
+
     console.log(`[GET_PROFILE_API] Mencari profil pengguna dengan ID: ${userId} dari alumni_db`);
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false,
+      },
+    });
+
     const { data: profile, error } = await supabaseAdmin
       .from('alumni_db')
       .select(`
@@ -49,7 +60,6 @@ export async function GET(req: NextRequest) {
         alumni_agri(*),
         alumni_pendidik(*)
       `)
-      
       .eq('id', userId)
       .single() as { data: AlumniProfileType | null, error: unknown }; // Tetap type assertion ke unknown
 
@@ -68,16 +78,20 @@ export async function GET(req: NextRequest) {
     }
 
     // --- Transformasi data sebelum dikirim ke klien ---
-    const transformedProfile = { ...profile };
+    const transformedProfile: Partial<AlumniProfileType> & Record<string, unknown> = { ...profile };
     
     // Fungsi helper untuk mengonversi string comma-separated ke array
     const convertStringToArray = (field: string | null | undefined): string[] => {
       return (typeof field === 'string' ? field.split(',').map(s => s.trim()).filter(Boolean) : []);
     };
 
-    (transformedProfile as any).aktivitas = convertStringToArray(transformedProfile.aktivitas);
-    (transformedProfile as any).jenis_dukungan_dibutuhkan = convertStringToArray(transformedProfile.jenis_dukungan_dibutuhkan);
-    (transformedProfile as any).bidang_kontribusi_minat = convertStringToArray(transformedProfile.bidang_kontribusi_minat);
+    // Safely set transformed array fields
+    const aktivitasField = transformedProfile['aktivitas'];
+    if (typeof aktivitasField === 'string') transformedProfile['aktivitas'] = convertStringToArray(aktivitasField);
+    const jenisDukungan = transformedProfile['jenis_dukungan_dibutuhkan'];
+    if (typeof jenisDukungan === 'string') transformedProfile['jenis_dukungan_dibutuhkan'] = convertStringToArray(jenisDukungan);
+    const bidangKontribusi = transformedProfile['bidang_kontribusi_minat'];
+    if (typeof bidangKontribusi === 'string') transformedProfile['bidang_kontribusi_minat'] = convertStringToArray(bidangKontribusi);
     // --- Akhir transformasi data ---
 
     console.log('[GET_PROFILE_API] Profil berhasil dimuat.');

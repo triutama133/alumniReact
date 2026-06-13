@@ -3,14 +3,14 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { useRouter } from 'next/navigation'; // Untuk router.push
+// router tidak dibutuhkan saat ini
 
 interface NavbarProps {
   userEmail: string | null;
 }
 
 export default function Navbar({ userEmail }: NavbarProps) {
-  const router = useRouter();
+  // tidak memakai router saat ini
 
   const handleLogout = () => {
     // Mengarahkan ke API Route logout untuk menghapus cookie

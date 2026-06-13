@@ -48,8 +48,9 @@ export default function SearchPage() {
 
       setSearchResults(data || []);
 
-    } catch (error: any) {
-      toast.error("Gagal melakukan pencarian", { description: error.message });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error("Gagal melakukan pencarian", { description: message });
     } finally {
       setLoading(false);
     }

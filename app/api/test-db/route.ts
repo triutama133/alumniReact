@@ -4,7 +4,7 @@
 import { createClient } from '@supabase/supabase-js'; // Mengimpor Supabase client
 import { NextRequest, NextResponse } from 'next/server'; // Mengimpor utilitas server Next.js
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   console.log('--- Memulai Pengujian Konfigurasi Database ---');
 
   // Ambil variabel lingkungan
@@ -84,12 +84,13 @@ export async function GET(req: NextRequest) {
         { status: 200 }
       );
     }
-  } catch (e: any) {
-    console.error('[TEST_DB] Terjadi kesalahan fatal selama pengujian koneksi:', e.message);
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error('[TEST_DB] Terjadi kesalahan fatal selama pengujian koneksi:', msg);
     return NextResponse.json(
       {
         status: 'error',
-        message: `Terjadi kesalahan tidak terduga saat mencoba terhubung ke Supabase: ${e.message}`,
+        message: `Terjadi kesalahan tidak terduga saat mencoba terhubung ke Supabase: ${msg}`,
       },
       { status: 500 }
     );

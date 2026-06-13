@@ -2,10 +2,8 @@
 'use client'; // Ini adalah Client Component
 
 import { Button } from '@/components/ui/button';
-import { useRouter } from 'next/navigation'; // Untuk router.refresh() opsional
-
 export default function LogoutButtonClient() {
-  const router = useRouter(); // Opsional, jika Anda ingin menggunakan router.refresh()
+  // router tidak diperlukan saat ini
 
   const handleLogout = () => {
     // Client-side redirect to logout API route

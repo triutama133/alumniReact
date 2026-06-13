@@ -2,7 +2,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+// router not needed here; using direct redirects when necessary
 import Link from 'next/link'
 // createClient tidak digunakan untuk pendaftaran ini lagi
 // import { createClient } from '@/lib/supabaseClient' 
@@ -18,7 +18,7 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const router = useRouter()
+  
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -50,7 +50,7 @@ export default function RegisterPage() {
         // router.push('/login?message=' + encodeURIComponent(data.message || 'Pendaftaran berhasil! Silakan login.'));
       }
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError('Terjadi kesalahan jaringan atau yang tidak terduga saat pendaftaran.');
       console.error('Unexpected error during registration process:', err);
     } finally {

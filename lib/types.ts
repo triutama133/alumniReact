@@ -1,7 +1,10 @@
 // lib/types.ts
 
+// Note: Database uses bigint for IDs, which maps to number in TypeScript
+// PostgreSQL bigint → JavaScript number (safe up to 2^53-1)
+
 export type ProjectWithOwner = {
-  id: string;
+  id: string; // projects.id is UUID (kept as string)
   created_at: string;
   title: string;
   description: string;
@@ -9,14 +12,14 @@ export type ProjectWithOwner = {
   status: string;
   // 'owner' adalah sebuah array dari objek
   owner: {
-    id: string;
+    id: number; // alumni_db.id is bigint → number
     nama_lengkap: string;
   }[] | null;
 };
 
 // Definisikan bentuk data untuk kartu hasil pencarian alumni
 export type AlumniSearchResult = {
-  id: string; // Sebenarnya UUID, tapi kita gunakan string untuk aman
+  id: number; // alumni_db.id is bigint → number
   nama_lengkap: string | null;
   nama_panggilan: string | null;
   aktivitas: string | null;
@@ -25,7 +28,7 @@ export type AlumniSearchResult = {
 };
 
 export interface AlumniProfileType {
-  id: string; // Asumsi ID alumni_db juga string (UUID) atau sesuaikan dengan bigint jika itu
+  id: number; // alumni_db.id is bigint → number
   created_at: string;
   email: string;
   password_hash: string | null; // Hanya jika Anda masih punya ini di alumni_db
@@ -59,7 +62,7 @@ export interface AlumniProfileType {
 
 // Tipe kustom untuk user yang login (dari header/JWT)
 export interface CustomUserForProjectCard {
-  id: string;
+  id: number; // user.id is bigint → number
   email: string;
   role: string | null;
 }

@@ -21,11 +21,11 @@ interface CustomUserForProjectCard {
 interface ProjectDetailModalProps {
   project: ProjectWithOwner;
   user: CustomUserForProjectCard | null; // <--- PERBARUI TIPE INI
-  open: boolean;
+  _open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export function ProjectDetailModal({ project, user, open, onOpenChange }: ProjectDetailModalProps) {
+export function ProjectDetailModal({ project, user, onOpenChange }: ProjectDetailModalProps) {
   // Anda mungkin memiliki state dan logika lain di sini, seperti untuk mengajukan diri
   const [isApplying, setIsApplying] = useState(false); // Contoh state
   const isOwner = user?.id === project.owner?.[0]?.id; // Pindahkan logika isOwner di sini

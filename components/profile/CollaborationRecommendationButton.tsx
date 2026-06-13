@@ -48,9 +48,10 @@ export default function CollaborationRecommendationButton({
         setRecommendation(data.recommendation);
         console.log('Rekomendasi berhasil diterima:', data.recommendation);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
       setError('Terjadi kesalahan jaringan atau yang tidak terduga saat memuat rekomendasi.');
-      console.error('Unexpected error loading recommendation:', err);
+      console.error('Unexpected error loading recommendation:', msg);
       setRecommendation(null); // Clear previous recommendation on error
     } finally {
       setIsLoading(false);

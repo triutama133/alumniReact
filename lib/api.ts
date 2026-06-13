@@ -39,8 +39,9 @@ export async function getProfileRecommendation(profileData: AlumniProfileType): 
     const data = await response.json();
     console.log("[LLM_API] Respon sukses dari FastAPI:", data);
     return data.rekomendasi || "Tidak ada rekomendasi yang dapat dihasilkan saat ini.";
-  } catch (error: any) {
-    console.error("[LLM_API] Fetch Error untuk FastAPI Rekomendasi AI:", error);
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("[LLM_API] Fetch Error untuk FastAPI Rekomendasi AI:", msg);
     return "Terjadi kesalahan saat mencoba menghubungi layanan rekomendasi AI.";
   }
 }

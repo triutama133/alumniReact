@@ -7,7 +7,7 @@ import * as z from "zod"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
-import { User } from "@supabase/supabase-js"
+import { User, SupabaseClient } from "@supabase/supabase-js"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -54,7 +54,7 @@ export default function CompleteProfilePage() {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
-  const supabase = createClient()
+  const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -66,8 +66,12 @@ export default function CompleteProfilePage() {
 
   // Cek status login saat halaman dimuat
   useEffect(() => {
-    const fetchUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+    const init = async () => {
+      // createClient() must only run in the browser — initialize here
+      const sb = createClient();
+      setSupabase(sb);
+
+      const { data: { session } } = await sb.auth.getSession();
       if (!session) {
         toast.error("Anda harus login untuk melengkapi profil.");
         router.push('/login');
@@ -76,12 +80,12 @@ export default function CompleteProfilePage() {
       setUser(session.user);
       // Isi form dengan data yang mungkin sudah ada dari proses registrasi
       form.reset({
-        nama_lengkap: session.user.user_metadata.nama_lengkap || '',
-        nama_panggilan: session.user.user_metadata.nama_panggilan || '',
+        nama_lengkap: session.user.user_metadata?.nama_lengkap || '',
+        nama_panggilan: session.user.user_metadata?.nama_panggilan || '',
       });
-    }
-    fetchUser();
-  }, [router, form, supabase.auth]);
+    };
+    init();
+  }, [router, form]);
 
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -93,6 +97,7 @@ export default function CompleteProfilePage() {
 
     try {
       // 1. INSERT KE alumni_db
+      if (!supabase) throw new Error('Supabase client not initialized');
       const { error: alumniDbError } = await supabase
         .from('alumni_db')
         .insert({
@@ -112,7 +117,7 @@ export default function CompleteProfilePage() {
       }
 
       // 2. INSERT KE TABEL SPESIALISASI
-      if (values.aktivitas === 'Pekerja') {
+        if (values.aktivitas === 'Pekerja') {
         const { error } = await supabase.from('alumni_pekerja').insert({
           alumni_id: user.id,
           nama_instansi: values.nama_instansi,
@@ -139,8 +144,9 @@ export default function CompleteProfilePage() {
       toast.success("Profil berhasil disimpan!");
       router.push('/'); // Arahkan ke homepage
 
-    } catch (error: any) {
-      toast.error("Terjadi Kesalahan", { description: error.message });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error("Terjadi Kesalahan", { description: message });
     } finally {
       setLoading(false);
     }

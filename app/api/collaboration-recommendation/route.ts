@@ -4,26 +4,29 @@ import { createClient } from '@supabase/supabase-js';
 import { getProfileRecommendation } from '@/lib/api';
 import { AlumniProfileType } from '@/lib/types';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-if (!supabaseUrl || !supabaseServiceRoleKey) {
-  console.error('ERROR: Variabel lingkungan Supabase tidak ditemukan untuk route rekomendasi.');
-  throw new Error('Missing environment variables for recommendation API route.');
-}
-
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-    detectSessionInUrl: false,
-  },
-});
+// Supabase admin client will be created at runtime inside the handler to avoid
+// build-time failures if environment variables are not present during static
+// analysis.
 
 export async function POST(req: NextRequest) {
   console.log('--- Memulai Permintaan Rekomendasi Kolaborasi API ---');
   try {
     const { userId } = await req.json();
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      console.error('ERROR: Variabel lingkungan Supabase tidak ditemukan untuk route rekomendasi.');
+      return NextResponse.json({ error: 'Server misconfigured: missing environment variables.' }, { status: 500 });
+    }
+
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false,
+      },
+    });
 
     if (!userId) {
       console.log('[REC_API] userId tidak ada dalam permintaan.');

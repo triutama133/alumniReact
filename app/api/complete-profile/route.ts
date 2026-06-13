@@ -4,23 +4,10 @@ import { createClient } from '@supabase/supabase-js';
 import * as z from 'zod'; // Import zod untuk validasi di server
 import { headers } from 'next/headers'; // Untuk mendapatkan userId dari header
 
-import { AlumniProfileType } from '@/lib/types'; // Import tipe AlumniProfileType
+// Import tipe tidak diperlukan di route ini
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-if (!supabaseUrl || !supabaseServiceRoleKey) {
-  console.error('ERROR: Variabel lingkungan Supabase tidak ditemukan untuk route complete-profile.');
-  throw new Error('Missing environment variables for complete-profile API route.');
-}
-
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-    detectSessionInUrl: false,
-  },
-});
+// Delay creating Supabase admin client until runtime inside the handler so
+// the build process does not fail when environment variables are not set.
 
 // --- Zod Schema untuk Validasi Data Masuk (Harus cocok dengan schema form di klien) ---
 const serverFormSchema = z.object({
@@ -122,11 +109,18 @@ export async function POST(req: NextRequest) {
   console.log('--- Memulai Permintaan Complete Profile API ---');
   try {
     const headersList = await headers(); // Perbaikan: Tambahkan 'await' di sini
-    const userId = headersList.get('x-user-id'); // Baris 124
+    const userIdString = headersList.get('x-user-id'); // Baris 124
 
-    if (!userId) {
+    if (!userIdString) {
       console.log('[COMPLETE_PROFILE_API] User ID tidak ditemukan di header.');
       return NextResponse.json({ error: 'Autentikasi gagal: User ID tidak ditemukan.' }, { status: 401 });
+    }
+
+    // Convert string to bigint/number for database operations
+    const userId = parseInt(userIdString, 10);
+    if (isNaN(userId)) {
+      console.log('[COMPLETE_PROFILE_API] User ID tidak valid.');
+      return NextResponse.json({ error: 'User ID tidak valid.' }, { status: 400 });
     }
 
     const body = await req.json();
@@ -138,6 +132,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Data tidak valid.', details: validationResult.error.errors }, { status: 400 });
     }
     const dataToSave = validationResult.data;
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      console.error('ERROR: Variabel lingkungan Supabase tidak ditemukan untuk route complete-profile.');
+      return NextResponse.json({ error: 'Server misconfigured: missing environment variables.' }, { status: 500 });
+    }
+
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false,
+      },
+    });
 
     const { error: alumniDbError } = await supabaseAdmin
       .from('alumni_db')
@@ -170,7 +180,7 @@ export async function POST(req: NextRequest) {
     }
     console.log('[COMPLETE_PROFILE_API] Data dasar profil berhasil disimpan/diperbarui.');
 
-    const saveRelatedData = async (tableName: string, dataArray: any[], foreignKey: string) => {
+    const saveRelatedData = async (tableName: string, dataArray: Array<Record<string, unknown>>, foreignKey: string) => {
       if (dataArray && dataArray.length > 0) {
         const dataToUpsert = { ...dataArray[0], [foreignKey]: userId };
         
@@ -180,8 +190,9 @@ export async function POST(req: NextRequest) {
           .eq(foreignKey, userId)
           .single();
 
-        if (fetchRelatedError && fetchRelatedError.code !== 'PGRST116') {
-          console.error(`[COMPLETE_PROFILE_API] Error fetching existing ${tableName}:`, fetchRelatedError.message);
+        const fetchErr = fetchRelatedError as { code?: string; message?: string } | null;
+        if (fetchErr && fetchErr.code !== 'PGRST116') {
+          console.error(`[COMPLETE_PROFILE_API] Error fetching existing ${tableName}:`, fetchErr.message);
           throw new Error(`Gagal memuat data relasi ${tableName}.`);
         }
 
@@ -199,8 +210,9 @@ export async function POST(req: NextRequest) {
           console.log(`[COMPLETE_PROFILE_API] Menyisipkan data ${tableName}.`);
         }
 
-        if (upsertResult.error) {
-          console.error(`[COMPLETE_PROFILE_API] Error upserting ${tableName}:`, upsertResult.error.message);
+        if ((upsertResult as any).error) {
+          const errObj = (upsertResult as any).error as { message?: string } | null;
+          console.error(`[COMPLETE_PROFILE_API] Error upserting ${tableName}:`, errObj?.message);
           throw new Error(`Gagal menyimpan data relasi ${tableName}.`);
         }
       }
