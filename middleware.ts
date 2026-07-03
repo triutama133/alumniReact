@@ -1,7 +1,7 @@
 // middleware.ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import * as jose from 'jose'; // Import the jose library
+import { verifyAuthToken } from '@/lib/auth';
 
 // Daftar rute yang TIDAK memerlukan autentikasi
 const publicPaths = [
@@ -10,7 +10,10 @@ const publicPaths = [
   '/api/login',    // API untuk login
   '/api/register', // API untuk register
   '/api/logout',   // API untuk logout
+  '/api/me',
+  '/api/test-db',
   '/favicon.ico',
+  '/landing',
 ];
 
 export async function middleware(request: NextRequest) {
@@ -30,39 +33,25 @@ export async function middleware(request: NextRequest) {
   }
   
   // Periksa apakah path adalah public (tidak perlu autentikasi)
-  const isPublicPath = publicPaths.some(path => currentPath.startsWith(path));
+  const isPublicPath = publicPaths.some(path => currentPath === path || currentPath.startsWith(path + '/'));
 
   // Ambil token dari HTTP-only cookie yang Anda set di /api/login
   const authToken = request.cookies.get('auth_token')?.value;
   console.log(`[MIDDLEWARE] Menerima cookie 'auth_token': ${authToken ? 'Ada' : 'Tidak Ada'}`);
 
   let isAuthenticated = false;
-  let decodedToken: jose.JWTPayload | null = null; // Ganti tipe decodedToken ke JWTPayload dari jose
+  let decodedToken: Awaited<ReturnType<typeof verifyAuthToken>> | null = null;
 
   // Verifikasi token jika ada
   if (authToken) {
     try {
-      const jwtSecret = process.env.JWT_SECRET; // Ambil JWT_SECRET dari .env.local
-
-      if (!jwtSecret) {
-        console.error('[MIDDLEWARE] ERROR: JWT_SECRET tidak terdefinisi di middleware. Pastikan di .env.local');
-        isAuthenticated = false;
-      } else {
-        // Perbaikan: Gunakan jose.jwtVerify untuk verifikasi
-        // Secret harus dalam bentuk Uint8Array
-        const secret = new TextEncoder().encode(jwtSecret);
-        const { payload } = await jose.jwtVerify(authToken, secret, {
-            algorithms: ['HS256'], // Sesuaikan dengan algoritma yang Anda gunakan saat menandatangani (misal: HS256)
-            audience: 'authenticated' // Pastikan ini cocok dengan klaim 'aud' di JWT Anda
-        });
-        
-        decodedToken = payload;
-        isAuthenticated = true;
-        console.log('[MIDDLEWARE] Token berhasil diverifikasi oleh JOSE. Payload:', decodedToken);
-      }
-    } catch (error: any) {
+      decodedToken = await verifyAuthToken(authToken);
+      isAuthenticated = true;
+      console.log('[MIDDLEWARE] Token berhasil diverifikasi oleh JOSE. Payload:', decodedToken);
+    } catch (error: unknown) {
       // Jika token tidak valid (kadaluwarsa, tanda tangan salah, dll.)
-      console.error('[MIDDLEWARE] Verifikasi token JOSE gagal:', error.message);
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('[MIDDLEWARE] Verifikasi token JOSE gagal:', message);
       isAuthenticated = false;
       decodedToken = null; // Set null jika tidak valid
     }
@@ -72,8 +61,8 @@ export async function middleware(request: NextRequest) {
 
   // Skenario 1: User TIDAK terautentikasi dan mencoba mengakses rute yang terproteksi
   if (!isAuthenticated && !isPublicPath) {
-    console.log('[MIDDLEWARE] Tidak ada auth_token atau token tidak valid. Mengalihkan ke /login.');
-    const response = NextResponse.redirect(new URL('/login', request.url));
+    console.log('[MIDDLEWARE] Tidak ada auth_token atau token tidak valid. Mengalihkan ke /landing.');
+    const response = NextResponse.redirect(new URL('/landing', request.url));
     // Hapus cookie yang mungkin rusak/kadaluarsa
     response.cookies.delete('auth_token');
     return response;
@@ -81,39 +70,75 @@ export async function middleware(request: NextRequest) {
 
   // Skenario 2: User SUDAH terautentikasi dan mencoba mengakses rute login/register
   if (isAuthenticated && isPublicPath && (currentPath.startsWith('/login') || currentPath.startsWith('/register'))) {
-    console.log('[MIDDLEWARE] User sudah terautentikasi dan berada di halaman login/register. Mengalihkan ke beranda (/).');
+    console.log('[MIDDLEWARE] User sudah terautentikasi dan berada di halaman publik. Mengalihkan ke beranda (/).');
     const url = request.nextUrl.clone();
     url.pathname = '/';
     return NextResponse.redirect(url);
   }
 
-  // Jika autentikasi berhasil, inject klaim user ke header permintaan
-  // Ini berguna untuk Server Components atau API Routes yang butuh info user
-  const response = NextResponse.next();
+  const profileCompleted = Boolean(decodedToken?.profile_completed);
+  const mustChangePassword = Boolean(decodedToken?.must_change_password);
+  const allowIncompleteProfilePath =
+    currentPath.startsWith('/complete-profile') ||
+    currentPath.startsWith('/api/complete-profile') ||
+    currentPath.startsWith('/api/get-profile') ||
+    currentPath.startsWith('/api/me') ||
+    currentPath.startsWith('/api/logout');
+
+  const allowMustChangePasswordPath =
+    currentPath.startsWith('/settings') ||
+    currentPath.startsWith('/api/account-settings') ||
+    currentPath.startsWith('/complete-profile') ||
+    currentPath.startsWith('/api/complete-profile') ||
+    currentPath.startsWith('/api/get-profile') ||
+    currentPath.startsWith('/api/me') ||
+    currentPath.startsWith('/api/logout');
+
+  if (isAuthenticated && !profileCompleted && !allowIncompleteProfilePath) {
+    console.log('[MIDDLEWARE] Profil belum lengkap. Mengalihkan ke /complete-profile.');
+    const url = request.nextUrl.clone();
+    url.pathname = '/complete-profile';
+    return NextResponse.redirect(url);
+  }
+
+  if (isAuthenticated && mustChangePassword && profileCompleted && !allowMustChangePasswordPath) {
+    console.log('[MIDDLEWARE] Password sementara terdeteksi. Mengalihkan ke /settings.');
+    const url = request.nextUrl.clone();
+    url.pathname = '/settings';
+    return NextResponse.redirect(url);
+  }
+
+  if (isAuthenticated && profileCompleted && currentPath.startsWith('/complete-profile')) {
+    console.log('[MIDDLEWARE] Profil sudah lengkap. Mengalihkan dari complete-profile ke beranda (/).');
+    const url = request.nextUrl.clone();
+    url.pathname = '/';
+    return NextResponse.redirect(url);
+  }
+
+  const requestHeaders = new Headers(request.headers);
   if (isAuthenticated && decodedToken) {
-    response.headers.set('x-user-id', decodedToken.sub as string);
-    response.headers.set('x-user-email', decodedToken.email as string);
-    // Tambahkan klaim lain yang Anda simpan di JWT
+    requestHeaders.set('x-user-id', decodedToken.sub ?? '');
+    requestHeaders.set('x-user-email', decodedToken.email ?? '');
     if (decodedToken.role) {
-      response.headers.set('x-user-role', decodedToken.role as string);
+      requestHeaders.set('x-user-role', decodedToken.role);
     }
+    requestHeaders.set('x-user-profile-completed', String(profileCompleted));
+    requestHeaders.set('x-user-must-change-password', String(mustChangePassword));
     console.log(`[MIDDLEWARE] Pengguna terautentikasi (ID: ${decodedToken.sub}). Lanjutkan ke ${currentPath}.`);
-  } else {
-    // Pastikan header tidak ada jika tidak terautentikasi
-    response.headers.delete('x-user-id');
-    response.headers.delete('x-user-email');
-    response.headers.delete('x-user-role');
   }
 
   console.log('--- MIDDLEWARE FINISHED (No redirect) ---');
-  return response;
+  return NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
 }
 
 // Konfigurasi matcher
 export const config = {
   matcher: [
-    // Kecualikan semua API routes dan aset statis yang tidak perlu dilindungi
-    // (api/login, api/register, api/logout, api/test-db sudah ditangani di publicPaths)
-    '/((?!api|_next/static|_next/image|favicon.ico|login|register).*)',
+    // Lindungi semua route kecuali asset statis dan halaman auth publik.
+    '/((?!_next/static|_next/image|favicon.ico|login|register).*)',
   ],
 };

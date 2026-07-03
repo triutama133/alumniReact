@@ -50,6 +50,7 @@ export async function GET() {
       .select(`
         *,
         user(*),
+        alumni_education_histories(*),
         alumni_pekerja(*),
         alumni_bisnis(*),
         alumni_sosial(*),
@@ -78,7 +79,7 @@ export async function GET() {
     }
 
     // --- Transformasi data sebelum dikirim ke klien ---
-    const transformedProfile: Partial<AlumniProfileType> & Record<string, unknown> = { ...profile };
+    const transformedProfile: Record<string, unknown> = { ...profile };
     
     // Fungsi helper untuk mengonversi string comma-separated ke array
     const convertStringToArray = (field: string | null | undefined): string[] => {

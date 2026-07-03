@@ -4,7 +4,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { v4 as uuidv4 } from 'uuid'; // Untuk menghasilkan ID unik jika public.user.id bukan serial
 
 // Mendapatkan variabel lingkungan
 // Create Supabase client at runtime inside handler to avoid build-time throws
@@ -13,7 +12,10 @@ import { v4 as uuidv4 } from 'uuid'; // Untuk menghasilkan ID unik jika public.u
 export async function POST(req: NextRequest) {
   console.log('--- Memulai Permintaan Register API ---');
   try {
-    const { email, password, username } = await req.json(); // Asumsi menerima username juga
+    const { email, password, username } = await req.json();
+    const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+    const normalizedPassword = typeof password === 'string' ? password : '';
+    const providedUsername = typeof username === 'string' ? username.trim() : '';
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -31,17 +33,51 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    if (!email || !password || !username) {
-      console.log('[LOG] Email, password, atau username tidak ada.');
-      return NextResponse.json({ error: 'Email, password, dan username wajib diisi.' }, { status: 400 });
+    if (!normalizedEmail) {
+      console.log('[LOG] Email tidak ada.');
+      return NextResponse.json({ error: 'Email wajib diisi.' }, { status: 400 });
     }
 
-    // 1. Periksa apakah email atau username sudah ada di public.user
-    console.log(`[LOG] Memeriksa ketersediaan email: ${email} dan username: ${username}`);
+    const usingDefaultPassword = normalizedPassword.length === 0;
+    const effectivePassword = usingDefaultPassword ? normalizedEmail : normalizedPassword;
+
+    const emailLocalPart = normalizedEmail.split('@')[0] || '';
+    const sanitizedFromEmail = emailLocalPart.replace(/[^a-zA-Z0-9._-]/g, '').slice(0, 30);
+    const usernameBase = providedUsername || sanitizedFromEmail || 'user';
+
+    let generatedUsername = usernameBase;
+    let suffix = 1;
+
+    while (true) {
+      const { data: usernameExists, error: usernameCheckError } = await supabaseAdmin
+        .from('user')
+        .select('id')
+        .eq('username', generatedUsername)
+        .maybeSingle<{ id: number }>();
+
+      if (usernameCheckError) {
+        console.error('[LOG] ERROR saat memeriksa username:', usernameCheckError.message);
+        return NextResponse.json({ error: 'Terjadi kesalahan saat memeriksa username.' }, { status: 500 });
+      }
+
+      if (!usernameExists) {
+        break;
+      }
+
+      generatedUsername = `${usernameBase}${suffix}`;
+      suffix += 1;
+
+      if (suffix > 9999) {
+        return NextResponse.json({ error: 'Gagal menghasilkan username unik.' }, { status: 500 });
+      }
+    }
+
+    // 1. Periksa apakah email sudah ada di public.user
+    console.log(`[LOG] Memeriksa ketersediaan email: ${normalizedEmail}`);
     const { data: existingUsers, error: checkError } = await supabaseAdmin
       .from('user')
-      .select('id, email, username')
-      .or(`email.eq.${email},username.eq.${username}`);
+      .select('id, email')
+      .eq('email', normalizedEmail);
 
     if (checkError) {
       console.error('[LOG] ERROR saat memeriksa pengguna yang sudah ada:', checkError.message);
@@ -49,20 +85,16 @@ export async function POST(req: NextRequest) {
     }
 
     if (existingUsers && existingUsers.length > 0) {
-      if (existingUsers.some(u => u.email === email)) {
-        console.log(`[LOG] Pendaftaran gagal: Email ${email} sudah terdaftar.`);
+      if (existingUsers.some(u => u.email === normalizedEmail)) {
+        console.log(`[LOG] Pendaftaran gagal: Email ${normalizedEmail} sudah terdaftar.`);
         return NextResponse.json({ error: 'Email sudah terdaftar.' }, { status: 409 }); // Conflict
-      }
-      if (existingUsers.some(u => u.username === username)) {
-        console.log(`[LOG] Pendaftaran gagal: Username ${username} sudah digunakan.`);
-        return NextResponse.json({ error: 'Username sudah digunakan.' }, { status: 409 }); // Conflict
       }
     }
 
     // 2. Hash password
     console.log('[LOG] Menghash password...');
     const saltRounds = 10; // Jumlah putaran salt untuk bcrypt
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    const hashedPassword = await bcrypt.hash(effectivePassword, saltRounds);
     console.log('[LOG] Password berhasil dihash.');
 
     // 3. Sisipkan pengguna baru ke tabel public.user
@@ -71,10 +103,11 @@ export async function POST(req: NextRequest) {
     // Jika 'id' adalah UUID, Anda mungkin perlu membuat satu di sini (misal: uuidv4()).
     const newUser = {
       // id: uuidv4(), // Gunakan ini jika 'id' adalah UUID dan Anda perlu membuatnya manual
-      email: email,
+      email: normalizedEmail,
       password_hash: hashedPassword,
-      username: username,
+      username: generatedUsername,
       role: 'alumni', // Set role default atau dari input pengguna
+      must_change_password: usingDefaultPassword,
     };
 
     console.log('[LOG] Menyisipkan pengguna baru ke public.user...');
@@ -87,12 +120,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Gagal mendaftar pengguna.' }, { status: 500 });
     }
 
-    console.log(`[LOG] Pengguna ${email} berhasil didaftarkan di public.user.`);
+    console.log(`[LOG] Pengguna ${normalizedEmail} berhasil didaftarkan di public.user.`);
     console.log('--- Permintaan Register API Selesai ---');
-    return NextResponse.json({ message: 'Pendaftaran berhasil!' }, { status: 201 }); // Created
+    return NextResponse.json(
+      {
+        message: usingDefaultPassword
+          ? 'Pendaftaran berhasil. Password sementara menggunakan email Anda, silakan segera ganti password di halaman pengaturan.'
+          : 'Pendaftaran berhasil!',
+      },
+      { status: 201 }
+    ); // Created
 
-  } catch (error: any) {
-    console.error('[LOG] ERROR FATAL di Register API Route:', error.message);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('[LOG] ERROR FATAL di Register API Route:', message);
     return NextResponse.json({ error: 'Terjadi kesalahan internal server.' }, { status: 500 });
   }
 }

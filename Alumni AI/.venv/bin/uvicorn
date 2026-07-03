@@ -1,0 +1,8 @@
+#!/bin/sh
+'''exec' "/Users/triutama/Documents/Project/TalentHubIndonesia/talent-hub-v2/Alumni AI/.venv/bin/python3" "$0" "$@"
+' '''
+import sys
+from uvicorn.main import main
+if __name__ == '__main__':
+    sys.argv[0] = sys.argv[0].removesuffix('.exe')
+    sys.exit(main())

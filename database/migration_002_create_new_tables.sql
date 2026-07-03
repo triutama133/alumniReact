@@ -71,10 +71,11 @@ CREATE INDEX IF NOT EXISTS idx_ai_rec_type ON ai_recommendations(recommendation_
 CREATE INDEX IF NOT EXISTS idx_ai_rec_expires ON ai_recommendations(expires_at);
 CREATE INDEX IF NOT EXISTS idx_ai_rec_created ON ai_recommendations(created_at DESC);
 
--- Composite index for cache lookups
+-- Composite index for cache lookups.
+-- Note: partial index predicates cannot use NOW() because index predicates
+-- must be immutable in PostgreSQL.
 CREATE INDEX IF NOT EXISTS idx_ai_rec_cache_lookup 
-  ON ai_recommendations(user_id, recommendation_type, created_at DESC)
-  WHERE expires_at > NOW();
+  ON ai_recommendations(user_id, recommendation_type, expires_at, created_at DESC);
 
 -- ================================================================
 -- SECTION 3: Extend project_applications to Support More Statuses
@@ -219,7 +220,8 @@ SELECT
   ad.skill_gabungan,
   ad.aktivitas
 FROM project_applications pa
-JOIN alumni_db ad ON pa.user_id = ad.id
+JOIN auth.users au ON pa.user_id = au.id
+LEFT JOIN alumni_db ad ON LOWER(ad.email) = LOWER(au.email)
 WHERE pa.status IN ('accepted', 'active');
 
 -- View: Recent posts feed (with user info)

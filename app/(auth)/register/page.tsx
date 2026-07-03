@@ -59,7 +59,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen">
+    <div className="flex items-center justify-center min-h-screen px-4 stagger-children">
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="text-2xl">Daftar Akun Baru</CardTitle>
@@ -85,9 +85,12 @@ export default function RegisterPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                required
                 disabled={isLoading}
+                placeholder="Opsional. Jika kosong, password sementara = email"
               />
+              <p className="text-xs text-slate-500">
+                Jika dikosongkan, sistem akan menggunakan email sebagai password sementara dan Anda wajib menggantinya setelah login.
+              </p>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="username">Username</Label>
@@ -96,8 +99,8 @@ export default function RegisterPage() {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                required
                 disabled={isLoading}
+                placeholder="Opsional. Otomatis dari email jika dikosongkan"
               />
             </div>
             {error && <p className="text-sm text-red-500">{error}</p>}

@@ -40,23 +40,31 @@ export interface AlumniProfileType {
   nama_panggilan: string | null;
   angkatan: number | null;
   fakultas_jurusan: string | null;
-  aktivitas: 'Pekerja' | 'Bisnis' | 'Rumah Tangga' | null;
+  aktivitas: string | string[] | null;
   skill_gabungan: string | null; // Keterampilan dipisahkan koma
+  bahasa_dikuasai?: string | null;
+  sertifikasi?: string | null;
+  gabungan_data?: string | null;
+  jenis_dukungan_dibutuhkan?: string | string[] | null;
+  bidang_kontribusi_minat?: string | string[] | null;
 
   // Sub-relasi dari join
-  alumni_pekerja: Array<{
-    nama_instansi: string;
-    posisi: string;
-    // ... kolom alumni_pekerja lainnya
-  }>;
-  alumni_bisnis: Array<{
-    nama_usaha: string;
-    bidang_usaha: string;
-    // ... kolom alumni_bisnis lainnya
-  }>;
-  alumni_rumah_tangga: Array<{
-    bidang_minat: string;
-    // ... kolom alumni_rumah_tangga lainnya
+  alumni_pekerja?: Array<Record<string, unknown>>;
+  alumni_bisnis?: Array<Record<string, unknown>>;
+  alumni_sosial?: Array<Record<string, unknown>>;
+  alumni_kreatif?: Array<Record<string, unknown>>;
+  alumni_rumah_tangga?: Array<Record<string, unknown>>;
+  alumni_mahasiswa?: Array<Record<string, unknown>>;
+  alumni_informal?: Array<Record<string, unknown>>;
+  alumni_agri?: Array<Record<string, unknown>>;
+  alumni_pendidik?: Array<Record<string, unknown>>;
+  alumni_education_histories?: Array<{
+    level?: string;
+    institution_name?: string;
+    major_program?: string;
+    start_year?: number | null;
+    end_year?: number | null;
+    is_current?: boolean;
   }>;
 }
 

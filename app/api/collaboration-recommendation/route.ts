@@ -11,7 +11,7 @@ import { AlumniProfileType } from '@/lib/types';
 export async function POST(req: NextRequest) {
   console.log('--- Memulai Permintaan Rekomendasi Kolaborasi API ---');
   try {
-    const { userId } = await req.json();
+    const { userId, cohortId, source } = await req.json();
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -37,9 +37,16 @@ export async function POST(req: NextRequest) {
       .from('alumni_db')
       .select(`
         *,
+        alumni_education_histories(*),
         alumni_pekerja(*),
         alumni_bisnis(*),
-        alumni_rumah_tangga(*)
+        alumni_sosial(*),
+        alumni_kreatif(*),
+        alumni_rumah_tangga(*),
+        alumni_mahasiswa(*),
+        alumni_informal(*),
+        alumni_agri(*),
+        alumni_pendidik(*)
       `)
       .eq('id', userId)
       .single() as { data: AlumniProfileType | null, error: unknown }; // Perbaikan: Ganti 'any' dengan 'unknown'
@@ -50,7 +57,7 @@ export async function POST(req: NextRequest) {
     }
 
     console.log(`[REC_API] Profil ditemukan: ${profile.nama_lengkap}. Menghasilkan rekomendasi...`);
-    const recommendation = await getProfileRecommendation(profile);
+    const recommendation = await getProfileRecommendation(profile, cohortId, source);
     console.log('[REC_API] Rekomendasi berhasil dihasilkan.');
 
     return NextResponse.json({ recommendation: recommendation }, { status: 200 });

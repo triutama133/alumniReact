@@ -1,6 +1,7 @@
 // app/layout.tsx
 import './globals.css'; // File CSS global Anda
 import { Geist, Geist_Mono } from "next/font/google"; // Import font
+import RootMotionShell from '@/components/layout/RootMotionShell';
 
 // Inisialisasi font Geist
 const geistSans = Geist({
@@ -24,10 +25,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="id">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        {/* Children di sini akan merujuk ke app/(main)/layout.tsx atau halaman lain yang tidak dalam grup */}
-        {children}
+        <RootMotionShell>{children}</RootMotionShell>
       </body>
     </html>
   );

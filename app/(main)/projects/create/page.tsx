@@ -12,7 +12,6 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { createClient } from "@/lib/supabaseClient"
 
 const formSchema = z.object({
   title: z.string().min(10, "Judul harus lebih dari 10 karakter."),
@@ -23,7 +22,6 @@ const formSchema = z.object({
 export default function CreateProjectPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
-  const supabase = createClient()
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -32,34 +30,36 @@ export default function CreateProjectPage() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      toast.error("Anda harus login untuk membuat proyek.");
-      setLoading(false);
-      return;
-    }
     
-    // Ubah string skill (dipisahkan koma) menjadi array untuk disimpan di database
     const skillsArray = values.required_skills.split(',').map(skill => skill.trim());
 
-    const { error } = await supabase
-      .from('projects')
-      .insert({
-        title: values.title,
-        description: values.description,
-        required_skills: skillsArray,
-        owner_id: user.id
+    try {
+      const response = await fetch('/api/projects', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: values.title,
+          description: values.description,
+          required_skills: skillsArray,
+        }),
       });
-      
-    if (error) {
-      toast.error("Gagal membuat proyek", { description: error.message });
-    } else {
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Gagal membuat proyek.');
+      }
+
       toast.success("Proyek berhasil dibuat!");
       router.push('/projects');
       router.refresh(); // Minta router untuk memuat ulang data di halaman /projects
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Terjadi kesalahan saat membuat proyek.';
+      toast.error("Gagal membuat proyek", { description: message });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   return (

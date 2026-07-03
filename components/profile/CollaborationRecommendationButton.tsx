@@ -1,18 +1,18 @@
 // components/profile/CollaborationRecommendationButton.tsx
-'use client'; // Ini adalah Client Component
+'use client';
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react'; // Untuk ikon loading
-import { AlumniProfileType, CustomUserForProjectCard } from '@/lib/types'; // Import tipe dari lib/types
+import { Loader2, Sparkles } from 'lucide-react';
+import { AlumniProfileType, CustomUserForProjectCard } from '@/lib/types';
 
-import ReactMarkdown from 'react-markdown'; // <-- Import ReactMarkdown
-import remarkGfm from 'remark-gfm'; // <-- Import remarkGfm untuk GitHub Flavored Markdown
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface CollaborationRecommendationButtonProps {
-  profile: AlumniProfileType; // Profil yang sedang dilihat
-  currentUser: CustomUserForProjectCard; // User yang sedang login
+  profile: AlumniProfileType;
+  currentUser: CustomUserForProjectCard;
 }
 
 export default function CollaborationRecommendationButton({
@@ -29,21 +29,20 @@ export default function CollaborationRecommendationButton({
     setError(null);
 
     try {
-      // Panggil API Route baru untuk mendapatkan rekomendasi
       const response = await fetch('/api/collaboration-recommendation', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ userId: currentUser.id }), // Kirim ID user yang login
+        body: JSON.stringify({ userId: currentUser.id }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || 'Gagal mendapatkan rekomendasi.');
+        setError(data.error || 'Gagal mendapatkan rekomendasi kolaborasi.');
         console.error('API Rekomendasi Error:', data.error);
-        setRecommendation(null); // Clear previous recommendation on error
+        setRecommendation(null);
       } else {
         setRecommendation(data.recommendation);
         console.log('Rekomendasi berhasil diterima:', data.recommendation);
@@ -52,44 +51,59 @@ export default function CollaborationRecommendationButton({
       const msg = err instanceof Error ? err.message : String(err);
       setError('Terjadi kesalahan jaringan atau yang tidak terduga saat memuat rekomendasi.');
       console.error('Unexpected error loading recommendation:', msg);
-      setRecommendation(null); // Clear previous recommendation on error
+      setRecommendation(null);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900 dark:to-blue-800">
-      <CardHeader>
-        <CardTitle>Rekomendasi Kolaborasi</CardTitle>
-        <CardDescription>Dapatkan ide kolaborasi inovatif untuk profil Anda.</CardDescription>
+    <Card className="premium-light-card liquid-glass-border shadow-md border-emerald-500/20">
+      <CardHeader className="pb-3 border-b border-slate-100 dark:border-white/5 bg-gradient-to-r from-emerald-50/50 to-teal-50/50 dark:from-emerald-950/20 dark:to-teal-950/20">
+        <CardTitle className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+          <Sparkles className="h-4.5 w-4.5 text-emerald-600 dark:text-emerald-400" />
+          Rekomendasi Kolaborasi AI
+        </CardTitle>
+        <CardDescription className="text-[10px] text-slate-500 dark:text-slate-400">
+          Dapatkan ide kolaborasi inovatif, pencocokan partner, dan peluang bisnis dari database alumni.
+        </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-4">
         {recommendation ? (
-          // Perbaikan: Gunakan ReactMarkdown untuk merender rekomendasi
-          <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
+          <div className="prose prose-sm dark:prose-invert max-w-none text-slate-700 dark:text-slate-350 leading-relaxed space-y-4">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {recommendation}
             </ReactMarkdown>
           </div>
         ) : error ? (
-          <p className="text-sm text-red-500">{error}</p>
+          <p className="text-xs text-rose-600 dark:text-rose-400 font-medium">{error}</p>
         ) : (
-          <p className="text-sm text-muted-foreground">Klik tombol di bawah untuk mendapatkan rekomendasi kolaborasi.</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed italic">
+            Klik tombol di bawah untuk mendapatkan analisis kecocokan jejaring dan ide proyek kolaboratif bersama alumni lainnya.
+          </p>
         )}
+        
+        <div className="mt-4 pt-3 border-t border-slate-100 dark:border-white/5 flex justify-end">
+          <Button
+            onClick={handleGenerateRecommendation}
+            disabled={isLoading}
+            variant="outline"
+            className="ai-collab-btn !bg-emerald-600 hover:!bg-emerald-700 dark:!bg-emerald-500 dark:hover:!bg-emerald-400 !text-white dark:!text-white !border-emerald-600/60 dark:!border-emerald-400/40 font-bold text-xs py-2 px-6 rounded-full shadow-md hover:shadow-emerald-500/20 transition-all flex items-center gap-1.5"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Menganalisis Kemitraan...
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-3.5 w-3.5" />
+                Dapatkan Rekomendasi Kolaborasi
+              </>
+            )}
+          </Button>
+        </div>
       </CardContent>
-      <CardHeader> {/* Menggunakan CardHeader di bawah untuk tombol */}
-        <Button onClick={handleGenerateRecommendation} disabled={isLoading} className="w-full">
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Memuat Rekomendasi...
-            </>
-          ) : (
-            'Dapatkan Rekomendasi Kolaborasi'
-          )}
-        </Button>
-      </CardHeader>
     </Card>
   );
 }

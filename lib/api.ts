@@ -2,7 +2,11 @@
 import { AlumniProfileType } from './types'; // Import tipe AlumniProfileType yang sudah didefinisikan
 
 // Fungsi ini sekarang akan menerima objek profil lengkap
-export async function getProfileRecommendation(profileData: AlumniProfileType): Promise<string | null> {
+export async function getProfileRecommendation(
+  profileData: AlumniProfileType,
+  cohortId?: number | null,
+  source?: string
+): Promise<string | null> {
   // Pastikan kita memiliki URL backend dan kunci API
   const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL; // URL ke FastAPI Render Anda
   const apiKey = process.env.INTERNAL_API_KEY; // Kunci API rahasia untuk FastAPI Anda
@@ -12,15 +16,21 @@ export async function getProfileRecommendation(profileData: AlumniProfileType): 
     return "Layanan rekomendasi AI sedang tidak tersedia.";
   }
 
+  const isHome = source === 'home';
+  const isKarir = source === 'karir';
+  const endpoint = isHome ? '/wawasan' : (isKarir ? '/karir' : '/rekomendasi');
+
   // Siapkan body permintaan untuk FastAPI Anda
   const requestBody = {
+    user_id: profileData.id,
     nama_lengkap: profileData.nama_lengkap, // Ambil nama_lengkap dari objek profileData
+    cohort_id: cohortId || null,
     language: 'id' // Tetapkan bahasa ke 'id' secara statis seperti yang Anda jelaskan
   };
 
   try {
-    console.log(`[LLM_API] Mengirim permintaan ke FastAPI di ${apiUrl}/rekomendasi dengan body:`, requestBody);
-    const response = await fetch(`${apiUrl}/rekomendasi`, {
+    console.log(`[LLM_API] Mengirim permintaan ke FastAPI di ${apiUrl}${endpoint} dengan body:`, requestBody);
+    const response = await fetch(`${apiUrl}${endpoint}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -38,10 +48,17 @@ export async function getProfileRecommendation(profileData: AlumniProfileType): 
 
     const data = await response.json();
     console.log("[LLM_API] Respon sukses dari FastAPI:", data);
-    return data.rekomendasi || "Tidak ada rekomendasi yang dapat dihasilkan saat ini.";
+    if (isHome) {
+      return data.wawasan || "Tidak ada wawasan yang dapat dihasilkan saat ini.";
+    } else if (isKarir) {
+      return data.karir || "Tidak ada rekomendasi pengembangan karir yang dapat dihasilkan saat ini.";
+    } else {
+      return data.rekomendasi || "Tidak ada rekomendasi yang dapat dihasilkan saat ini.";
+    }
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error);
     console.error("[LLM_API] Fetch Error untuk FastAPI Rekomendasi AI:", msg);
     return "Terjadi kesalahan saat mencoba menghubungi layanan rekomendasi AI.";
   }
 }
+

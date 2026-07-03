@@ -13,15 +13,14 @@ export default async function MainLayout({
   // Mengambil informasi pengguna dari header yang disetel oleh middleware
   const headersList = await headers();
   const userEmail = headersList.get('x-user-email');
+  const userId = headersList.get('x-user-id');
 
   return (
-    <>
-      <Navbar userEmail={userEmail} /> {/* Render Navbar Client Component */}
-      <main className="flex-grow">{children}</main>
-      {/* Opsional: Tambahkan footer di sini */}
-      {/* <footer className="bg-gray-800 text-white p-4 text-center">
-        &copy; 2025 Indonesia Talent Hub
-      </footer> */}
-    </>
+    <div className="min-h-screen bg-transparent motion-page">
+      <Navbar userEmail={userEmail} userId={userId} />
+      <main className="flex-1 py-6 sm:py-8">
+        <div className="app-shell stagger-children">{children}</div>
+      </main>
+    </div>
   );
 }
