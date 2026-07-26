@@ -84,6 +84,8 @@ interface ExtendedAlumniProfile {
     skala_usaha: string;
     kendala_bisnis: string;
     target_pasar: string;
+    kolaborasi_terbuka?: string;
+    keahlian_dibagikan?: string;
   }>;
   alumni_sosial?: Array<{
     status_keaktifan?: string;
@@ -575,6 +577,18 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
                             <div className="md:col-span-2">
                               <span className="text-slate-550 dark:text-slate-400 block font-semibold">Tantangan Bisnis Saat Ini:</span>
                               <span className="text-slate-700 dark:text-slate-300 leading-normal">{data.kendala_bisnis}</span>
+                            </div>
+                          )}
+                          {data.kolaborasi_terbuka && (
+                            <div className="md:col-span-2">
+                              <span className="text-slate-550 dark:text-slate-400 block font-semibold">Keterbukaan Kolaborasi:</span>
+                              <span className="text-slate-700 dark:text-slate-300 leading-normal">{data.kolaborasi_terbuka}</span>
+                            </div>
+                          )}
+                          {data.keahlian_dibagikan && (
+                            <div className="md:col-span-2">
+                              <span className="text-slate-550 dark:text-slate-400 block font-semibold">Keahlian Yang Bisa Dibagikan ke Komunitas:</span>
+                              <span className="text-slate-700 dark:text-slate-300 leading-normal">{data.keahlian_dibagikan}</span>
                             </div>
                           )}
                         </div>

@@ -1123,6 +1123,8 @@ export default function EditProfilePage() {
                                 <FormMessage />
                               </FormItem>
                             )} />
+                            <FormField control={form.control} name={`bisnis_details.${index}.kolaborasi_terbuka` as const} render={({ field }) => (<FormItem><FormLabel className="text-foreground">Keterbukaan Kolaborasi (Inkubasi, Ekspansi, dsb)</FormLabel><FormControl><Textarea placeholder="Jelaskan jenis kolaborasi yang Anda harapkan..." {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name={`bisnis_details.${index}.keahlian_dibagikan` as const} render={({ field }) => (<FormItem><FormLabel className="text-foreground">Keahlian yang Bisa Dibagikan ke Komunitas</FormLabel><FormControl><Textarea placeholder="Sebutkan keahlian yang dapat Anda bagikan/mentorkan..." {...field} /></FormControl><FormMessage /></FormItem>)} />
                           </div>
                         )}
                       </div>

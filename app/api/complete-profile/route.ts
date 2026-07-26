@@ -70,6 +70,8 @@ const serverFormSchema = z.object({
     skala_usaha: z.string().optional().default(''),
     kendala_bisnis: z.string().optional().default(''),
     target_pasar: z.enum(['B2C', 'B2B', 'B2C dan B2B']).optional(),
+    kolaborasi_terbuka: z.string().optional().default(''),
+    keahlian_dibagikan: z.string().optional().default(''),
   })).optional(),
   alumni_sosial: z.array(z.object({
     status_keaktifan: activityStatusEnum.optional(),
@@ -155,7 +157,7 @@ const serverFormSchema = z.object({
   };
 
   validateActivity('alumni_pekerja', ['keahlian_pekerja', 'nama_instansi', 'posisi', 'pengalaman_proyek']);
-  validateActivity('alumni_bisnis', ['keahlian_wirausahaan', 'produk_layanan_utama', 'nama_usaha', 'skala_usaha', 'kendala_bisnis', 'target_pasar']);
+  validateActivity('alumni_bisnis', ['keahlian_wirausahaan', 'produk_layanan_utama', 'nama_usaha', 'skala_usaha', 'kendala_bisnis', 'target_pasar', 'kolaborasi_terbuka', 'keahlian_dibagikan']);
   validateActivity('alumni_sosial', ['keahlian_sosial', 'pengalaman_proyek_sosial', 'isu_fokus', 'nama_organisasi']);
   validateActivity('alumni_kreatif', ['keahlian_kreatif', 'platform_digital_utama', 'jenis_konten', 'total_jangkauan', 'kisaran_rate_card', 'demografi_followers']);
   validateActivity('alumni_rumah_tangga', ['keahlian_irt', 'kegiatan_organisasi_irt']);

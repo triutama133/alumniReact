@@ -90,6 +90,8 @@ export const formSchema = z.object({
     skala_usaha: z.string().optional(),
     kendala_bisnis: z.string().optional(),
     target_pasar: z.enum(['B2C', 'B2B', 'B2C dan B2B']).optional(),
+    kolaborasi_terbuka: z.string().optional(),
+    keahlian_dibagikan: z.string().optional(),
   })).default([]),
   sosial_details: z.array(z.object({
     status_keaktifan: z.enum(activityStatusOptions),
@@ -202,6 +204,8 @@ export const formSchema = z.object({
     { field: 'skala_usaha', label: 'Skala usaha' },
     { field: 'kendala_bisnis', label: 'Kendala bisnis' },
     { field: 'target_pasar', label: 'Target pasar' },
+    { field: 'kolaborasi_terbuka', label: 'Keterbukaan kolaborasi' },
+    { field: 'keahlian_dibagikan', label: 'Keahlian yang bisa dibagikan' },
   ])
   validate('sosial_details', 'Sosial', [
     { field: 'keahlian_sosial', label: 'Keahlian sosial' },
@@ -357,9 +361,11 @@ export function ensureBisnisDetailsFromProfile(profile: ProfileResponse) {
       skala_usaha: typeof item.skala_usaha === 'string' ? item.skala_usaha : '',
       kendala_bisnis: typeof item.kendala_bisnis === 'string' ? item.kendala_bisnis : '',
       target_pasar: normalizeTargetPasar(item.target_pasar),
+      kolaborasi_terbuka: typeof item.kolaborasi_terbuka === 'string' ? item.kolaborasi_terbuka : '',
+      keahlian_dibagikan: typeof item.keahlian_dibagikan === 'string' ? item.keahlian_dibagikan : '',
     }))
   }
-  return [{ status_keaktifan: 'Aktif saat ini' as const, keahlian_wirausahaan: '', produk_layanan_utama: '', nama_usaha: '', skala_usaha: '', kendala_bisnis: '', target_pasar: undefined }]
+  return [{ status_keaktifan: 'Aktif saat ini' as const, keahlian_wirausahaan: '', produk_layanan_utama: '', nama_usaha: '', skala_usaha: '', kendala_bisnis: '', target_pasar: undefined, kolaborasi_terbuka: '', keahlian_dibagikan: '' }]
 }
 
 export function ensureSosialDetailsFromProfile(profile: ProfileResponse) {
@@ -550,6 +556,8 @@ export function buildPayload(values: FormValues) {
       skala_usaha: detail.skala_usaha,
       kendala_bisnis: detail.kendala_bisnis,
       target_pasar: detail.target_pasar,
+      kolaborasi_terbuka: detail.kolaborasi_terbuka,
+      keahlian_dibagikan: detail.keahlian_dibagikan,
     }))
   }
 
