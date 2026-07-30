@@ -43,10 +43,16 @@ export default async function HomePage() {
     redirect('/complete-profile');
   }
 
-  // Fetch posts from posts_feed view
-  const { data: posts, error: postsError } = await supabase
-    .from('posts_feed')
-    .select('*')
+  const activeCohortId = cookieStore.get('active_cohort_id')?.value;
+  
+  let dbQuery = supabase.from('posts_feed').select('*');
+  if (activeCohortId && activeCohortId !== 'global') {
+    dbQuery = dbQuery.eq('cohort_id', Number(activeCohortId));
+  } else {
+    dbQuery = dbQuery.is('cohort_id', null);
+  }
+
+  const { data: posts, error: postsError } = await dbQuery
     .order('created_at', { ascending: false })
     .limit(50);
 

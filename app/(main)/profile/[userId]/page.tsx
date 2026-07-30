@@ -290,14 +290,8 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
                 {profile.nama_panggilan && (
                   <span className="text-indigo-600 dark:text-indigo-400">"{profile.nama_panggilan}"</span>
                 )}
-                {profile.angkatan && (
-                  <span className="flex items-center gap-1">
-                    <Calendar className="h-3.5 w-3.5 text-slate-500" />
-                    Angkatan {profile.angkatan}
-                  </span>
-                )}
                 {profile.fakultas_jurusan && (
-                  <span className="flex items-center gap-1 border-l border-slate-200 dark:border-white/10 pl-3">
+                  <span className="flex items-center gap-1">
                     <Book className="h-3.5 w-3.5 text-slate-500" />
                     {profile.fakultas_jurusan}
                   </span>

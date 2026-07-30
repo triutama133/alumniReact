@@ -53,11 +53,36 @@ export default function SearchPage() {
     setHasSearchedStandard(true);
     setSearchResults([]);
 
+    const getCookie = (name: string) => {
+      if (typeof document === 'undefined') return null;
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+      return null;
+    };
+    const activeCohortId = getCookie('active_cohort_id');
+
     try {
-      const { data, error } = await supabase
+      let memberIds: number[] = [];
+      if (activeCohortId && activeCohortId !== 'global') {
+        const { data: memberRows, error: memberErr } = await supabase
+          .from('cohort_members')
+          .select('user_id')
+          .eq('cohort_id', Number(activeCohortId));
+        if (!memberErr && memberRows) {
+          memberIds = memberRows.map(r => Number(r.user_id));
+        }
+      }
+
+      let dbQuery = supabase
         .from('alumni_db')
-        .select('id, nama_lengkap, nama_panggilan, aktivitas, skill_gabungan, fakultas_jurusan')
-        .or(`nama_lengkap.ilike.%${searchTerm}%,skill_gabungan.ilike.%${searchTerm}%`);
+        .select('id, nama_lengkap, nama_panggilan, aktivitas, skill_gabungan, fakultas_jurusan');
+      
+      if (activeCohortId && activeCohortId !== 'global') {
+        dbQuery = dbQuery.in('id', memberIds);
+      }
+
+      const { data, error } = await dbQuery.or(`nama_lengkap.ilike.%${searchTerm}%,skill_gabungan.ilike.%${searchTerm}%`);
 
       if (error) throw error;
       setSearchResults(data || []);
@@ -85,11 +110,23 @@ export default function SearchPage() {
 
     const scanSound = playScanSound(8.0);
 
+    const getCookie = (name: string) => {
+      if (typeof document === 'undefined') return null;
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+      return null;
+    };
+    const activeCohortId = getCookie('active_cohort_id');
+
     try {
       const res = await fetch('/api/ai/talent-search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: finalPrompt }),
+        body: JSON.stringify({ 
+          prompt: finalPrompt,
+          cohortId: activeCohortId && activeCohortId !== 'global' ? Number(activeCohortId) : null
+        }),
       });
 
       const data = await res.json();
@@ -124,7 +161,7 @@ export default function SearchPage() {
           Cari Talenta Terbaik
         </h1>
         <p className="text-slate-500 dark:text-slate-400 mt-2 max-w-xl mx-auto text-sm">
-          Hubungkan ide, proyek, dan kolaborasi Anda dengan alumni yang tepat menggunakan pencarian standar atau asisten pencocokan cerdas AI.
+          Hubungkan ide, proyek, dan kolaborasi Anda dengan talenta yang tepat menggunakan pencarian standar atau asisten pencocokan cerdas AI.
         </p>
       </div>
 
@@ -168,7 +205,7 @@ export default function SearchPage() {
                   <CardTitle className="text-slate-900 dark:text-white text-base">Asisten Pencocokan Semantik AI</CardTitle>
                 </div>
                 <CardDescription className="text-xs text-slate-500 dark:text-slate-400">
-                  Masukkan deskripsi proyek, kebutuhan tim, atau kriteria peran Anda. AI akan menganalisis profil dan mencarikan hingga 10 alumni yang paling sesuai dengan justifikasinya.
+                  Masukkan deskripsi proyek, kebutuhan tim, atau kriteria peran Anda. AI akan menganalisis profil dan mencarikan hingga 10 talenta yang paling sesuai dengan justifikasinya.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -177,7 +214,7 @@ export default function SearchPage() {
                     <Textarea
                        value={aiPrompt}
                        onChange={(e) => setAiPrompt(e.target.value)}
-                       placeholder="Jelaskan kebutuhan Anda secara detail (Contoh: Saya butuh alumni yang menguasai desain grafis, mahir menggunakan Canva/Photoshop, dan memiliki minat di bidang sosial kemasyarakatan)..."
+                       placeholder="Jelaskan kebutuhan Anda secara detail (Contoh: Saya butuh talenta yang menguasai desain grafis, mahir menggunakan Canva/Photoshop, dan memiliki minat di bidang sosial kemasyarakatan)..."
                        className="min-h-[100px] bg-slate-50 border-slate-200 focus:border-indigo-500 text-slate-900 placeholder:text-slate-400 dark:bg-slate-950/40 dark:border-slate-800 dark:text-slate-101 dark:placeholder:text-slate-500 rounded-lg text-sm resize-none"
                     />
                   </div>
@@ -289,7 +326,7 @@ export default function SearchPage() {
                 <Card className="premium-light-card liquid-glass-border p-8 text-center text-slate-500 dark:text-slate-400 max-w-md mx-auto">
                   <AlertCircle className="h-10 w-10 mx-auto text-slate-400 dark:text-slate-600 mb-3" />
                   <h4 className="font-semibold text-slate-900 dark:text-white">Tidak Ada Hasil</h4>
-                  <p className="text-xs mt-1">Tidak ada alumni yang sesuai dengan kata kunci "{searchTerm}".</p>
+                  <p className="text-xs mt-1">Tidak ada talenta yang sesuai dengan kata kunci "{searchTerm}".</p>
                 </Card>
               )}
               

@@ -33,6 +33,15 @@ export default function CreateProjectPage() {
     
     const skillsArray = values.required_skills.split(',').map(skill => skill.trim());
 
+    const getCookie = (name: string) => {
+      if (typeof document === 'undefined') return null;
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+      return null;
+    };
+    const activeCohortId = getCookie('active_cohort_id');
+
     try {
       const response = await fetch('/api/projects', {
         method: 'POST',
@@ -43,6 +52,7 @@ export default function CreateProjectPage() {
           title: values.title,
           description: values.description,
           required_skills: skillsArray,
+          cohortId: activeCohortId ? Number(activeCohortId) : null,
         }),
       });
 

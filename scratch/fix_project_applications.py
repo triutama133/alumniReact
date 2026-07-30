@@ -1,16 +1,19 @@
 import asyncio
 import asyncpg
 
+import os
+from dotenv import load_dotenv
+
 async def migrate():
+    load_dotenv()
+    load_dotenv("../.env")
+    load_dotenv("../alumni_RESTAPI/.env")
+    db_url = os.environ.get("SUPABASE_DB_URL") or os.environ.get("DATABASE_URL")
+    if not db_url:
+        print("Error: DB connection URL not found in .env")
+        return
     print("Connecting to database...")
-    conn = await asyncpg.connect(
-        user="postgres.uubgqbzeowuwnqufcpha",
-        password="133133raitO!@#",
-        host="aws-0-ap-southeast-1.pooler.supabase.com",
-        port=6543,
-        database="postgres",
-        statement_cache_size=0
-    )
+    conn = await asyncpg.connect(db_url)
     try:
         async with conn.transaction():
             print("1. Dropping existing view project_members...")

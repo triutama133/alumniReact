@@ -152,6 +152,15 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
 
   // Load cohorts on mount
   useEffect(() => {
+    const getCookie = (name: string) => {
+      if (typeof document === 'undefined') return null;
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+      return null;
+    };
+    const activeId = getCookie('active_cohort_id') || 'global';
+
     const fetchCohorts = async () => {
       setIsLoadingCohorts(true);
       try {
@@ -159,6 +168,13 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
         if (res.ok) {
           const data = await res.json();
           setCohorts(data);
+
+          if (activeId !== 'global') {
+            const active = data.find((c: any) => String(c.id) === activeId);
+            if (active) {
+              setActiveCohort(active);
+            }
+          }
         }
       } catch (err) {
         console.error('Error fetching cohorts:', err);
@@ -419,11 +435,8 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
               </AvatarFallback>
             </Avatar>
             <h3 className="font-bold text-slate-900 dark:text-white mt-3 text-base">{userProfile.nama_lengkap}</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
-              <Calendar className="h-3 w-3" /> Angkatan {userProfile.angkatan || 'N/A'}
-            </p>
             {userProfile.fakultas_jurusan && (
-              <p className="text-xs text-indigo-600 dark:text-indigo-300 mt-0.5">{userProfile.fakultas_jurusan}</p>
+              <p className="text-xs text-indigo-600 dark:text-indigo-300 mt-1">{userProfile.fakultas_jurusan}</p>
             )}
             
             <div className="w-full border-t border-slate-200 dark:border-white/5 my-4 pt-4 text-left space-y-2">
@@ -800,7 +813,7 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
                       <p className="text-xs font-bold text-slate-800 dark:text-white truncate">{m.nama_lengkap}</p>
                       <p className="text-[10px] text-slate-500 truncate">{m.email}</p>
                     </div>
-                    <Badge className={`text-[8px] px-2 py-0.5 rounded-full uppercase ${m.role === 'admin' ? 'bg-amber-155/15 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
+                    <Badge className={`text-[8px] px-2 py-0.5 rounded-full uppercase ${m.role === 'admin' ? 'bg-amber-500/10 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
                       {m.role}
                     </Badge>
                   </div>

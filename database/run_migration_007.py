@@ -1,8 +1,19 @@
 import asyncio
 import asyncpg
 
+import os
+from dotenv import load_dotenv
+
 async def main():
-    db_url = "postgresql://postgres.uubgqbzeowuwnqufcpha:133133raitO%21%40%23@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres"
+    load_dotenv()
+    load_dotenv("../.env")
+    load_dotenv("../alumni_RESTAPI/.env")
+    
+    db_url = os.environ.get("SUPABASE_DB_URL") or os.environ.get("DATABASE_URL")
+    if not db_url:
+        print("Error: Database connection URL not found in .env")
+        return
+        
     print("Connecting to Supabase PostgreSQL...")
     conn = await asyncpg.connect(db_url)
     try:

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from 'next/link';
-import { Globe, ArrowRight, Instagram, Twitter } from "lucide-react";
+import { Globe, Instagram, Twitter } from "lucide-react";
 
 export default function LandingPage() {
   return (
@@ -40,24 +40,14 @@ export default function LandingPage() {
 
       <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 py-12 text-center">
         <h1 className="mb-5 max-w-5xl text-4xl font-semibold tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl">
-          Connecting alumni talents, instantly.
+          Connecting professional talents, instantly.
         </h1>
         <div className="w-full max-w-2xl space-y-6">
           <p className="mx-auto max-w-xl px-4 text-sm leading-relaxed text-white/85 md:text-lg">
-            Platform ekosistem digital berbasis AI untuk mempertemukan talenta alumni dengan ide proyek, pekerjaan, dan rancangan kolaborasi strategis secara semantik.
+            Platform ekosistem digital berbasis AI untuk mempertemukan talenta profesional dengan ide proyek, pekerjaan, dan rancangan kolaborasi strategis secara semantik.
           </p>
-          <div className="mx-auto flex max-w-md items-center gap-2 rounded-full border border-white/20 bg-black/35 py-2 pl-4 pr-2 backdrop-blur-md sm:pl-6">
-            <input
-              type="email"
-              placeholder="Masukkan email alumni Anda"
-              className="h-10 flex-1 border-none bg-transparent text-sm text-white placeholder:text-white/50 outline-none"
-            />
-            <Link href="/register" className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-white text-black no-underline hover:bg-white/90">
-              <ArrowRight className="h-5 w-5" />
-            </Link>
-          </div>
-          <div>
-            <Link href="/projects" className="inline-flex items-center rounded-full border border-white/25 bg-white/10 px-8 py-3 text-sm font-medium text-white no-underline hover:bg-white/20">
+          <div className="pt-2">
+            <Link href="/register" className="inline-flex items-center rounded-full bg-white text-black px-8 py-3 text-sm font-semibold no-underline hover:bg-white/90 transition-colors shadow-lg hover:shadow-white/10">
               Mulai Eksplorasi
             </Link>
           </div>

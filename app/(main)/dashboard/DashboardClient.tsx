@@ -72,6 +72,26 @@ export default function DashboardClient({ userCohorts }: DashboardClientProps) {
     }
   };
 
+  // Read active_cohort_id cookie on mount to align with global portal choice
+  useEffect(() => {
+    const getCookie = (name: string) => {
+      if (typeof document === 'undefined') return null;
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+      return null;
+    };
+    const activeId = getCookie('active_cohort_id');
+    if (activeId && activeId !== 'global') {
+      const active = userCohorts.find((c: any) => String(c.id) === activeId);
+      if (active) {
+        setSelectedCohort(active);
+      }
+    } else {
+      setSelectedCohort(null);
+    }
+  }, [userCohorts]);
+
   useEffect(() => {
     fetchAnalytics(selectedCohort?.id || null);
   }, [selectedCohort]);

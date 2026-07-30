@@ -97,6 +97,23 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // Fetch user's role to check if super_admin or premium
+    const { data: userRecord, error: userErr } = await supabaseAdmin
+      .from('user')
+      .select('role')
+      .eq('id', userId)
+      .single();
+
+    if (userErr || !userRecord) {
+      return NextResponse.json({ error: 'Gagal memverifikasi status akun.' }, { status: 500 });
+    }
+
+    if (userRecord.role !== 'super_admin' && userRecord.role !== 'premium') {
+      return NextResponse.json({ 
+        error: 'Pembuatan komunitas khusus untuk anggota Premium (Segera Hadir). Silakan hubungi Super Admin untuk meningkatkan akun Anda.' 
+      }, { status: 403 });
+    }
+
     // 1. Insert new cohort (mocking 30 days subscription)
     const { data: newCohort, error: cohortError } = await supabaseAdmin
       .from('cohorts')

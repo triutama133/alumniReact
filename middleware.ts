@@ -65,6 +65,8 @@ export async function middleware(request: NextRequest) {
     const response = NextResponse.redirect(new URL('/landing', request.url));
     // Hapus cookie yang mungkin rusak/kadaluarsa
     response.cookies.delete('auth_token');
+    response.headers.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
+    response.headers.set('x-middleware-cache', 'no-cache');
     return response;
   }
 
@@ -73,7 +75,10 @@ export async function middleware(request: NextRequest) {
     console.log('[MIDDLEWARE] User sudah terautentikasi dan berada di halaman publik. Mengalihkan ke beranda (/).');
     const url = request.nextUrl.clone();
     url.pathname = '/';
-    return NextResponse.redirect(url);
+    const response = NextResponse.redirect(url);
+    response.headers.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
+    response.headers.set('x-middleware-cache', 'no-cache');
+    return response;
   }
 
   const profileCompleted = Boolean(decodedToken?.profile_completed);
@@ -98,21 +103,30 @@ export async function middleware(request: NextRequest) {
     console.log('[MIDDLEWARE] Profil belum lengkap. Mengalihkan ke /complete-profile.');
     const url = request.nextUrl.clone();
     url.pathname = '/complete-profile';
-    return NextResponse.redirect(url);
+    const response = NextResponse.redirect(url);
+    response.headers.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
+    response.headers.set('x-middleware-cache', 'no-cache');
+    return response;
   }
 
   if (isAuthenticated && mustChangePassword && profileCompleted && !allowMustChangePasswordPath) {
     console.log('[MIDDLEWARE] Password sementara terdeteksi. Mengalihkan ke /settings.');
     const url = request.nextUrl.clone();
     url.pathname = '/settings';
-    return NextResponse.redirect(url);
+    const response = NextResponse.redirect(url);
+    response.headers.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
+    response.headers.set('x-middleware-cache', 'no-cache');
+    return response;
   }
 
   if (isAuthenticated && profileCompleted && currentPath.startsWith('/complete-profile')) {
     console.log('[MIDDLEWARE] Profil sudah lengkap. Mengalihkan dari complete-profile ke beranda (/).');
     const url = request.nextUrl.clone();
     url.pathname = '/';
-    return NextResponse.redirect(url);
+    const response = NextResponse.redirect(url);
+    response.headers.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
+    response.headers.set('x-middleware-cache', 'no-cache');
+    return response;
   }
 
   const requestHeaders = new Headers(request.headers);
@@ -128,17 +142,19 @@ export async function middleware(request: NextRequest) {
   }
 
   console.log('--- MIDDLEWARE FINISHED (No redirect) ---');
-  return NextResponse.next({
+  const response = NextResponse.next({
     request: {
       headers: requestHeaders,
     },
   });
+  response.headers.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
+  return response;
 }
 
 // Konfigurasi matcher
 export const config = {
   matcher: [
-    // Lindungi semua route kecuali asset statis dan halaman auth publik.
-    '/((?!_next/static|_next/image|favicon.ico|login|register).*)',
+    // Lindungi semua route kecuali asset statis (.ext), robots, sitemap, dan halaman auth publik.
+    '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\..*|login|register|landing).*)',
   ],
 };

@@ -1,15 +1,18 @@
 import asyncio
 import asyncpg
 
+import os
+from dotenv import load_dotenv
+
 async def check():
-    conn = await asyncpg.connect(
-        user="postgres.uubgqbzeowuwnqufcpha",
-        password="133133raitO!@#",
-        host="aws-0-ap-southeast-1.pooler.supabase.com",
-        port=6543,
-        database="postgres",
-        statement_cache_size=0
-    )
+    load_dotenv()
+    load_dotenv("../.env")
+    load_dotenv("../alumni_RESTAPI/.env")
+    db_url = os.environ.get("SUPABASE_DB_URL") or os.environ.get("DATABASE_URL")
+    if not db_url:
+        print("Error: DB connection URL not found in .env")
+        return
+    conn = await asyncpg.connect(db_url)
     try:
         count = await conn.fetchval("SELECT COUNT(*) FROM auth.users")
         print(f"Total users in auth.users: {count}")
