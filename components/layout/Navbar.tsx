@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { playClickSound } from '@/lib/audio';
 import { 
   Globe, 
   Home, 
@@ -21,7 +22,10 @@ import {
   PlusCircle, 
   Users, 
   Clock,
-  TrendingUp
+  TrendingUp,
+  Briefcase,
+  Menu,
+  X
 } from 'lucide-react';
 import {
   Select,
@@ -56,6 +60,7 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
   const [isCreatingCohort, setIsCreatingCohort] = useState(false);
   const [activeCohortRole, setActiveCohortRole] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   const handleLogout = () => {
     window.location.href = '/api/logout';
@@ -179,25 +184,34 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
     { href: '/dashboard', label: 'Dashboard', icon: BarChart3 },
     { href: '/projects', label: 'Hub Proyek', icon: FolderKanban },
     { href: '/search', label: 'Cari Talenta', icon: Search },
-    { href: '/learning-path', label: 'Jalur Belajar', icon: TrendingUp },
+    { href: '/jobs', label: 'Jobs', icon: Briefcase },
   ];
 
   return (
     <>
       <nav className="sticky top-0 z-50 w-full px-6 py-4">
-        <div className="mx-auto flex max-w-6xl items-center justify-between rounded-full border border-slate-200/80 dark:border-white/10 bg-white/85 dark:bg-slate-950/70 px-6 py-3 backdrop-blur-md shadow-md dark:shadow-[0_0_20px_rgba(0,0,0,0.4)] transition-all duration-300">
+        <div className="mx-auto flex max-w-7xl items-center justify-between rounded-full border border-slate-200/80 dark:border-white/10 bg-white/85 dark:bg-slate-950/70 px-6 py-3 backdrop-blur-md shadow-md dark:shadow-[0_0_20px_rgba(0,0,0,0.4)] transition-all duration-300">
           
           {/* Brand Logo & Portal Selector */}
           <div className="flex items-center gap-3">
+            {/* Mobile Menu Toggle Button */}
+            <button
+              onClick={() => { playClickSound(); setIsMobileOpen(!isMobileOpen); }}
+              className="p-1.5 -ml-1 rounded-full md:hidden hover:bg-slate-100 dark:hover:bg-white/5 text-slate-600 dark:text-slate-350 transition-colors"
+              aria-label="Toggle Menu"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+
             <Link href="/" className="flex items-center gap-1.5 hover:opacity-90 transition-opacity">
-              <Globe className="h-5 w-5 text-indigo-500 dark:text-indigo-400 animate-pulse animate-duration-1000" />
+              <Globe className="h-5 w-5 text-primary" />
               <span className="font-bold text-sm sm:text-base tracking-tight text-slate-900 dark:text-white hidden md:inline">
                 Talent Hub
               </span>
             </Link>
 
             {userId && (
-              <div className="w-40 sm:w-48 ml-1">
+              <div className="hidden sm:block w-40 sm:w-48 ml-1">
                 <Select value={activeCohortId} onValueChange={handlePortalChange}>
                   <SelectTrigger className="h-8 bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-white/5 text-[11px] font-semibold text-slate-700 dark:text-slate-200 rounded-full px-3">
                     <SelectValue placeholder="Pilih Portal" />
@@ -213,7 +227,7 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
                       </>
                     )}
                     <div className="border-t border-slate-100 dark:border-white/5 my-1" />
-                    <SelectItem value="create_new" className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold focus:text-indigo-500">➕ Buat Komunitas baru</SelectItem>
+                    <SelectItem value="create_new" className="text-xs text-primary font-semibold focus:text-primary">➕ Buat Komunitas baru</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -229,9 +243,9 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium transition-all duration-300 ${
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-semibold transition-all duration-300 ${
                     isActive
-                      ? 'bg-indigo-600/10 text-indigo-600 border border-indigo-500/20 dark:bg-indigo-600/20 dark:text-indigo-300 dark:border-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.08)] dark:shadow-[0_0_15px_rgba(99,102,241,0.15)]'
+                      ? 'bg-slate-100 text-slate-900 border border-slate-200 dark:bg-white/10 dark:text-white dark:border-white/10 shadow-sm'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-white/5 border border-transparent'
                   }`}
                 >
@@ -265,10 +279,10 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
                 {activeCohortId !== 'global' && activeCohortRole === 'admin' && (
                   <Link
                     href="/cohort-admin"
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold border transition-all duration-300 ${
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-bold border transition-all duration-300 ${
                       pathname === '/cohort-admin'
-                        ? 'bg-indigo-650/15 text-indigo-600 border-indigo-500/25 dark:bg-indigo-600/20 dark:text-indigo-300 dark:border-indigo-500/25'
-                        : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 border-indigo-500/15'
+                        ? 'bg-slate-100 text-slate-900 border-slate-200 dark:bg-white/10 dark:text-white dark:border-white/10'
+                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-white/5 dark:hover:text-white border-transparent'
                     }`}
                   >
                     <Shield className="h-3 w-3" />
@@ -279,28 +293,28 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
                 {userId && (
                   <Link
                     href={`/profile/${userId}`}
-                    className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium transition-all duration-300 ${
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-semibold transition-all duration-300 ${
                       pathname.startsWith(`/profile/${userId}`)
-                        ? 'bg-indigo-600/10 text-indigo-600 border border-indigo-500/20 dark:bg-indigo-600/20 dark:text-indigo-300 dark:border-indigo-500/20'
+                        ? 'bg-slate-100 text-slate-900 border border-slate-200 dark:bg-white/10 dark:text-white dark:border-white/10 shadow-sm'
                         : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-white/5 border border-transparent'
                     }`}
                   >
                     <User className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">Profil</span>
+                    <span className="hidden lg:inline">Profil</span>
                   </Link>
                 )}
                 <Link
                   href="/settings"
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium transition-all duration-300 ${
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-semibold transition-all duration-300 ${
                     pathname.startsWith('/settings')
-                      ? 'bg-indigo-600/10 text-indigo-600 border border-indigo-500/20 dark:bg-indigo-600/20 dark:text-indigo-300 dark:border-indigo-500/20'
+                      ? 'bg-slate-100 text-slate-900 border border-slate-200 dark:bg-white/10 dark:text-white dark:border-white/10 shadow-sm'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-white/5 border border-transparent'
                   }`}
                 >
                   <Settings className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Pengaturan</span>
+                  <span className="hidden lg:inline">Pengaturan</span>
                 </Link>
-                <span className="hidden lg:inline text-xs text-slate-500 dark:text-slate-400 border-l border-slate-200 dark:border-white/10 pl-3">
+                <span className="hidden xl:inline text-xs text-slate-500 dark:text-slate-400 border-l border-slate-200 dark:border-white/10 pl-3">
                   {userEmail.split('@')[0]}
                 </span>
                 <Button
@@ -317,13 +331,13 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
               <div className="flex items-center gap-2">
                 <Link
                   href="/login"
-                  className="px-4 py-2 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-white/5 rounded-full transition-all"
+                  className="px-4 py-2 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-white/5 rounded-md transition-all"
                 >
                   Masuk
                 </Link>
                 <Link
                   href="/register"
-                  className="px-4 py-2 text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-full transition-all shadow-md dark:shadow-[0_0_15px_rgba(99,102,241,0.3)] hover:shadow-lg dark:hover:shadow-[0_0_20px_rgba(99,102,241,0.5)]"
+                  className="px-4 py-2 text-xs font-semibold bg-primary hover:bg-primary/95 text-white rounded-md transition-all shadow-sm"
                 >
                   Daftar
                 </Link>
@@ -349,7 +363,7 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
                 value={newCohortName}
                 onChange={(e) => setNewCohortName(e.target.value)}
                 placeholder="Contoh: Indo Tech Innovators"
-                className="h-9 bg-slate-50 border-slate-200 text-sm dark:bg-slate-900 dark:border-slate-800 text-slate-900 dark:text-white rounded-lg focus:border-indigo-500"
+                className="h-9 bg-slate-50 border-slate-200 text-sm dark:bg-slate-900 dark:border-slate-800 text-slate-900 dark:text-white rounded-md focus:border-primary"
                 required
               />
             </div>
@@ -359,19 +373,163 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
                 value={newCohortDesc}
                 onChange={(e) => setNewCohortDesc(e.target.value)}
                 placeholder="Jelaskan visi dan misi dari komunitas Anda..."
-                className="bg-slate-50 border-slate-200 text-sm dark:bg-slate-900 dark:border-slate-800 text-slate-900 dark:text-white rounded-lg resize-none focus:border-indigo-500"
+                className="bg-slate-50 border-slate-200 text-sm dark:bg-slate-900 dark:border-slate-800 text-slate-900 dark:text-white rounded-md resize-none focus:border-primary"
                 rows={3}
               />
             </div>
             <DialogFooter className="pt-2">
-              <Button type="button" variant="ghost" size="sm" onClick={() => setShowCreateModal(false)} className="rounded-full text-xs">Batal</Button>
-              <Button type="submit" size="sm" disabled={isCreatingCohort || !newCohortName.trim()} className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-full px-5">
+              <Button type="button" variant="ghost" size="sm" onClick={() => setShowCreateModal(false)} className="rounded-md text-xs">Batal</Button>
+              <Button type="submit" size="sm" disabled={isCreatingCohort || !newCohortName.trim()} className="bg-primary hover:bg-primary/95 text-white font-semibold text-xs rounded-md px-5 shadow-sm">
                 {isCreatingCohort ? 'Membuat...' : 'Buat Komunitas'}
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Mobile Drawer Backdrop */}
+      {isMobileOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-black/45 backdrop-blur-xs md:hidden"
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
+
+      {/* Mobile Drawer Content */}
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-850 shadow-2xl p-6 transition-all duration-300 md:hidden flex flex-col justify-between ${
+        isMobileOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}>
+        <div className="space-y-6">
+          {/* Header & Close Button */}
+          <div className="flex justify-between items-center">
+            <Link href="/" onClick={() => setIsMobileOpen(false)} className="flex items-center gap-1.5">
+              <Globe className="h-5 w-5 text-primary" />
+              <span className="font-bold text-sm tracking-tight text-slate-900 dark:text-white">
+                Talent Hub
+              </span>
+            </Link>
+            <button 
+              onClick={() => setIsMobileOpen(false)}
+              className="p-1 hover:bg-slate-100 dark:hover:bg-white/5 rounded text-slate-500 dark:text-slate-400"
+            >
+              <X className="h-4.5 w-4.5" />
+            </button>
+          </div>
+
+          {/* Portal Selector inside Drawer */}
+          {userId && (
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-extrabold text-slate-450 dark:text-slate-550 uppercase tracking-wider">Portal Aktif</label>
+              <Select value={activeCohortId} onValueChange={(val) => { handlePortalChange(val); setIsMobileOpen(false); }}>
+                <SelectTrigger className="h-9 w-full bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-white/5 text-xs font-semibold text-slate-700 dark:text-slate-200 rounded-md px-3">
+                  <SelectValue placeholder="Pilih Portal" />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-slate-950 border-slate-200 dark:border-white/10">
+                  <SelectItem value="global" className="text-xs">🌐 Portal Global</SelectItem>
+                  {cohorts.length > 0 && (
+                    <>
+                      <div className="text-[9px] font-extrabold text-slate-400 dark:text-slate-600 px-2 py-1 select-none border-t border-slate-100 dark:border-white/5 mt-1 tracking-wider">KOMUNITAS SAYA</div>
+                      {cohorts.map((c) => (
+                        <SelectItem key={c.id} value={String(c.id)} className="text-xs pl-4">👥 {c.name}</SelectItem>
+                      ))}
+                    </>
+                  )}
+                  <div className="border-t border-slate-100 dark:border-white/5 my-1" />
+                  <SelectItem value="create_new" className="text-xs text-primary font-semibold focus:text-primary">➕ Buat Komunitas baru</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Vertical Menu Navigation links */}
+          <div className="flex flex-col gap-1.5 pt-2">
+            <span className="text-[10px] font-extrabold text-slate-450 dark:text-slate-550 uppercase tracking-wider mb-1">Navigasi</span>
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setIsMobileOpen(false)}
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-semibold transition-all duration-300 ${
+                    isActive
+                      ? 'bg-slate-100 text-slate-900 border border-slate-200 dark:bg-white/10 dark:text-white dark:border-white/10'
+                      : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5 border border-transparent'
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Bottom Actions inside Drawer */}
+        <div className="border-t border-slate-100 dark:border-white/5 pt-4 space-y-3">
+          {userEmail ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 px-2">
+                <div className="h-6.5 w-6.5 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs uppercase">
+                  {userEmail[0]}
+                </div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate w-36">
+                  {userEmail}
+                </div>
+              </div>
+              
+              <div className="flex flex-col gap-1.5">
+                {userId && (
+                  <Link
+                    href={`/profile/${userId}`}
+                    onClick={() => setIsMobileOpen(false)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-md text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5"
+                  >
+                    <User className="h-4 w-4" />
+                    <span>Profil Saya</span>
+                  </Link>
+                )}
+                <Link
+                  href="/settings"
+                  onClick={() => setIsMobileOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-md text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5"
+                >
+                  <Settings className="h-4 w-4" />
+                  <span>Pengaturan</span>
+                </Link>
+
+                <Button
+                  onClick={() => { setIsMobileOpen(false); handleLogout(); }}
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start h-9 rounded-md text-xs font-semibold text-rose-600 hover:text-rose-500 hover:bg-rose-50 dark:text-rose-450 dark:hover:bg-rose-500/10 gap-2 px-3"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span>Keluar</span>
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <Link
+                href="/login"
+                onClick={() => setIsMobileOpen(false)}
+                className="w-full text-center px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-white/5 rounded-md"
+              >
+                Masuk
+              </Link>
+              <Link
+                href="/register"
+                onClick={() => setIsMobileOpen(false)}
+                className="w-full text-center px-4 py-2 text-xs font-semibold bg-primary hover:bg-primary/95 text-white rounded-md shadow-sm"
+              >
+                Daftar
+              </Link>
+            </div>
+          )}
+        </div>
+      </div>
     </>
   );
 }

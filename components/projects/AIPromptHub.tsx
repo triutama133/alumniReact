@@ -53,11 +53,11 @@ export function AIPromptHub({ userId, userFullName }: AIPromptHubProps) {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in zoom-in duration-300">
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-900 dark:to-indigo-950 p-8 rounded-2xl border border-blue-100 dark:border-indigo-900 shadow-sm text-center">
-        <h2 className="text-2xl font-bold mb-4 text-indigo-900 dark:text-indigo-100">
+      <div className="bg-white dark:bg-[#1b1f23] p-8 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm text-center">
+        <h2 className="text-2xl font-bold mb-4 text-slate-900 dark:text-white">
           Cari Peluang Kolaborasi dengan AI
         </h2>
-        <p className="text-indigo-700 dark:text-indigo-300 mb-6">
+        <p className="text-slate-600 dark:text-slate-400 mb-6">
           Gunakan Natural Language untuk menceritakan situasi dan keahlian Anda secara bebas. Semantic AI kami akan mencocokkan profil Anda dengan peluang yang ada.
         </p>
         

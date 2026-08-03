@@ -265,7 +265,7 @@ export default function SettingsPage() {
         </div>
       ) : null}
 
-      <div className="rounded-2xl border border-indigo-200/60 dark:border-indigo-500/20 bg-gradient-to-r from-indigo-50 to-cyan-50 dark:from-slate-900 dark:to-indigo-950/40 p-6 shadow-sm">
+      <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1b1f23] p-6 shadow-sm">
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Pengaturan Akun & Profil</h1>
         <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
           Kelola kredensial login Anda secara aman sekaligus perbarui identitas profesional yang tampil di Talent Hub.

@@ -33,7 +33,8 @@ export async function middleware(request: NextRequest) {
   }
   
   // Periksa apakah path adalah public (tidak perlu autentikasi)
-  const isPublicPath = publicPaths.some(path => currentPath === path || currentPath.startsWith(path + '/'));
+  const isProjectDetailPath = /^\/projects\/[0-9a-fA-F-]{36}$/.test(currentPath);
+  const isPublicPath = isProjectDetailPath || publicPaths.some(path => currentPath === path || currentPath.startsWith(path + '/'));
 
   // Ambil token dari HTTP-only cookie yang Anda set di /api/login
   const authToken = request.cookies.get('auth_token')?.value;

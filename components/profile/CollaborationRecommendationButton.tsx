@@ -58,10 +58,10 @@ export default function CollaborationRecommendationButton({
   };
 
   return (
-    <Card className="premium-light-card liquid-glass-border shadow-md border-emerald-500/20">
-      <CardHeader className="pb-3 border-b border-slate-100 dark:border-white/5 bg-gradient-to-r from-emerald-50/50 to-teal-50/50 dark:from-emerald-950/20 dark:to-teal-950/20">
+    <Card className="premium-light-card liquid-glass-border shadow-sm border-slate-200 dark:border-slate-800">
+      <CardHeader className="pb-3 border-b border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-slate-900">
         <CardTitle className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-          <Sparkles className="h-4.5 w-4.5 text-emerald-600 dark:text-emerald-400" />
+          <Sparkles className="h-4.5 w-4.5 text-primary" />
           Rekomendasi Kolaborasi AI
         </CardTitle>
         <CardDescription className="text-[10px] text-slate-500 dark:text-slate-400">

@@ -61,10 +61,10 @@ export default function CareerRecommendationButton({
   };
 
   return (
-    <Card className="premium-light-card liquid-glass-border shadow-md border-indigo-550/20">
-      <CardHeader className="pb-3 border-b border-slate-100 dark:border-white/5 bg-gradient-to-r from-indigo-50/50 to-purple-50/50 dark:from-indigo-950/20 dark:to-purple-950/20">
+    <Card className="premium-light-card liquid-glass-border shadow-sm border-slate-200 dark:border-slate-800">
+      <CardHeader className="pb-3 border-b border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-slate-900">
         <CardTitle className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-          <TrendingUp className="h-4.5 w-4.5 text-indigo-600 dark:text-indigo-400" />
+          <TrendingUp className="h-4.5 w-4.5 text-primary" />
           Rekomendasi Pengembangan Karir AI
         </CardTitle>
         <CardDescription className="text-[10px] text-slate-500 dark:text-slate-400">

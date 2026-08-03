@@ -138,6 +138,26 @@ export async function GET(req: NextRequest) {
       .slice(0, 8)
       .map(s => ({ name: s.display, count: s.count }));
 
+    // 4.5 Calculate Top 5 Majors / Fakultas
+    const majorsMap: Record<string, { display: string; count: number }> = {};
+    alumni.forEach(a => {
+      if (a.fakultas_jurusan) {
+        const clean = a.fakultas_jurusan.trim();
+        if (clean.length > 1) {
+          const key = clean.toLowerCase();
+          if (majorsMap[key]) {
+            majorsMap[key].count += 1;
+          } else {
+            majorsMap[key] = { display: clean, count: 1 };
+          }
+        }
+      }
+    });
+    const topMajors = Object.values(majorsMap)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5)
+      .map(m => ({ name: m.display, count: m.count }));
+
     // 5. Generate Smart Network Synergy Insight
     let insight = '';
     const total = alumni.length;
@@ -147,14 +167,14 @@ export async function GET(req: NextRequest) {
       const iPersen = Math.round((irtCount / total) * 100);
       
       if (pekerjaCount > bisnisCount && pekerjaCount > irtCount) {
-        insight = `Jejaring Anda didominasi oleh kalangan **Profesional/Pekerja** (${pPersen}%). Keahlian teknis dan manajerial sangat melimpah, siap mendukung digitalisasi bagi ${bisnisCount} pelaku bisnis di dalam kelompok.`;
+        insight = `Komunitas didominasi oleh kalangan **Profesional/Pekerja** (${pPersen}%). Keahlian teknis dan manajerial sangat melimpah, siap mendukung digitalisasi bagi ${bisnisCount} pelaku bisnis di dalam kelompok.`;
       } else if (bisnisCount > pekerjaCount && bisnisCount > irtCount) {
-        insight = `Jejaring Anda didominasi oleh **Wirausahawan/Pebisnis** (${bPersen}%). Ini adalah ekosistem kolaborasi komersial yang dinamis, dengan peluang kemitraan bisnis dan penyediaan lapangan kerja baru yang tinggi.`;
+        insight = `Komunitas didominasi oleh **Wirausahawan/Pebisnis** (${bPersen}%). Ini adalah ekosistem kolaborasi komersial yang dinamis, dengan peluang kemitraan bisnis dan penyediaan lapangan kerja baru yang tinggi.`;
       } else {
-        insight = `Jejaring Anda memiliki komposisi yang **beragam dan seimbang** antara Profesional (${pPersen}%), Pebisnis (${bPersen}%), dan Ibu Rumah Tangga (${iPersen}%). Sinergi antar-sektor sangat terbuka lebar.`;
+        insight = `Komunitas memiliki komposisi yang **beragam dan seimbang** antara Profesional (${pPersen}%), Pebisnis (${bPersen}%), dan Ibu Rumah Tangga (${iPersen}%). Sinergi antar-sektor sangat terbuka lebar.`;
       }
     } else {
-      insight = 'Belum ada data jejaring terdaftar.';
+      insight = 'Belum ada data anggota terdaftar.';
     }
 
     return NextResponse.json({
@@ -168,6 +188,7 @@ export async function GET(req: NextRequest) {
       angkatanDistribution,
       kotaDistribution,
       topSkills,
+      topMajors,
       insight,
     }, { status: 200 });
 

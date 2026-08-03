@@ -42,6 +42,7 @@ interface AnalyticsData {
   angkatanDistribution: { year: number; count: number }[];
   kotaDistribution: { name: string; count: number }[];
   topSkills: { name: string; count: number }[];
+  topMajors: { name: string; count: number }[];
   insight: string;
 }
 
@@ -53,15 +54,17 @@ export default function DashboardClient({ userCohorts }: DashboardClientProps) {
   const [hoveredSegment, setHoveredSegment] = useState<string | null>(null);
 
   const fetchAnalytics = async (cohortId: number | null) => {
+    if (!cohortId) {
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     setError(null);
     try {
-      const url = cohortId 
-        ? `/api/analytics?cohortId=${cohortId}`
-        : '/api/analytics';
+      const url = `/api/analytics?cohortId=${cohortId}`;
       const res = await fetch(url);
       if (!res.ok) {
-        throw new Error('Gagal mengambil data statistik alumni.');
+        throw new Error('Gagal mengambil data statistik komunitas.');
       }
       const analyticsData = await res.json();
       setData(analyticsData);
@@ -93,7 +96,12 @@ export default function DashboardClient({ userCohorts }: DashboardClientProps) {
   }, [userCohorts]);
 
   useEffect(() => {
-    fetchAnalytics(selectedCohort?.id || null);
+    if (selectedCohort) {
+      fetchAnalytics(selectedCohort.id);
+    } else {
+      setData(null);
+      setIsLoading(false);
+    }
   }, [selectedCohort]);
 
   const handleCohortChange = (cohort: Cohort | null) => {
@@ -127,7 +135,7 @@ export default function DashboardClient({ userCohorts }: DashboardClientProps) {
     if (hoveredSegment === 'bisnis') return `${bPct.toFixed(1)}% Pebisnis`;
     if (hoveredSegment === 'irt') return `${iPct.toFixed(1)}% IRT`;
     if (hoveredSegment === 'campuran') return `${cPct.toFixed(1)}% Campuran`;
-    return `${data?.totalAlumni || 0} Alumni`;
+    return `${data?.totalAlumni || 0} Anggota`;
   };
 
   // SVG Area/Line Chart Calculations for Angkatan
@@ -182,33 +190,33 @@ export default function DashboardClient({ userCohorts }: DashboardClientProps) {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-            Analisis Jejaring & Sinergi Alumni
+            Analisis Jejaring & Sinergi Komunitas
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Visualisasi data karir, keahlian, demografi, dan potensi kolaborasi antar-alumni.
+            Visualisasi data karir, keahlian, demografi, dan potensi kolaborasi antar-anggota.
           </p>
         </div>
 
         {/* Cohort Selector */}
-        <div className="flex items-center gap-2 self-start md:self-auto bg-slate-100 dark:bg-slate-900/60 p-1 rounded-full border border-slate-200 dark:border-white/5 shadow-md">
+        <div className="flex items-center gap-2 self-start md:self-auto bg-slate-100 dark:bg-slate-900/60 p-1 rounded-md border border-slate-200 dark:border-white/5 shadow-sm">
           <button
             onClick={() => handleCohortChange(null)}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-bold transition-all ${
               selectedCohort === null
-                ? 'bg-indigo-600 text-white shadow-md'
+                ? 'bg-slate-900 text-white border border-slate-950 dark:bg-white dark:text-slate-950 shadow-sm'
                 : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
             }`}
           >
             <Globe className="h-3.5 w-3.5" />
-            <span>Bumi Publik</span>
+            <span>Portal Global</span>
           </button>
           {userCohorts.map(c => (
             <button
               key={c.id}
               onClick={() => handleCohortChange(c)}
-              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-bold transition-all ${
                 selectedCohort?.id === c.id
-                  ? 'bg-indigo-600 text-white shadow-md'
+                  ? 'bg-slate-900 text-white border border-slate-950 dark:bg-white dark:text-slate-950 shadow-sm'
                   : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
               }`}
             >
@@ -219,16 +227,24 @@ export default function DashboardClient({ userCohorts }: DashboardClientProps) {
         </div>
       </div>
 
-      {isLoading ? (
+      {selectedCohort === null ? (
+        <Card className="premium-light-card liquid-glass-border p-8 text-center max-w-xl mx-auto shadow-sm bg-white dark:bg-[#1b1f23] border border-slate-200 dark:border-slate-800">
+          <Globe className="h-12 w-12 mx-auto text-primary mb-4" />
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Pilih Komunitas untuk Melihat Insight</h3>
+          <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-md mx-auto">
+            Analisis Jejaring & Sinergi Insight hanya tersedia untuk ruang lingkup Komunitas/Himpunan eksklusif. Silakan pilih Komunitas Anda pada tombol pemilih di sebelah kanan atas, atau buat komunitas baru di menu header.
+          </p>
+        </Card>
+      ) : isLoading ? (
         <div className="min-h-[400px] flex flex-col items-center justify-center text-slate-400">
-          <RefreshCw className="h-8 w-8 animate-spin text-indigo-500 mb-3" />
+          <RefreshCw className="h-8 w-8 animate-spin text-primary mb-3" />
           <p className="text-xs">Memuat visualisasi dashboard...</p>
         </div>
       ) : error || !data ? (
         <Card className="liquid-glass liquid-glass-border p-8 text-center text-rose-400 max-w-md mx-auto">
           <p className="font-semibold">Gagal Memuat Dashboard</p>
           <p className="text-xs mt-1 text-rose-500">{error || 'Gagal memproses data statistik.'}</p>
-          <Button onClick={() => fetchAnalytics(selectedCohort?.id || null)} size="sm" className="mt-4 bg-indigo-600 hover:bg-indigo-500 text-white">
+          <Button onClick={() => fetchAnalytics(selectedCohort?.id || null)} size="sm" className="mt-4 bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900">
             Coba Lagi
           </Button>
         </Card>
@@ -239,10 +255,10 @@ export default function DashboardClient({ userCohorts }: DashboardClientProps) {
             <Card className="premium-light-card liquid-glass-border">
               <CardContent className="pt-6 flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">Total Alumni</p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">Total Anggota</p>
                   <h3 className="text-2xl font-black text-slate-900 dark:text-white mt-1">{data.totalAlumni}</h3>
                 </div>
-                <div className="h-10 w-10 bg-indigo-50 dark:bg-indigo-500/10 rounded-full flex items-center justify-center text-indigo-650 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20">
+                <div className="h-10 w-10 bg-slate-50 dark:bg-slate-900 rounded-full flex items-center justify-center text-primary dark:text-primary border border-slate-200 dark:border-slate-800">
                   <Users className="h-5 w-5" />
                 </div>
               </CardContent>
@@ -391,10 +407,10 @@ export default function DashboardClient({ userCohorts }: DashboardClientProps) {
             <Card className="premium-light-card liquid-glass-border lg:col-span-8">
               <CardHeader className="pb-2">
                 <CardTitle className="text-slate-900 dark:text-white text-sm font-bold flex items-center gap-1.5">
-                  <Award className="h-4 w-4 text-indigo-650 dark:text-indigo-400" />
+                  <Award className="h-4 w-4 text-primary" />
                   Keahlian Terpopuler
                 </CardTitle>
-                <CardDescription className="text-[10px] text-slate-500 dark:text-slate-400">Frekuensi kemunculan kata kunci skill di profil alumni</CardDescription>
+                <CardDescription className="text-[10px] text-slate-500 dark:text-slate-400">Frekuensi kemunculan kata kunci skill di profil anggota</CardDescription>
               </CardHeader>
               <CardContent className="pt-4 space-y-3.5">
                 {data.topSkills.length > 0 ? (
@@ -405,11 +421,11 @@ export default function DashboardClient({ userCohorts }: DashboardClientProps) {
                       <div key={index} className="space-y-1.5">
                         <div className="flex justify-between items-center text-[10px] font-medium">
                           <span className="text-slate-800 dark:text-slate-200 font-bold">{skill.name}</span>
-                          <span className="text-slate-500 dark:text-slate-400">{skill.count} Alumni</span>
+                          <span className="text-slate-500 dark:text-slate-400">{skill.count} Anggota</span>
                         </div>
                         <div className="w-full bg-slate-100 dark:bg-slate-950/40 rounded-full h-2 overflow-hidden border border-slate-250 dark:border-white/5">
                           <div 
-                            className="bg-gradient-to-r from-indigo-500 to-purple-500 h-full rounded-full transition-all duration-700" 
+                            className="bg-primary h-full rounded-full transition-all duration-700" 
                             style={{ width: `${percent}%` }}
                           />
                         </div>
@@ -423,72 +439,39 @@ export default function DashboardClient({ userCohorts }: DashboardClientProps) {
             </Card>
           </div>
 
-          {/* LOWER SECTION: LINE CHART & DENSITY */}
+          {/* LOWER SECTION: MAJORS & DENSITY */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* SVG Area Chart for Angkatan */}
+            {/* Bidang Studi & Jurusan Terbanyak Widget */}
             <Card className="premium-light-card liquid-glass-border lg:col-span-8">
               <CardHeader className="pb-2">
                 <CardTitle className="text-slate-900 dark:text-white text-sm font-bold flex items-center gap-1.5">
-                  <TrendingUp className="h-4 w-4 text-indigo-650 dark:text-indigo-400" />
-                  Sebaran Angkatan Alumni
+                  <TrendingUp className="h-4 w-4 text-primary" />
+                  Rumpun Keilmuan & Jurusan Terbanyak
                 </CardTitle>
-                <CardDescription className="text-[10px] text-slate-500 dark:text-slate-400">Tren pertumbuhan data alumni berdasarkan tahun kelulusan</CardDescription>
+                <CardDescription className="text-[10px] text-slate-500 dark:text-slate-400">Distribusi bidang studi dan fakultas asal anggota di dalam kelompok</CardDescription>
               </CardHeader>
-              <CardContent className="pt-4">
-                {chartPoints.length > 0 ? (
-                  <div className="w-full relative">
-                    <svg viewBox="0 0 500 150" className="w-full h-auto overflow-visible">
-                      <defs>
-                        <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#6366f1" stopOpacity="0.3"/>
-                          <stop offset="100%" stopColor="#6366f1" stopOpacity="0.0"/>
-                        </linearGradient>
-                      </defs>
-
-                      {/* Grid Lines */}
-                      <line x1="30" y1="20" x2="470" y2="20" stroke="currentColor" className="text-slate-200/50 dark:text-white/5" strokeDasharray="3 3" />
-                      <line x1="30" y1="75" x2="470" y2="75" stroke="currentColor" className="text-slate-200/50 dark:text-white/5" strokeDasharray="3 3" />
-                      <line x1="30" y1="130" x2="470" y2="130" stroke="currentColor" className="text-slate-200 dark:text-white/10" />
-
-                      {/* Area Fill */}
-                      <path d={areaPath} fill="url(#chartGradient)" className="transition-all duration-500" />
-
-                      {/* Stroke Line */}
-                      <path d={linePath} fill="none" stroke="#6366f1" strokeWidth="2.5" className="transition-all duration-500" />
-
-                      {/* Interactive Circles & Tooltips */}
-                      {chartPoints.map((p, i) => (
-                        <g key={i} className="group cursor-pointer">
-                          <circle 
-                            cx={p.x} 
-                            cy={p.y} 
-                            r="4" 
-                            fill="#ffffff" 
-                            stroke="#6366f1" 
-                            strokeWidth="2" 
-                            className="transition-all duration-300 group-hover:r-6 group-hover:fill-indigo-400"
+              <CardContent className="pt-4 space-y-3.5">
+                {data.topMajors && data.topMajors.length > 0 ? (
+                  data.topMajors.map((major, index) => {
+                    const maxMajor = Math.max(...data.topMajors.map(m => m.count), 1);
+                    const percent = (major.count / maxMajor) * 100;
+                    return (
+                      <div key={index} className="space-y-1.5">
+                        <div className="flex justify-between items-center text-[10px] font-bold">
+                          <span className="text-slate-800 dark:text-slate-200">{major.name}</span>
+                          <span className="text-slate-500 dark:text-slate-400">{major.count} Anggota</span>
+                        </div>
+                        <div className="w-full bg-slate-100 dark:bg-slate-950/40 rounded-full h-2 overflow-hidden border border-slate-250 dark:border-white/5">
+                          <div 
+                            className="bg-primary h-full rounded-full transition-all duration-700" 
+                            style={{ width: `${percent}%` }}
                           />
-                          <text 
-                            x={p.x} 
-                            y={p.y - 10} 
-                            textAnchor="middle" 
-                            className="text-[8px] font-extrabold fill-slate-700 dark:fill-slate-300 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                          >
-                            {p.count}
-                          </text>
-                        </g>
-                      ))}
-                    </svg>
-
-                    {/* X-axis labels */}
-                    <div className="flex justify-between items-center text-[8px] text-slate-550 dark:text-slate-500 font-semibold mt-2 px-6">
-                      <span>{Math.min(...data.angkatanDistribution.map(d => d.year))}</span>
-                      <span>Tahun Angkatan Kelulusan</span>
-                      <span>{Math.max(...data.angkatanDistribution.map(d => d.year))}</span>
-                    </div>
-                  </div>
+                        </div>
+                      </div>
+                    );
+                  })
                 ) : (
-                  <p className="text-xs text-slate-500 py-12 text-center">Tidak ada data angkatan.</p>
+                  <p className="text-xs text-slate-500 py-12 text-center">Tidak ada data bidang studi.</p>
                 )}
               </CardContent>
             </Card>
@@ -497,10 +480,10 @@ export default function DashboardClient({ userCohorts }: DashboardClientProps) {
             <Card className="premium-light-card liquid-glass-border lg:col-span-4">
               <CardHeader className="pb-2">
                 <CardTitle className="text-slate-900 dark:text-white text-sm font-bold flex items-center gap-1.5">
-                  <MapPin className="h-4 w-4 text-indigo-650 dark:text-indigo-400" />
+                  <MapPin className="h-4 w-4 text-primary" />
                   Kota Domisili Teratas
                 </CardTitle>
-                <CardDescription className="text-[10px] text-slate-500 dark:text-slate-400">Peta sebaran geografi wilayah alumni</CardDescription>
+                <CardDescription className="text-[10px] text-slate-500 dark:text-slate-400">Peta sebaran geografi wilayah anggota</CardDescription>
               </CardHeader>
               <CardContent className="pt-4 space-y-3.5">
                 {data.kotaDistribution.length > 0 ? (
@@ -511,11 +494,11 @@ export default function DashboardClient({ userCohorts }: DashboardClientProps) {
                       <div key={index} className="space-y-1">
                         <div className="flex justify-between items-center text-[10px]">
                           <span className="font-semibold text-slate-800 dark:text-slate-200">{city.name}</span>
-                          <span className="text-slate-550 dark:text-slate-400">{city.count}</span>
+                          <span className="text-slate-550 dark:text-slate-400">{city.count} Anggota</span>
                         </div>
                         <div className="w-full bg-slate-100 dark:bg-slate-900/60 rounded-full h-1.5 overflow-hidden">
                           <div 
-                            className="bg-indigo-500/80 h-full rounded-full transition-all duration-700" 
+                            className="bg-primary h-full rounded-full transition-all duration-700" 
                             style={{ width: `${percent}%` }}
                           />
                         </div>
@@ -530,22 +513,22 @@ export default function DashboardClient({ userCohorts }: DashboardClientProps) {
           </div>
 
           {/* DYNAMIC NETWORK INSIGHT ANALYSIS */}
-          <Card className="premium-light-card liquid-glass-border border-indigo-500/10 p-5 shadow-[0_0_30px_rgba(99,102,241,0.02)]">
+          <Card className="premium-light-card liquid-glass-border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
             <div className="flex items-start gap-3">
-              <div className="h-10 w-10 bg-indigo-50 dark:bg-indigo-500/10 rounded-xl flex items-center justify-center text-indigo-600 dark:text-indigo-400 flex-shrink-0 border border-indigo-200 dark:border-indigo-500/20">
-                <Lightbulb className="h-5 w-5 animate-pulse" />
+              <div className="h-10 w-10 bg-slate-50 dark:bg-slate-900 rounded-xl flex items-center justify-center text-primary flex-shrink-0 border border-slate-200 dark:border-slate-800">
+                <Lightbulb className="h-5 w-5" />
               </div>
               <div className="space-y-1.5 text-sm">
                 <h4 className="font-extrabold text-slate-900 dark:text-white flex items-center gap-1">
                   💡 Analisis Sinergi Jejaring Cerdas
-                  <Badge className="bg-indigo-600/10 dark:bg-indigo-600/20 text-indigo-600 dark:text-indigo-300 text-[8px] font-bold border border-indigo-500/20 uppercase tracking-widest px-2 py-0.5">
+                  <Badge className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-350 text-[8px] font-bold border border-slate-200 dark:border-slate-700 uppercase tracking-widest px-2 py-0.5">
                     AI Insight
                   </Badge>
                 </h4>
                 <p 
                   className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-medium"
                   dangerouslySetInnerHTML={{ 
-                     __html: data.insight.replace(/\*\*(.*?)\*\*/g, '<strong class="text-indigo-650 dark:text-indigo-400 font-bold">$1</strong>') 
+                     __html: data.insight.replace(/\*\*(.*?)\*\*/g, '<strong class="text-primary font-bold">$1</strong>') 
                   }}
                 />
               </div>

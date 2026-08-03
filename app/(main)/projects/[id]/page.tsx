@@ -14,11 +14,7 @@ export default async function ProjectDetailPage({
   const headersList = await headers();
 
   const userIdString = headersList.get('x-user-id');
-  if (!userIdString) {
-    redirect('/landing');
-  }
-
-  const userId = Number(userIdString);
+  const userId = userIdString ? Number(userIdString) : null;
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -35,7 +31,7 @@ export default async function ProjectDetailPage({
   // Fetch project details
   const { data: project, error } = await supabase
     .from('projects')
-    .select('id, created_at, title, description, required_skills, status, owner_id, owner:alumni_db (id, nama_lengkap)')
+    .select('id, created_at, title, description, required_skills, status, owner_id, plan, milestones, is_public, owner:alumni_db (id, nama_lengkap)')
     .eq('id', id)
     .single();
 
@@ -44,13 +40,33 @@ export default async function ProjectDetailPage({
     redirect('/projects');
   }
 
-  // Check if current user has already applied
-  const { data: application } = await supabase
-    .from('project_applications')
-    .select('id, status, role')
+  // Check if project is private and user is not logged in
+  if (!project.is_public && !userId) {
+    redirect('/landing');
+  }
+
+  // Fetch project updates (daily logs)
+  const { data: updates, error: updatesErr } = await supabase
+    .from('project_updates')
+    .select('id, created_at, title, content, author_id, author:alumni_db (id, nama_lengkap)')
     .eq('project_id', id)
-    .eq('user_id', userId)
-    .maybeSingle();
+    .order('created_at', { ascending: false });
+
+  if (updatesErr) {
+    console.error('Error fetching project updates:', updatesErr.message);
+  }
+
+  // Check if current user has already applied (only if logged in)
+  let application = null;
+  if (userId) {
+    const { data: appData } = await supabase
+      .from('project_applications')
+      .select('id, status, role')
+      .eq('project_id', id)
+      .eq('user_id', userId)
+      .maybeSingle();
+    application = appData;
+  }
 
   // Serialize BigInt or other non-serializable fields if any
   const serializedProject = {
@@ -59,10 +75,19 @@ export default async function ProjectDetailPage({
     owner: (project.owner || []).map((o: any) => ({
       ...o,
       id: Number(o.id)
+    })),
+    updates: (updates || []).map((u: any) => ({
+      ...u,
+      id: Number(u.id),
+      author_id: Number(u.author_id),
+      author: u.author ? {
+        ...u.author,
+        id: Number(u.author.id)
+      } : null
     }))
   };
 
-  const isOwner = userId === Number(project.owner_id);
+  const isOwner = userId !== null && userId === Number(project.owner_id);
 
   return (
     <div className="py-8 bg-slate-950/20 min-h-screen">

@@ -427,31 +427,31 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
       <div className="lg:col-span-3 space-y-6">
         {/* Profile completeness card */}
         <Card className="premium-light-card liquid-glass-border overflow-hidden">
-          <div className="h-16 bg-gradient-to-r from-indigo-950 to-indigo-900" />
+          <div className="h-16 bg-slate-350 dark:bg-slate-800" />
           <div className="flex flex-col items-center -mt-8 px-4 pb-6 text-center">
-            <Avatar className="h-16 w-16 border-2 border-indigo-500 shadow-lg">
-              <AvatarFallback className="bg-indigo-600 text-white font-bold text-lg">
+            <Avatar className="h-16 w-16 border-2 border-white dark:border-slate-800 shadow-md">
+              <AvatarFallback className="bg-primary text-primary-foreground font-bold text-lg">
                 {getInitials(userProfile.nama_lengkap)}
               </AvatarFallback>
             </Avatar>
             <h3 className="font-bold text-slate-900 dark:text-white mt-3 text-base">{userProfile.nama_lengkap}</h3>
             {userProfile.fakultas_jurusan && (
-              <p className="text-xs text-indigo-600 dark:text-indigo-300 mt-1">{userProfile.fakultas_jurusan}</p>
+              <p className="text-xs text-slate-800 dark:text-slate-200 mt-1">{userProfile.fakultas_jurusan}</p>
             )}
             
             <div className="w-full border-t border-slate-200 dark:border-white/5 my-4 pt-4 text-left space-y-2">
               <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-500 dark:text-slate-400">Kelengkapan Profil</span>
-                <span className="font-bold text-indigo-600 dark:text-indigo-400">{completeness}%</span>
+                <span className="font-bold text-primary">{completeness}%</span>
               </div>
               <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-950/40 rounded-full overflow-hidden border border-slate-200 dark:border-white/5">
                 <div 
-                  className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500" 
+                  className="h-full bg-primary rounded-full transition-all duration-500" 
                   style={{ width: `${completeness}%` }}
                 />
               </div>
               {completeness < 100 ? (
-                <Link href={`/profile/edit/${userProfile.id}`} className="text-[11px] text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium inline-block underline">
+                <Link href={`/profile/edit/${userProfile.id}`} className="text-[11px] text-primary hover:text-primary/90 font-bold inline-block underline">
                   Lengkapi profil Anda &rarr;
                 </Link>
               ) : (
@@ -461,20 +461,20 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
               )}
             </div>
             
-            <Button asChild size="sm" className="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs">
+            <Button asChild size="sm" className="w-full bg-slate-900 hover:bg-slate-800 text-white shadow-sm font-bold text-xs rounded-md dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900">
               <Link href={`/profile/${userProfile.id}`}>Lihat Profil Saya</Link>
             </Button>
           </div>
         </Card>
 
         {/* Network Analytics Teaser Widget */}
-        <Card className="premium-light-card liquid-glass-border p-4 space-y-3 shadow-[0_0_15px_rgba(99,102,241,0.03)]">
+        <Card className="premium-light-card liquid-glass-border p-4 space-y-3 shadow-sm">
           <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-white/5 pb-2">
             <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-              <Sparkles className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400 animate-pulse" />
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
               Sinergi Jejaring
             </span>
-            <Badge className="bg-indigo-600/10 text-indigo-600 dark:text-indigo-400 text-[8px] font-bold">
+            <Badge className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-350 text-[8px] font-bold">
               Real-time
             </Badge>
           </div>
@@ -499,7 +499,7 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
             variant="ghost" 
             size="sm" 
             onClick={() => playClickSound()}
-            className="w-full text-center text-[10px] h-8 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 font-bold border border-indigo-500/10 dark:border-indigo-500/10 transition-all rounded-lg"
+            className="w-full text-center text-[10px] h-8 bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 shadow-sm font-bold rounded-md dark:bg-slate-900 dark:hover:bg-slate-850 dark:text-white dark:border-slate-800 transition-all"
           >
             <Link href="/dashboard" className="flex items-center justify-center gap-1">
               Buka Dashboard Lengkap &rarr;
@@ -517,7 +517,7 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
             <Button 
               size="sm" 
               onClick={() => setShowCreateModal(true)}
-              className="h-6 w-6 p-0 rounded-full bg-indigo-600/10 dark:bg-indigo-600/20 hover:bg-indigo-600/25 dark:hover:bg-indigo-600/40 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400"
+              className="h-6 w-6 p-0 rounded-full bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350"
             >
               <Plus className="h-3.5 w-3.5" />
             </Button>
@@ -526,9 +526,9 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
             {/* Public Option */}
             <button
               onClick={() => setActiveCohort(null)}
-              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all text-left ${
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs font-semibold transition-all text-left ${
                 activeCohort === null 
-                  ? 'bg-indigo-600/10 text-indigo-600 border border-indigo-500/20 shadow-md font-bold' 
+                  ? 'bg-slate-100 text-slate-900 border border-slate-200 dark:bg-white/10 dark:text-white dark:border-white/10 shadow-sm font-bold' 
                   : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 border border-transparent'
               }`}
             >
@@ -541,9 +541,9 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
               <button
                 key={cohort.id}
                 onClick={() => setActiveCohort(cohort)}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all text-left ${
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-xs font-semibold transition-all text-left ${
                   activeCohort?.id === cohort.id 
-                    ? 'bg-indigo-600/10 text-indigo-600 border border-indigo-500/20 shadow-md font-bold' 
+                    ? 'bg-slate-100 text-slate-900 border border-slate-200 dark:bg-white/10 dark:text-white dark:border-white/10 shadow-sm font-bold' 
                     : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 border border-transparent'
                 }`}
               >
@@ -765,37 +765,6 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
 
       {/* COLUMN RIGHT: AI Collaboration Assistant Widget & Members Panel */}
       <div className="lg:col-span-3 space-y-6">
-        {/* AI Recommendation Widget */}
-        <Card className="premium-light-card liquid-glass-border border-indigo-500/20 shadow-[0_0_20px_rgba(99,102,241,0.08)]">
-          <CardHeader className="flex flex-row items-center gap-2 pb-3 border-b border-slate-200/80 dark:border-white/5">
-            <Sparkles className="h-4 w-4 text-indigo-600 dark:text-indigo-400 animate-pulse" />
-            <div>
-              <CardTitle className="text-sm font-bold text-slate-900 dark:text-white">Wawasan Partner AI</CardTitle>
-              <CardDescription className="text-[10px] text-slate-500 dark:text-slate-400">
-                {activeCohort ? `Partner dalam kelompok` : `Asisten semantik kolaborasi`}
-              </CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-4 text-xs">
-            {isLoadingAI ? (
-              <JarvisScanHUD />
-            ) : aiError ? (
-              <div className="flex items-start gap-2 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 p-3 rounded-lg text-rose-700 dark:text-rose-300">
-                <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                <div className="space-y-1">
-                  <p className="font-semibold">AI Offline</p>
-                  <p className="text-[10px] text-rose-600 dark:text-rose-400/90 leading-normal">{aiError}</p>
-                </div>
-              </div>
-            ) : aiRecommendation ? (
-              <div className="max-h-[300px] overflow-y-auto pr-1">
-                <TypewriterReveal text={aiRecommendation} speed={30} />
-              </div>
-            ) : (
-              <p className="text-slate-500 dark:text-slate-400">Tidak ada rekomendasi partner yang bisa dihasilkan saat ini.</p>
-            )}
-          </CardContent>
-        </Card>
 
         {/* Cohort Members List Card (If active) */}
         {activeCohort && (
