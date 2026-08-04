@@ -9,14 +9,14 @@ export default function LandingPage() {
 
       <video
         src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260328_115001_bcdaa3b4-03de-47e7-ad63-ae3e392c32d4.mp4"
-        className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-85"
+        className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-25"
         muted
         playsInline
         autoPlay
         loop
       />
 
-      <div className="pointer-events-none absolute inset-0 z-[5] bg-gradient-to-b from-black/85 via-black/60 to-black/90" aria-hidden="true" />
+      <div className="pointer-events-none absolute inset-0 z-[5] bg-gradient-to-b from-black/95 via-black/75 to-black/95" aria-hidden="true" />
 
       {/* Top Navbar */}
       <nav className="relative z-20 w-full px-6 py-6">
