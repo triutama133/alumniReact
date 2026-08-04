@@ -9,7 +9,7 @@ export default function LandingPage() {
 
       <video
         src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260328_115001_bcdaa3b4-03de-47e7-ad63-ae3e392c32d4.mp4"
-        style={{ opacity: 0.15, position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+        style={{ opacity: 1, position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
         className="pointer-events-none"
         muted
         playsInline
@@ -19,7 +19,7 @@ export default function LandingPage() {
 
       <div 
         style={{ 
-          background: 'linear-gradient(to bottom, rgba(0, 0, 0, 0.93) 0%, rgba(0, 0, 0, 0.78) 50%, rgba(0, 0, 0, 0.95) 100%)',
+          background: 'linear-gradient(to bottom, rgba(0, 0, 0, 0.72) 0%, rgba(0, 0, 0, 0.42) 50%, rgba(0, 0, 0, 0.78) 100%)',
           position: 'absolute',
           inset: 0,
           zIndex: 5
@@ -59,14 +59,14 @@ export default function LandingPage() {
             Ubah ide jadi proyek nyata dan raih karir impianmu. <strong>HubTalent</strong> menghubungkanmu dengan partner kolaborasi, mempersiapkan wawancara kerja bersama AI, dan membuka akses ke ribuan lowongan terpilih—semua di satu tempat.
           </p>
           <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link 
-              href="/register" 
+            <Link
+              href="/register"
               className="w-full sm:w-auto inline-flex items-center justify-center rounded-full bg-white text-black px-8 py-3 text-sm font-semibold no-underline hover:bg-white/90 transition-colors shadow-lg hover:shadow-white/10"
             >
               Mulai Kolaborasi — Gratis
             </Link>
-            <Link 
-              href="/jobs" 
+            <Link
+              href="/jobs"
               className="w-full sm:w-auto inline-flex items-center justify-center rounded-full border border-white/20 bg-white/5 text-white px-8 py-3 text-sm font-semibold no-underline hover:bg-white/15 transition-colors"
             >
               Eksplorasi Lowongan
