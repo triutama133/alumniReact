@@ -5,7 +5,7 @@ import { Globe, Sparkles, Code, Brain, Briefcase, ChevronRight, Check } from "lu
 
 export default function LandingPage() {
   return (
-    <div className="relative min-h-screen bg-[#07080a] font-sans text-slate-100 overflow-x-hidden scroll-smooth selection:bg-indigo-500/30 selection:text-white">
+    <div className="relative min-h-screen bg-[#07080a] font-sans text-slate-100 overflow-x-hidden scroll-smooth selection:bg-blue-500/30 selection:text-white">
 
       {/* --- HERO AREA (Header + Hero Content) --- */}
       <div className="relative w-full min-h-screen flex flex-col justify-between z-10">
@@ -14,21 +14,21 @@ export default function LandingPage() {
         <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
           <video
             src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260328_115001_bcdaa3b4-03de-47e7-ad63-ae3e392c32d4.mp4"
-            className="w-full h-full object-cover opacity-45 scale-105"
+            className="w-full h-full object-cover opacity-40 scale-105"
             muted
             playsInline
             autoPlay
             loop
           />
           {/* Subtle gradient overlays to blend the video into the black background */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-[#07080a]/60 to-[#07080a]" />
-          <div className="absolute inset-0 bg-radial-gradient from-transparent to-[#07080a]/90" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-[#07080a]/65 to-[#07080a]" />
+          <div className="absolute inset-0 bg-radial-gradient from-transparent to-[#07080a]/95" />
         </div>
 
         {/* Top Navbar */}
         <nav className="relative z-20 w-full px-6 py-6 max-w-6xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 hover:opacity-90 transition-opacity">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 shadow-lg shadow-indigo-600/30">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 shadow-lg shadow-blue-600/30">
               <Globe className="h-4.5 w-4.5 text-white" />
             </div>
             <span className="text-base font-extrabold text-white tracking-tight">HubTalent</span>
@@ -45,7 +45,7 @@ export default function LandingPage() {
             <Link href="/login" className="text-xs font-semibold text-slate-350 no-underline hover:text-white transition-colors">
               Login
             </Link>
-            <Link href="/register" className="rounded-full bg-white px-5 py-2 text-xs font-bold text-slate-950 no-underline hover:bg-slate-100 transition-all shadow-sm">
+            <Link href="/register" className="rounded-full bg-blue-600 px-5 py-2 text-xs font-bold text-white no-underline hover:bg-blue-500 transition-all shadow-sm shadow-blue-600/10">
               Sign Up
             </Link>
           </div>
@@ -53,14 +53,14 @@ export default function LandingPage() {
 
         {/* Hero Body */}
         <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 text-center max-w-3xl mx-auto py-16">
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-indigo-500/20 bg-indigo-500/10 text-indigo-300 text-[10px] font-bold uppercase tracking-wider mb-8 animate-fadeIn">
-            <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
+          <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-blue-500/20 bg-blue-500/10 text-blue-400 text-[10px] font-bold uppercase tracking-wider mb-8 animate-fadeIn">
+            <Sparkles className="h-3.5 w-3.5 text-blue-400" />
             Where Ideas Meet Talent & Opportunity
           </div>
 
           <h1 className="mb-6 text-4xl font-extrabold tracking-tight text-white sm:text-5xl md:text-6xl leading-[1.1] animate-fadeIn">
             Where Ideas Meet <br className="hidden sm:inline"/>
-            <span className="bg-gradient-to-r from-indigo-400 via-violet-400 to-purple-400 bg-clip-text text-transparent">Talent</span> & Opportunity.
+            <span className="bg-gradient-to-r from-blue-400 via-sky-400 to-blue-500 bg-clip-text text-transparent">Talent</span> & Opportunity.
           </h1>
 
           <p className="max-w-xl text-slate-350 text-sm md:text-base leading-relaxed mb-10 animate-fadeIn delay-100">
@@ -68,10 +68,10 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto items-center justify-center animate-fadeIn delay-200">
-            <Link href="/register" className="w-full sm:w-auto text-center rounded-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm px-8 py-3.5 transition-all shadow-lg shadow-indigo-600/20 border border-indigo-500/35">
+            <Link href="/register" className="w-full sm:w-auto text-center rounded-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm px-8 py-3.5 transition-all shadow-lg shadow-blue-600/20 border border-blue-500/35">
               Mulai Kolaborasi — Gratis
             </Link>
-            <Link href="/jobs" className="w-full sm:w-auto text-center rounded-full border border-slate-700 bg-slate-900/40 hover:bg-slate-900/80 text-white font-semibold text-sm px-8 py-3.5 transition-all backdrop-blur-sm">
+            <Link href="/jobs" className="w-full sm:w-auto text-center rounded-full border border-slate-800 bg-slate-900/40 hover:bg-slate-900/85 text-white font-semibold text-sm px-8 py-3.5 transition-all backdrop-blur-sm">
               Eksplorasi Lowongan
             </Link>
           </div>
@@ -83,11 +83,11 @@ export default function LandingPage() {
 
 
       {/* --- SECTION: THE 3 PILLARS (Clean grid layout, no video background) --- */}
-      <section className="relative z-20 py-24 bg-[#07080a] border-t border-slate-900/80">
+      <section className="relative z-20 py-24 bg-[#07080a] border-t border-slate-950">
         <div className="max-w-6xl mx-auto px-6 space-y-16">
           
           <div className="text-center space-y-2 max-w-xl mx-auto">
-            <h2 className="text-xs font-bold text-indigo-400 uppercase tracking-widest">Fitur Utama</h2>
+            <h2 className="text-xs font-bold text-blue-500 uppercase tracking-widest">Fitur Utama</h2>
             <h3 className="text-3xl font-extrabold text-white sm:text-4xl">Satu Ekosistem, Tiga Pilar</h3>
             <p className="text-slate-400 text-xs sm:text-sm mt-2">Segala hal yang Anda butuhkan untuk mempercepat perkembangan portofolio dan kesiapan karir.</p>
           </div>
@@ -95,14 +95,14 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             
             {/* Pilar 1 */}
-            <div className="p-8 rounded-2xl bg-[#0b0d10] border border-slate-900 hover:border-indigo-500/20 transition-all duration-300 flex flex-col justify-between group">
+            <div className="p-8 rounded-2xl bg-[#0b0d10] border border-slate-900 hover:border-blue-500/20 transition-all duration-305 flex flex-col justify-between group">
               <div className="space-y-6">
-                <div className="h-12 w-12 rounded-xl bg-indigo-500/5 border border-indigo-500/20 flex items-center justify-center text-indigo-400 group-hover:scale-105 transition-transform">
+                <div className="h-12 w-12 rounded-xl bg-blue-500/5 border border-blue-500/20 flex items-center justify-center text-blue-500 group-hover:scale-105 transition-transform">
                   <Code className="h-5.5 w-5.5" />
                 </div>
                 <div className="space-y-2.5">
                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Pilar 01</span>
-                  <h4 className="text-lg font-bold text-white group-hover:text-indigo-300 transition-colors">🚀 Jangan Biarkan Ide Kerenmu Berhenti di Catatan.</h4>
+                  <h4 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">Jangan Biarkan Ide Kerenmu Berhenti di Catatan.</h4>
                   <p className="text-xs text-slate-400 leading-relaxed">
                     Cari co-founder, developer, atau designer yang punya visi sama. Mulai proyek dari nol atau gabung ke tim yang sedang bergerak.
                   </p>
@@ -125,14 +125,14 @@ export default function LandingPage() {
             </div>
 
             {/* Pilar 2 */}
-            <div className="p-8 rounded-2xl bg-[#0b0d10] border border-slate-900 hover:border-violet-500/20 transition-all duration-300 flex flex-col justify-between group">
+            <div className="p-8 rounded-2xl bg-[#0b0d10] border border-slate-900 hover:border-blue-500/20 transition-all duration-305 flex flex-col justify-between group">
               <div className="space-y-6">
-                <div className="h-12 w-12 rounded-xl bg-violet-500/5 border border-violet-500/20 flex items-center justify-center text-violet-400 group-hover:scale-105 transition-transform">
+                <div className="h-12 w-12 rounded-xl bg-blue-500/5 border border-blue-500/20 flex items-center justify-center text-blue-550 group-hover:scale-105 transition-transform">
                   <Brain className="h-5.5 w-5.5" />
                 </div>
                 <div className="space-y-2.5">
                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Pilar 02</span>
-                  <h4 className="text-lg font-bold text-white group-hover:text-violet-300 transition-colors">🤖 Asah Kesiapan Kerja Bersama Personal AI Career Coach.</h4>
+                  <h4 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">Asah Kesiapan Kerja Bersama Personal AI Career Coach.</h4>
                   <p className="text-xs text-slate-400 leading-relaxed">
                     Jangan masuk ruang wawancara tanpa persiapan. Uji kesiapan teknis dan soft skill-mu bersama kecerdasan buatan sebelum menghadapi interviewer sungguhan.
                   </p>
@@ -155,14 +155,14 @@ export default function LandingPage() {
             </div>
 
             {/* Pilar 3 */}
-            <div className="p-8 rounded-2xl bg-[#0b0d10] border border-slate-900 hover:border-emerald-500/20 transition-all duration-300 flex flex-col justify-between group">
+            <div className="p-8 rounded-2xl bg-[#0b0d10] border border-slate-900 hover:border-blue-500/20 transition-all duration-305 flex flex-col justify-between group">
               <div className="space-y-6">
-                <div className="h-12 w-12 rounded-xl bg-emerald-500/5 border border-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition-transform">
+                <div className="h-12 w-12 rounded-xl bg-blue-500/5 border border-blue-500/20 flex items-center justify-center text-blue-500 group-hover:scale-105 transition-transform">
                   <Briefcase className="h-5.5 w-5.5" />
                 </div>
                 <div className="space-y-2.5">
                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Pilar 03</span>
-                  <h4 className="text-lg font-bold text-white group-hover:text-emerald-300 transition-colors">💼 Ribuan Peluang Karir Terkurasi dalam Satu Pintu.</h4>
+                  <h4 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">Ribuan Peluang Karir Terkurasi dalam Satu Pintu.</h4>
                   <p className="text-xs text-slate-400 leading-relaxed">
                     Tidak perlu membuang waktu membuka puluhan tab portal kerja. Kami mengumpulkan dan mengkurasi lowongan kerja dari berbagai platform ternama secara terpusat.
                   </p>
@@ -186,13 +186,13 @@ export default function LandingPage() {
 
 
       {/* --- SECTION: HOW IT WORKS --- */}
-      <section className="relative z-20 py-24 bg-[#07080a] border-t border-slate-900/80">
+      <section className="relative z-20 py-24 bg-[#07080a] border-t border-slate-950">
         <div className="max-w-4xl mx-auto px-6 space-y-12">
           
           <div className="text-center space-y-2">
-            <h2 className="text-xs font-bold text-indigo-400 uppercase tracking-widest">Alur Kerja</h2>
-            <h3 className="text-3xl font-extrabold text-white sm:text-4xl">💡 3 Langkah Mudah Memulai di HubTalent</h3>
-            <div className="w-12 h-1 bg-indigo-500 mx-auto mt-4 rounded-full" />
+            <h2 className="text-xs font-bold text-blue-500 uppercase tracking-widest">Cara Kerja</h2>
+            <h3 className="text-3xl font-extrabold text-white sm:text-4xl">3 Langkah Mudah Memulai di HubTalent</h3>
+            <div className="w-12 h-1 bg-blue-600 mx-auto mt-4 rounded-full" />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6">
@@ -230,17 +230,16 @@ export default function LandingPage() {
 
 
       {/* --- SECTION: BOTTOM CTA (Footer Banner) --- */}
-      <section className="relative z-20 py-24 bg-gradient-to-b from-[#07080a] to-[#0d0f14] border-t border-slate-900 text-center px-6">
+      <section className="relative z-20 py-24 bg-gradient-to-b from-[#07080a] to-[#0a0c10] border-t border-slate-950 text-center px-6">
         <div className="max-w-xl mx-auto space-y-6">
           <h3 className="text-3xl font-extrabold text-white sm:text-4xl leading-tight">Siap Eksekusi Ide dan Lompati Karirmu?</h3>
           <p className="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-md mx-auto">
-            Gabung dengan komunitas talenta, kreator, dan profesional muda yang saling mendukung di <span className="text-indigo-400 font-semibold">HubTalent</span>.
+            Gabung dengan komunitas talenta, kreator, dan profesional muda yang saling mendukung di <span className="text-blue-500 font-semibold">HubTalent</span>.
           </p>
           <div className="pt-4 flex justify-center">
-            {/* Standard HTML Link instead of Button with asChild to avoid text-color override bugs */}
             <Link 
               href="/register" 
-              className="inline-flex items-center gap-1.5 rounded-full bg-white hover:bg-slate-100 text-slate-950 font-extrabold text-xs sm:text-sm px-8 py-3.5 transition-all shadow-xl shadow-white/5 hover:scale-[1.02] active:scale-[0.98]"
+              className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs sm:text-sm px-8 py-3.5 transition-all shadow-lg shadow-blue-600/20 hover:scale-[1.02] active:scale-[0.98]"
             >
               Buat Akun Sekarang — 100% Gratis
               <ChevronRight className="h-4 w-4 stroke-[3px]" />
@@ -251,13 +250,13 @@ export default function LandingPage() {
 
 
       {/* --- FOOTER --- */}
-      <footer className="relative z-20 flex flex-col items-center gap-4 pb-12 pt-6 border-t border-slate-900/50 bg-[#0d0f14] text-slate-650 text-[10px] md:text-xs">
+      <footer className="relative z-20 flex flex-col items-center gap-4 pb-12 pt-6 border-t border-slate-950 bg-[#0a0c10] text-slate-500 text-[10px] md:text-xs">
         <div className="flex gap-4">
-          <button aria-label="Instagram" className="rounded-full border border-slate-800 bg-[#07080a] p-2.5 text-slate-400 hover:bg-slate-850 hover:text-white transition-all"><Instagram className="h-4 w-4" /></button>
-          <button aria-label="Twitter" className="rounded-full border border-slate-800 bg-[#07080a] p-2.5 text-slate-400 hover:bg-slate-850 hover:text-white transition-all"><Twitter className="h-4 w-4" /></button>
-          <button aria-label="Globe" className="rounded-full border border-slate-800 bg-[#07080a] p-2.5 text-slate-400 hover:bg-slate-850 hover:text-white transition-all"><Globe className="h-4 w-4" /></button>
+          <button aria-label="Instagram" className="rounded-full border border-slate-800 bg-[#07080a] p-2.5 text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><Instagram className="h-4 w-4" /></button>
+          <button aria-label="Twitter" className="rounded-full border border-slate-800 bg-[#07080a] p-2.5 text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><Twitter className="h-4 w-4" /></button>
+          <button aria-label="Globe" className="rounded-full border border-slate-800 bg-[#07080a] p-2.5 text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><Globe className="h-4 w-4" /></button>
         </div>
-        <p className="mt-2 text-slate-500">&copy; {new Date().getFullYear()} HubTalent.id. All rights reserved.</p>
+        <p className="mt-2 text-slate-650">&copy; {new Date().getFullYear()} HubTalent.id. All rights reserved.</p>
       </footer>
 
     </div>
