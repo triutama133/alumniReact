@@ -95,7 +95,7 @@ export default function RegisterPage() {
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="text-2xl">Daftar Akun Baru</CardTitle>
-          <CardDescription>Buat akun Anda untuk mengakses Indonesia Talent Hub.</CardDescription>
+          <CardDescription>Buat akun Anda untuk mengakses HubTalent.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleRegister} className="grid gap-4">

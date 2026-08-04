@@ -135,7 +135,7 @@ export default function DashboardClient({ userCohorts }: DashboardClientProps) {
     if (hoveredSegment === 'bisnis') return `${bPct.toFixed(1)}% Pebisnis`;
     if (hoveredSegment === 'irt') return `${iPct.toFixed(1)}% IRT`;
     if (hoveredSegment === 'campuran') return `${cPct.toFixed(1)}% Campuran`;
-    return `${data?.totalAlumni || 0} Anggota`;
+    return `${data?.totalAlumni || 0} Talenta`;
   };
 
   // SVG Area/Line Chart Calculations for Angkatan
@@ -255,7 +255,7 @@ export default function DashboardClient({ userCohorts }: DashboardClientProps) {
             <Card className="premium-light-card liquid-glass-border">
               <CardContent className="pt-6 flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">Total Anggota</p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">Total Talenta</p>
                   <h3 className="text-2xl font-black text-slate-900 dark:text-white mt-1">{data.totalAlumni}</h3>
                 </div>
                 <div className="h-10 w-10 bg-slate-50 dark:bg-slate-900 rounded-full flex items-center justify-center text-primary dark:text-primary border border-slate-200 dark:border-slate-800">
@@ -310,7 +310,7 @@ export default function DashboardClient({ userCohorts }: DashboardClientProps) {
                   <TrendingUp className="h-4 w-4 text-indigo-650 dark:text-indigo-400" />
                   Proporsi Aktivitas
                 </CardTitle>
-                <CardDescription className="text-[10px] text-slate-500 dark:text-slate-400">Komparasi peran utama alumni jejaring</CardDescription>
+                <CardDescription className="text-[10px] text-slate-500 dark:text-slate-400">Komparasi peran utama talenta jejaring</CardDescription>
               </CardHeader>
               <CardContent className="pt-4 flex flex-col items-center">
                 {totalAct > 0 ? (
@@ -421,7 +421,7 @@ export default function DashboardClient({ userCohorts }: DashboardClientProps) {
                       <div key={index} className="space-y-1.5">
                         <div className="flex justify-between items-center text-[10px] font-medium">
                           <span className="text-slate-800 dark:text-slate-200 font-bold">{skill.name}</span>
-                          <span className="text-slate-500 dark:text-slate-400">{skill.count} Anggota</span>
+                          <span className="text-slate-500 dark:text-slate-400">{skill.count} Talenta</span>
                         </div>
                         <div className="w-full bg-slate-100 dark:bg-slate-950/40 rounded-full h-2 overflow-hidden border border-slate-250 dark:border-white/5">
                           <div 
@@ -459,7 +459,7 @@ export default function DashboardClient({ userCohorts }: DashboardClientProps) {
                       <div key={index} className="space-y-1.5">
                         <div className="flex justify-between items-center text-[10px] font-bold">
                           <span className="text-slate-800 dark:text-slate-200">{major.name}</span>
-                          <span className="text-slate-500 dark:text-slate-400">{major.count} Anggota</span>
+                          <span className="text-slate-500 dark:text-slate-400">{major.count} Talenta</span>
                         </div>
                         <div className="w-full bg-slate-100 dark:bg-slate-950/40 rounded-full h-2 overflow-hidden border border-slate-250 dark:border-white/5">
                           <div 
@@ -494,7 +494,7 @@ export default function DashboardClient({ userCohorts }: DashboardClientProps) {
                       <div key={index} className="space-y-1">
                         <div className="flex justify-between items-center text-[10px]">
                           <span className="font-semibold text-slate-800 dark:text-slate-200">{city.name}</span>
-                          <span className="text-slate-550 dark:text-slate-400">{city.count} Anggota</span>
+                          <span className="text-slate-555 dark:text-slate-400">{city.count} Talenta</span>
                         </div>
                         <div className="w-full bg-slate-100 dark:bg-slate-900/60 rounded-full h-1.5 overflow-hidden">
                           <div 

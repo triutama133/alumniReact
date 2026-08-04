@@ -206,7 +206,7 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
             <Link href="/" className="flex items-center gap-1.5 hover:opacity-90 transition-opacity">
               <Globe className="h-5 w-5 text-primary" />
               <span className="font-bold text-sm sm:text-base tracking-tight text-slate-900 dark:text-white hidden md:inline">
-                Talent Hub
+                HubTalent
               </span>
             </Link>
 
@@ -405,7 +405,7 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
             <Link href="/" onClick={() => setIsMobileOpen(false)} className="flex items-center gap-1.5">
               <Globe className="h-5 w-5 text-primary" />
               <span className="font-bold text-sm tracking-tight text-slate-900 dark:text-white">
-                Talent Hub
+                HubTalent
               </span>
             </Link>
             <button 

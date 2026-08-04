@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: 'Indonesia Talent Hub',
-  description: 'Temukan peluang kolaborasi atau cari talenta terbaik untuk proyek Anda selanjutnya.',
+  title: 'HubTalent',
+  description: 'HubTalent — Platform kolaborasi dan pengembangan karir berbasis AI untuk talenta Indonesia',
 };
 
 export default function RootLayout({

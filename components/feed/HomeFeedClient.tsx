@@ -26,7 +26,8 @@ import {
   X,
   PlusCircle,
   Info,
-  Clock
+  Clock,
+  Briefcase
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -423,6 +424,74 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 max-w-6xl mx-auto px-4 stagger-children">
+      {/* 1. Welcome Header (Dynamic Greeting) */}
+      <div className="lg:col-span-12 mt-2">
+        <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900/90 to-indigo-950/80 border border-indigo-500/20 text-white shadow-xl backdrop-blur-md relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+            <Sparkles className="h-32 w-32 text-indigo-400" />
+          </div>
+          <h2 className="text-2xl font-black tracking-tight">
+            {new Date().getHours() < 18 ? `Halo, ${userProfile.nama_panggilan || userProfile.nama_lengkap}.` : `Lembur malam ini, ${userProfile.nama_panggilan || userProfile.nama_lengkap}?`}
+          </h2>
+          <p className="text-sm text-slate-350 mt-1 max-w-2xl leading-relaxed">
+            {new Date().getHours() < 18 
+              ? "Cek respon proyekmu, lakukan simulasi wawancara AI, atau intip lowongan kerja terbaru yang relevan hari ini."
+              : "Ide proyek terbaik sering lahir di jam tenang. Siap mencari rekan kolaborasi baru?"}
+          </p>
+        </div>
+      </div>
+
+      {/* 2. Quick Action Cards */}
+      <div className="lg:col-span-12 grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Card 1 */}
+        <Card className="premium-light-card liquid-glass-border p-5 flex flex-col justify-between hover:shadow-md transition-shadow bg-white dark:bg-[#1b1f23]">
+          <div>
+            <h4 className="font-extrabold text-sm text-slate-900 dark:text-white mb-1.5 flex items-center gap-1.5">
+              <PlusCircle className="h-4.5 w-4.5 text-primary" />
+              Buat Proyek Baru
+            </h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-4">
+              Publikasikan ide atau proyek berjalan milikmu dan temukan tim pertama.
+            </p>
+          </div>
+          <Button asChild size="sm" className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-md dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900">
+            <Link href="/projects">Pitch Ide Proyek</Link>
+          </Button>
+        </Card>
+
+        {/* Card 2 */}
+        <Card className="premium-light-card liquid-glass-border p-5 flex flex-col justify-between hover:shadow-md transition-shadow bg-white dark:bg-[#1b1f23]">
+          <div>
+            <h4 className="font-extrabold text-sm text-slate-900 dark:text-white mb-1.5 flex items-center gap-1.5">
+              <Sparkles className="h-4.5 w-4.5 text-indigo-500" />
+              Latihan Interview AI
+            </h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-4">
+              Simulasi wawancara kerja interaktif 5 menit untuk mengasah kesiapanmu.
+            </p>
+          </div>
+          <Button asChild size="sm" variant="outline" className="w-full border-slate-200 text-slate-900 font-bold text-xs rounded-md dark:border-slate-800 dark:text-white">
+            <Link href="/jobs">Mulai Latihan</Link>
+          </Button>
+        </Card>
+
+        {/* Card 3 */}
+        <Card className="premium-light-card liquid-glass-border p-5 flex flex-col justify-between hover:shadow-md transition-shadow bg-white dark:bg-[#1b1f23]">
+          <div>
+            <h4 className="font-extrabold text-sm text-slate-900 dark:text-white mb-1.5 flex items-center gap-1.5">
+              <Briefcase className="h-4.5 w-4.5 text-emerald-500" />
+              Eksplorasi Lowongan
+            </h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-4">
+              Cek lowongan kerja terkurasi yang sesuai dengan profil keahlianmu.
+            </p>
+          </div>
+          <Button asChild size="sm" variant="outline" className="w-full border-slate-200 text-slate-900 font-bold text-xs rounded-md dark:border-slate-800 dark:text-white">
+            <Link href="/jobs">Lihat Lowongan</Link>
+          </Button>
+        </Card>
+      </div>
+
       {/* COLUMN LEFT: Profile Summary & Cohort Swapper */}
       <div className="lg:col-span-3 space-y-6">
         {/* Profile completeness card */}
@@ -767,7 +836,7 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
       <div className="lg:col-span-3 space-y-6">
 
         {/* Cohort Members List Card (If active) */}
-        {activeCohort && (
+        {activeCohort ? (
           <Card className="premium-light-card liquid-glass-border">
             <CardHeader className="pb-2 border-b border-slate-200/80 dark:border-white/5">
               <CardTitle className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">Anggota Kelompok</CardTitle>
@@ -782,7 +851,7 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
                       <p className="text-xs font-bold text-slate-800 dark:text-white truncate">{m.nama_lengkap}</p>
                       <p className="text-[10px] text-slate-500 truncate">{m.email}</p>
                     </div>
-                    <Badge className={`text-[8px] px-2 py-0.5 rounded-full uppercase ${m.role === 'admin' ? 'bg-amber-500/10 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
+                    <Badge className={`text-[8px] px-2 py-0.5 rounded-full uppercase ${m.role === 'admin' ? 'bg-amber-500/10 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-350'}`}>
                       {m.role}
                     </Badge>
                   </div>
@@ -792,6 +861,91 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
               )}
             </CardContent>
           </Card>
+        ) : (
+          <>
+            {/* 4. Section AI Career Prep (Widget Asisten AI) */}
+            <Card className="premium-light-card liquid-glass-border p-4 space-y-4 bg-white dark:bg-[#1b1f23] border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div className="border-b border-slate-200/80 dark:border-white/5 pb-2">
+                <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  Asisten Karir AI
+                </h4>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Ringkasan evaluasi dan rekomendasi karirmu</p>
+              </div>
+
+              {/* Widget Skor CV */}
+              <div className="space-y-2 p-3 rounded-lg bg-slate-50 dark:bg-slate-950/45 border border-slate-200 dark:border-slate-800/85">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="font-extrabold text-slate-900 dark:text-white">Skor Kesiapan CV</span>
+                  <span className="font-black text-primary">82/100</span>
+                </div>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Struktur CV kamu sudah kuat. Tambahkan satu proyek kolaborasi aktif di HubTalent untuk meningkatkan daya tarik di mata perekrut.
+                </p>
+                <Button asChild size="sm" className="w-full h-7 bg-slate-900 hover:bg-slate-800 text-white font-bold text-[10px] rounded-md dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900">
+                  <Link href="/jobs?tab=cv-creator">Optimalkan CV</Link>
+                </Button>
+              </div>
+
+              {/* Widget Simulasi Wawancara */}
+              <div className="space-y-2 p-3 rounded-lg bg-slate-50 dark:bg-slate-950/45 border border-slate-200 dark:border-slate-800/85">
+                <div className="text-xs">
+                  <span className="font-bold text-slate-500 dark:text-slate-400">Tantangan Hari Ini:</span>
+                  <p className="font-extrabold text-slate-900 dark:text-white mt-0.5">Data Engineer / Analyst</p>
+                </div>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Luangkan 5 menit untuk menjawab 3 pertanyaan simulasi berbasis AI hari ini.
+                </p>
+                <Button asChild size="sm" variant="outline" className="w-full h-7 border-slate-200 text-slate-900 font-bold text-[10px] rounded-md dark:border-slate-800 dark:text-white">
+                  <Link href="/jobs">Mulai Simulasi</Link>
+                </Button>
+              </div>
+            </Card>
+
+            {/* 5. Section Job Aggregator (Rekomendasi Loker) */}
+            <Card className="premium-light-card liquid-glass-border p-4 space-y-3 bg-white dark:bg-[#1b1f23] border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div className="border-b border-slate-200/80 dark:border-white/5 pb-2">
+                <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                  <Briefcase className="h-4 w-4 text-emerald-500" />
+                  Lowongan Kerja Terpilih
+                </h4>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-normal">
+                  Kurasi otomatis berdasarkan keahlian Python, SQL pada profilmu.
+                </p>
+              </div>
+
+              <div className="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20 space-y-2">
+                <div className="flex justify-between items-start gap-1">
+                  <div>
+                    <h5 className="font-bold text-xs text-slate-900 dark:text-white">Junior Data Engineer</h5>
+                    <p className="text-[9px] text-slate-450 mt-0.5">Full-time • Remote • 2 hari lalu</p>
+                  </div>
+                  <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[8px] font-bold border border-emerald-500/20">
+                    95% Match
+                  </Badge>
+                </div>
+                <div className="flex gap-2">
+                  <Button asChild size="sm" className="flex-1 h-7 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] rounded-md">
+                    <Link href="/jobs">Lamar Sekarang</Link>
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-7 border-slate-205 dark:border-slate-800 text-slate-900 dark:text-white font-bold text-[10px] rounded-md">
+                    Simpan
+                  </Button>
+                </div>
+              </div>
+            </Card>
+
+            {/* 6. Community & Engagement Footer Widget */}
+            <Card className="premium-light-card liquid-glass-border p-4 bg-gradient-to-br from-indigo-900/50 to-purple-950/40 border-indigo-500/20 text-white shadow-sm">
+              <h4 className="font-extrabold text-xs text-indigo-300">Kolaborasi dimulai dari sapaan pertama.</h4>
+              <p className="text-[10px] text-slate-300 leading-relaxed mt-1.5 mb-3.5">
+                Mulai jaringan barumu dengan menyapa talenta lain atau ajukan tawaran bergabung pada ide proyek yang menarik minatmu.
+              </p>
+              <Button asChild size="sm" className="w-full bg-white hover:bg-slate-100 text-slate-900 font-bold text-[10px] rounded-md">
+                <Link href="/search">Jelajahi Direktori Talenta</Link>
+              </Button>
+            </Card>
+          </>
         )}
       </div>
 

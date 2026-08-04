@@ -95,7 +95,7 @@ export default function LoginPage() {
     <div className="flex items-center justify-center min-h-screen px-4 stagger-children">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="text-2xl">Indonesia Talent Hub</CardTitle>
+          <CardTitle className="text-2xl">HubTalent</CardTitle>
           <CardDescription>Silahkan login untuk melanjutkan.</CardDescription>
         </CardHeader>
         <CardContent>

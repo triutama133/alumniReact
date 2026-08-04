@@ -22,7 +22,7 @@ export default function LandingPage() {
         <div className="mx-auto flex max-w-6xl items-center justify-between rounded-full border border-white/20 bg-white/5 px-4 py-3 backdrop-blur-md sm:px-6">
           <div className="flex items-center gap-2">
             <Globe className="h-5 w-5 text-white" />
-            <span className="text-sm font-semibold text-white sm:text-base">Indonesia Talent Hub</span>
+            <span className="text-sm font-semibold text-white sm:text-base">HubTalent</span>
           </div>
           <div className="hidden items-center gap-8 md:flex">
             <Link href="/search" className="text-sm font-medium text-white/80 no-underline hover:text-white">Cari Talenta</Link>
