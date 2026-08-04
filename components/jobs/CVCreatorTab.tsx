@@ -48,6 +48,7 @@ export function CVCreatorTab() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'dirty'>('saved');
 
   // AI Assistant drawer/panel state
@@ -194,6 +195,60 @@ export function CVCreatorTab() {
       toast.error('Gagal menyimpan draf', { description: err.message });
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Generate CV from User Profile
+  const handleGenerateFromProfile = async () => {
+    playClickSound();
+    if (!window.confirm("Apakah Anda yakin ingin me-reset isi CV dan meng-generate ulang otomatis berdasarkan data profil Anda saat ini? Perubahan yang belum disimpan pada draf CV akan hilang.")) {
+      return;
+    }
+    setGenerating(true);
+    try {
+      const res = await fetch('/api/jobs/cv?reset=true');
+      if (!res.ok) throw new Error('Gagal memuat data profil.');
+      const data = await res.json();
+      
+      setLayoutSettings(data.layoutSettings || {
+        layoutType: 'single',
+        sidebarPosition: 'left',
+        sidebarWidth: 30,
+        columnGap: 24
+      });
+
+      // Inject content into contentEditable elements
+      if (headerRef.current) headerRef.current.innerHTML = data.htmlContent?.header || '';
+      if (mainRef.current) mainRef.current.innerHTML = data.htmlContent?.main || '';
+      if (sidebarRef.current) sidebarRef.current.innerHTML = data.htmlContent?.sidebar || '';
+
+      toast.success('CV berhasil di-generate ulang otomatis dari profil!');
+      
+      // Save it immediately
+      const saveData = {
+        layoutSettings: data.layoutSettings || {
+          layoutType: 'single',
+          sidebarPosition: 'left',
+          sidebarWidth: 30,
+          columnGap: 24
+        },
+        htmlContent: {
+          header: data.htmlContent?.header || '',
+          main: data.htmlContent?.main || '',
+          sidebar: data.htmlContent?.sidebar || ''
+        }
+      };
+
+      await fetch('/api/jobs/cv', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(saveData)
+      });
+      setSaveStatus('saved');
+    } catch (err: any) {
+      toast.error('Gagal me-regenerate CV dari profil', { description: err.message });
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -382,6 +437,16 @@ export function CVCreatorTab() {
             >
               <Sparkles className="h-3.5 w-3.5 text-primary mr-1 animate-pulse" />
               Asisten AI STAR
+            </Button>
+            <Button 
+              onClick={handleGenerateFromProfile} 
+              disabled={generating}
+              variant="outline"
+              className="border-slate-200 dark:border-slate-800 text-[10px] font-bold h-8 px-3 rounded-md flex items-center gap-1"
+              title="Generate CV otomatis dari data profil Anda saat ini"
+            >
+              {generating ? <RefreshCw className="h-3 w-3 animate-spin text-primary" /> : <RefreshCw className="h-3 w-3" />}
+              <span>Generate dari Profil</span>
             </Button>
             <Button 
               onClick={handleSave} 

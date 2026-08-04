@@ -29,16 +29,28 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    // 1. Try to fetch saved CV first
-    const { data: savedCV, error: fetchErr } = await supabaseAdmin
-      .from('user_cvs')
-      .select('cv_data')
-      .eq('user_id', userId)
-      .maybeSingle();
+    // 1. Try to fetch saved CV first (unless reset parameter is set to true)
+    const { searchParams } = new URL(req.url);
+    const forceReset = searchParams.get('reset') === 'true';
+
+    let savedCV = null;
+    if (!forceReset) {
+      const { data, error: fetchErr } = await supabaseAdmin
+        .from('user_cvs')
+        .select('cv_data')
+        .eq('user_id', userId)
+        .maybeSingle();
+      savedCV = data;
+    }
 
     if (savedCV && savedCV.cv_data && Object.keys(savedCV.cv_data).length > 0) {
-      return NextResponse.json(savedCV.cv_data, { status: 200 });
+      // Validate that it actually contains HTML content to avoid blank CVs
+      const htmlContent = (savedCV.cv_data as any).htmlContent;
+      if (htmlContent && (htmlContent.header || htmlContent.main || htmlContent.sidebar)) {
+        return NextResponse.json(savedCV.cv_data, { status: 200 });
+      }
     }
+
 
     // 2. If no CV saved, pull default user profile info to construct one
     const { data: profile, error: profileErr } = await supabaseAdmin
