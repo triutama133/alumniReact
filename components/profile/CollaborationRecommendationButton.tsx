@@ -65,7 +65,7 @@ export default function CollaborationRecommendationButton({
           Rekomendasi Kolaborasi AI
         </CardTitle>
         <CardDescription className="text-[10px] text-slate-500 dark:text-slate-400">
-          Dapatkan ide kolaborasi inovatif, pencocokan partner, dan peluang bisnis dari database alumni.
+          Dapatkan ide kolaborasi inovatif, pencocokan partner, dan peluang bisnis dari database talenta.
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-4">
@@ -79,7 +79,7 @@ export default function CollaborationRecommendationButton({
           <p className="text-xs text-rose-600 dark:text-rose-400 font-medium">{error}</p>
         ) : (
           <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed italic">
-            Klik tombol di bawah untuk mendapatkan analisis kecocokan jejaring dan ide proyek kolaboratif bersama alumni lainnya.
+            Klik tombol di bawah untuk mendapatkan analisis kecocokan jejaring dan ide proyek kolaboratif bersama talenta lainnya.
           </p>
         )}
         

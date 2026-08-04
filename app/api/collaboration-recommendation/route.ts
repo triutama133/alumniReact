@@ -129,19 +129,19 @@ export async function POST(req: NextRequest) {
       }).length;
       
       const percentage = Math.round((sameActivityCount / totalAlumni) * 100);
-      const primaryActivity = myActivities[0] || 'Alumni';
+      const primaryActivity = myActivities[0] || 'Talenta';
       
       // Buat ringkasan markdown yang persis sama dengan output prompt
-      let wawasan = `📊 **Posisi Jejaring**: Anda berada di kategori **${primaryActivity}** bersama **${sameActivityCount}** alumni lainnya (${percentage}% dari total ${totalAlumni} alumni di jejaring).\n\n`;
+      let wawasan = `📊 **Posisi Jejaring**: Anda berada di kategori **${primaryActivity}** bersama **${sameActivityCount}** talenta lainnya (${percentage}% dari total ${totalAlumni} talenta di jejaring).\n\n`;
       wawasan += `🤝 **Partner Kolaborasi Teratas**:\n`;
       
       if (ranked.length > 0) {
         ranked.forEach(partner => {
-          let act = 'Alumni';
+          let act = 'Talenta';
           if (typeof partner.aktivitas === 'string') {
-            act = partner.aktivitas.split(',')[0]?.trim() || 'Alumni';
+            act = partner.aktivitas.split(',')[0]?.trim() || 'Talenta';
           } else if (Array.isArray(partner.aktivitas) && partner.aktivitas.length > 0) {
-            act = partner.aktivitas[0]?.trim() || 'Alumni';
+            act = partner.aktivitas[0]?.trim() || 'Talenta';
           }
           wawasan += `- **${partner.nama_lengkap}** (${act}): Cocok untuk kolaborasi di bidang *${partner.skill_gabungan || 'umum'}*.\n`;
         });

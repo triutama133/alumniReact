@@ -156,7 +156,7 @@ export async function POST(
       .maybeSingle();
 
     if (!targetUser) {
-      return NextResponse.json({ error: 'Alumni dengan email atau username tersebut tidak ditemukan.' }, { status: 404 });
+      return NextResponse.json({ error: 'Talenta dengan email atau username tersebut tidak ditemukan.' }, { status: 404 });
     }
 
     // 3. Tambahkan ke cohort_members
