@@ -81,7 +81,7 @@ export default function LandingPage() {
             <span style={{ color: '#60a5fa' }}>Talent</span> & Opportunity.
           </h1>
 
-          <p style={{ color: '#cbd5e1' }} className="max-w-xl text-sm md:text-base leading-relaxed mb-10">
+          <p style={{ color: '#cbd5e1' }} className="max-w-2xl text-base md:text-lg leading-relaxed mb-10">
             Ubah ide jadi proyek nyata dan raih karir impianmu. <strong style={{ color: '#ffffff' }} className="font-semibold">HubTalent</strong> menghubungkanmu dengan partner kolaborasi, mempersiapkan wawancara kerja bersama AI, dan membuka akses ke ribuan lowongan terpilih—semua di satu tempat.
           </p>
 
