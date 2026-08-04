@@ -59,3 +59,23 @@ Form onboarding profil memiliki banyak pertanyaan bersyarat (Conditional Fields)
 * **Tampilan Fleksibel:** Field bersyarat dibungkus di dalam animasi *fade-in slide-down* saat diaktifkan agar pengguna tidak bingung dengan perubahan form.
 * **Skip Logic untuk Keaktifan >5 Tahun:** Jika pengguna memilih status keaktifan aktivitas berdurasi lebih dari 5 tahun lalu, form detail untuk aktivitas tersebut otomatis disembunyikan (*auto-skip*) dengan keterangan visual yang jelas.
 * **Indikator Progres Tab:** Pada bagian profil, pisahkan detail profesi ke dalam tab interaktif (Tab Pekerjaan, Tab Wirausaha, Tab Sosial) agar halaman profil tidak terkesan sangat panjang dan berantakan.
+
+---
+
+## 🔊 5. Fitur UX Interaktif Tambahan (Sound Effects & Autosave)
+
+Untuk meningkatkan tingkat keterikatan (*user engagement*) dan memberikan impresi platform yang premium, pengembang menerapkan dua fitur berikut:
+
+1. **Umpan Balik Suara (Audio Feedback):**
+   * Pemicu audio taktil menggunakan library audio lokal `@/lib/audio.ts`.
+   * Panggil `playClickSound()` saat pengguna mengklik tombol penting (seperti perpindahan tab, pemicu analisis, format teks).
+   * Panggil `playSuccessSound()` untuk momen kepuasan pengguna (*peak-end rule*), seperti penyelesaian checklist persiapan kerja 100% atau setelah draf CV berhasil disimpan manual.
+2. **Mesin Penyimpanan Otomatis (Autosave Engine & Indicators):**
+   * Pada fitur CV Creator, perubahan draf teks disimpan secara otomatis ke database Supabase 2 detik setelah pengguna berhenti mengetik (debounce mechanism).
+   * Tampilkan label status draf real-time di UI:
+     * `Draf Tersimpan` (Hijau, dengan ikon Check): Perubahan sinkron sepenuhnya dengan DB.
+     * `Menyimpan otomatis...` (Abu-abu, dengan ikon Spinner): Proses sync sedang berjalan.
+     * `Perubahan belum disimpan` (Oranye, Italic): Menandakan input baru sedang diedit di browser.
+3. **Styling Cetak Lembar A4 (Print Media Query):**
+   * Supaya draf CV dapat diunduh sebagai PDF dengan rapi, gunakan target stylesheet `@media print`.
+   * Sembunyikan elemen non-dokumen seperti Navbar, Sidebar, Toolbar Editor, Panel AI, dan tombol cetak (`display: none !important`), serta setel canvas CV menjadi posisi absolut dengan lebar 100% dan hilangkan bayangan border kartu agar tercetak bersih pada kertas A4 standar.

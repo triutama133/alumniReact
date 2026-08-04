@@ -5,6 +5,7 @@ import * as z from 'zod';
 import { headers } from 'next/headers';
 
 import { AUTH_COOKIE_NAME, AUTH_TOKEN_TTL_SECONDS, signAuthToken } from '@/lib/auth';
+import { bumpAuthSessionVersionByUserId, getAuthSessionVersionByUserId } from '@/lib/authSessionVersion';
 
 type UserRow = {
   id: number;
@@ -328,6 +329,11 @@ export async function PATCH(req: NextRequest) {
       ipAddress: requestIp,
     });
 
+    let authVersion = await getAuthSessionVersionByUserId(supabaseAdmin, updatedUser.id);
+    if (Boolean(updatePayload.password_hash)) {
+      authVersion = await bumpAuthSessionVersionByUserId(supabaseAdmin, updatedUser.id);
+    }
+
     const profileCompleted = headersList.get('x-user-profile-completed') === 'true';
     const authToken = await signAuthToken({
       sub: String(updatedUser.id),
@@ -336,6 +342,7 @@ export async function PATCH(req: NextRequest) {
       username: updatedUser.username || undefined,
       profile_completed: profileCompleted,
       must_change_password: Boolean(updatedUser.must_change_password),
+      auth_version: authVersion,
     });
 
     const response = NextResponse.json(

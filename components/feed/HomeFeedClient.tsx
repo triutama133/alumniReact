@@ -481,7 +481,7 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
           
           <div className="space-y-2 text-[11px] text-slate-600 dark:text-slate-400">
             <div className="flex justify-between items-center">
-              <span>👥 Total Alumni</span>
+              <span>👥 Total Talent</span>
               <span className="font-bold text-slate-900 dark:text-white">115 Terhubung</span>
             </div>
             <div className="flex justify-between items-center">

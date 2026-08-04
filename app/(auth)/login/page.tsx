@@ -1,28 +1,54 @@
 // app/(auth)/login/page.tsx
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { TurnstileWidget } from '@/components/auth/TurnstileWidget'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [turnstileToken, setTurnstileToken] = useState('')
+  const [turnstileSiteKey, setTurnstileSiteKey] = useState('')
+  const [turnstileResetSignal, setTurnstileResetSignal] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const router = useRouter() // router digunakan untuk redirect, jadi tidak unused
+
+  useEffect(() => {
+    const fetchTurnstileConfig = async () => {
+      try {
+        const response = await fetch('/api/security/turnstile', { cache: 'no-store' })
+        if (!response.ok) return
+        const data = await response.json()
+        setTurnstileSiteKey(data.siteKey || '')
+      } catch {
+        setTurnstileSiteKey('')
+      }
+    }
+
+    fetchTurnstileConfig()
+  }, [])
+
+  const handleTurnstileVerify = useCallback((token: string) => {
+    setTurnstileToken(token)
+  }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setIsLoading(true)
 
-    console.log('[CLIENT] Tombol Login ditekan.');
-    console.log(`[CLIENT] Mengirim: Email=${email}, Password (panjang)=${password.length}`);
+    if (!turnstileToken) {
+      setError('Selesaikan captcha terlebih dahulu.')
+      setIsLoading(false)
+      return
+    }
 
     try {
       const response = await fetch('/api/login', {
@@ -30,45 +56,29 @@ export default function LoginPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, turnstileToken }),
         redirect: 'follow'
       })
-
-      console.log(`[CLIENT] Respons Fetch diterima, status: ${response.status}. Redirected: ${response.redirected}, Final URL: ${response.url}`);
       
       if (response.ok) {
-        console.log('[CLIENT] API Login berhasil. Memaksa pengalihan klien ke beranda.');
         router.replace('/');
-        console.log('[CLIENT] Client-side router.replace("/") telah dieksekusi.');
         return; 
       }
 
-      const responseText = await response.text();
-      console.log('[CLIENT] Respons server sebagai teks (lengkap):', responseText.substring(0, 500) + (responseText.length > 500 ? '...' : ''));
-
-      let data;
-      try {
-        data = JSON.parse(responseText);
-        console.log('[CLIENT] Data respons JSON (jika tidak dialihkan ke halaman):', data);
-      } catch (jsonParseError) { // Perbaikan: jsonParseError sudah memiliki tipe 'unknown'
-        console.error('[CLIENT] Gagal parse respons sebagai JSON (bukan JSON yang diharapkan):', jsonParseError);
-        setError('Terjadi kesalahan tak terduga dari server: Respons tidak valid atau error server.');
-        return;
-      }
+      const data = await response.json();
 
       if (!response.ok) {
         setError(data.error || 'Terjadi kesalahan saat login.');
-        console.error('[CLIENT] API Login Error (dari server):', data.error);
+        setTurnstileToken('')
+        setTurnstileResetSignal((prev) => prev + 1)
         return;
       }
 
-      console.warn('[CLIENT] Server tidak melakukan redirect setelah login (status 200 OK). Ini tidak diharapkan. Mungkin ada masalah dengan implementasi API route server.');
-      router.replace('/');
-
     } catch (err: unknown) { // Perbaikan: Ganti 'any' dengan 'unknown'
       setError('Terjadi kesalahan jaringan atau yang tidak terduga.');
-      // Anda bisa melakukan type assertion jika yakin itu Error:
       console.error('[CLIENT] Unexpected error during login process:', (err as Error).message);
+      setTurnstileToken('')
+      setTurnstileResetSignal((prev) => prev + 1)
     } finally {
       setIsLoading(false);
     }
@@ -111,9 +121,28 @@ export default function LoginPage() {
                 required
                 disabled={isLoading}
               />
+              <div className="text-right">
+                <Link href="/forgot-password" className="text-xs underline text-slate-600 hover:text-slate-900">
+                  Lupa password?
+                </Link>
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label>Verifikasi Keamanan</Label>
+              {turnstileSiteKey ? (
+                <TurnstileWidget
+                  siteKey={turnstileSiteKey}
+                  onVerify={handleTurnstileVerify}
+                  onExpire={() => setTurnstileToken('')}
+                  onError={() => setTurnstileToken('')}
+                  resetSignal={turnstileResetSignal}
+                />
+              ) : (
+                <p className="text-xs text-amber-600">Captcha belum tersedia. Periksa konfigurasi Turnstile di server.</p>
+              )}
             </div>
             {error && <p className="text-sm text-red-500">{error}</p>}
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full" disabled={isLoading || !turnstileToken}>
               {isLoading ? 'Sedang memproses...' : 'Login'}
             </Button>
           </form>

@@ -19,17 +19,26 @@ talenthub/
 │   │   ├── page.tsx            # Beranda / Feed Utama (/)
 │   │   ├── profile/            # Halaman Profil User (/profile/[userId])
 │   │   ├── projects/           # Hub Kolaborasi Proyek (/projects)
-│   │   └── search/             # Halaman AI Semantic Search (/search)
+│   │   ├── search/             # Halaman AI Semantic Search (/search)
+│   │   ├── jobs/               # Portal Jobs, Learning Path, & CV Creator (/jobs)
+│   │   ├── learning-path/      # Pengalihan Rute ke /jobs (/learning-path)
+│   │   ├── cohort-admin/       # Konsol Admin Komunitas (/cohort-admin)
+│   │   └── super-admin/        # Konsol Super Admin (/super-admin)
 │   ├── api/                    # Route Handlers (REST & AI API)
 │   │   ├── auth/               # Endpoint Otentikasi (login, register, logout)
-│   │   ├── projects/           # Manajemen Proyek & Aplikasi
-│   │   └── reference/          # Rujukan Wilayah/Kota Indonesia
+│   │   ├── projects/           # Manajemen Proyek & Aplikasi (update-details, update-visibility, updates)
+│   │   ├── reference/          # Rujukan Wilayah/Kota Indonesia
+│   │   ├── cohorts/            # API Admin & Anggota Komunitas
+│   │   ├── jobs/               # API Data Pekerjaan & CRUD Draft CV
+│   │   ├── learning-path/      # API FastAPI AI Learning Path & Sync Checklist
+│   │   └── super-admin/        # API Manajemen Multi-Tenant Super Admin
 │   ├── layout.tsx              # Layout Utama Root Aplikasi
 │   ├── middleware.ts           # Interceptor Sesi & Proteksi Rute (JWT Cookie)
 │   └── globals.css             # Import CSS Global & Design System Tailwind
 ├── components/                 # Komponen React Reusable
 │   ├── ui/                     # UI Primitif Shadcn (Button, Card, Input, dsb.)
-│   └── shared/                 # Komponen Custom (Navbar, Sidebar, Card Proyek)
+│   ├── shared/                 # Komponen Custom (Navbar, Sidebar, Card Proyek)
+│   └── jobs/                   # Komponen Pendukung Portal Jobs & CV Creator (CVCreatorTab.tsx)
 ├── database/                   # Migrasi SQL & Runner Python Supabase
 ├── lib/                        # Utilitas & Klien Bersama
 │   ├── auth.ts                 # Enkripsi & Dekripsi JWT (jose)
@@ -59,7 +68,7 @@ Form besar seperti `/complete-profile` dan `/profile/edit/[userId]` dirender seb
 * **State Management:** Form state dikelola sepenuhnya oleh `react-hook-form` agar performa input tetap lancar tanpa *re-render* keseluruhan halaman.
 
 ### 3. Otentikasi Berbasis Middleware (Token JWT)
-Semua proteksi rute ditangani oleh [middleware.ts](file:///home/lightman/Documents/Project/talenthub/middleware.ts):
+Semua proteksi rute ditangani oleh [middleware.ts](../middleware.ts):
 * Middleware membaca HTTP-only cookie `auth_token`.
 * Memverifikasi JWT menggunakan library `jose` untuk memproses payload pengguna secara aman.
 * Menerapkan pengalihan otomatis (*redirect*) jika pengguna belum login atau profilnya belum lengkap.

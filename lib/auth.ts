@@ -10,6 +10,7 @@ export type AuthTokenPayload = JWTPayload & {
   username?: string;
   profile_completed?: boolean;
   must_change_password?: boolean;
+  auth_version?: number;
 };
 
 function getJwtSecret() {
@@ -31,6 +32,7 @@ export async function signAuthToken(payload: AuthTokenPayload) {
     username: payload.username,
     profile_completed: payload.profile_completed,
     must_change_password: payload.must_change_password,
+    auth_version: payload.auth_version,
   })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(String(payload.sub))

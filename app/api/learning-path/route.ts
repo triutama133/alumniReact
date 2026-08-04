@@ -26,8 +26,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Server misconfigured: missing INTERNAL_API_KEY.' }, { status: 500 });
     }
 
-    // Call FastAPI AI Engine
-    const fastApiUrl = 'http://localhost:8000/learning_path';
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+    if (!apiBaseUrl) {
+      return NextResponse.json({ error: 'Server misconfigured: missing NEXT_PUBLIC_API_BASE_URL.' }, { status: 500 });
+    }
+
+    const fastApiUrl = `${apiBaseUrl.replace(/\/$/, '')}/learning_path`;
     const response = await fetch(fastApiUrl, {
       method: 'POST',
       headers: {

@@ -56,7 +56,7 @@ Fitur utama untuk menemukan rekan kolaborasi ideal menggunakan bahasa alami.
 
 ## 💼 6. Hub Proyek & Kolaborasi (Dua Sub-Tab)
 
-Unified gateway untuk menjelajah proyek dan mencocokkan peluang kerja tim.
+Unified gateway untuk menjelajah proyek, mencocokkan peluang kerja tim, dan mengelola alur kerja internal proyek.
 
 ### Sub-Tab A: Jelajah Proyek (Manual Grid)
 * Menampilkan daftar semua proyek kolaborasi yang dibuat oleh alumni dalam bentuk kartu proyek.
@@ -68,6 +68,12 @@ Unified gateway untuk menjelajah proyek dan mencocokkan peluang kerja tim.
 * Pengguna mengetikkan preferensi ketersediaan mereka, seperti: *"Saya punya waktu luang 5 jam/minggu, ahli di bidang copywriting bahasa Inggris, tertarik proyek lingkungan hidup."*
 * **Prompt Starters:** Rekomendasi template ketikan siap pakai untuk memandu pengguna yang kebingungan.
 * **Output Pencocokan Proyek:** Menampilkan daftar proyek yang paling cocok, lengkap dengan persentase kecocokan dan **narasi "Alasan Rekomendasi AI"** yang menjabarkan mengapa proyek tersebut sesuai untuk mereka.
+
+### Fitur Pemilik Proyek (Project Owner Tools)
+Pada halaman detail proyek (`/projects/[id]`), pemilik proyek dibekali dengan alat manajemen internal:
+* **Pengaturan Visibilitas:** Mengubah status proyek menjadi Publik (dapat dicari oleh siapa saja) atau Privat (hanya dapat dilihat di lingkungan komunitas terkait).
+* **Rencana Kerja & Milestones:** Mengedit teks rencana kerja (`plan`) dan menyusun checklist pencapaian target (`milestones`) proyek secara terstruktur.
+* **Log Harian / Pembaruan Progres (Project Updates):** Menambahkan catatan pembaruan harian atau mingguan mengenai kemajuan proyek yang dapat dibaca oleh seluruh kolaborator.
 
 ---
 
@@ -81,12 +87,27 @@ Portofolio personal alumni untuk memamerkan keahlian dan riwayat profesional mer
 
 ---
 
-## 📊 8. Halaman Analisis Gap & Jalur Belajar (Learning Path)
+## 💼 8. Portal Jobs, Kesiapan Karir & CV Creator (`/jobs`)
 
-Fitur yang mempertemukan profil keahlian alumni dengan kebutuhan real-time industri kerja berdasarkan data lowongan kerja aktif (LinkedIn & Kalibrr) hasil scraping.
-* **Kalkulasi Selisih Skill (Gap Analysis):** AI membandingkan daftar skill gabungan alumni dengan persyaratan lowongan kerja terpopuler untuk posisi/peran target mereka.
-* **Rekomendasi Jalur Belajar (Learning/Training Path):** AI merancang kurikulum belajar mandiri yang berisi topik pelatihan, sertifikasi yang disarankan, atau kursus yang relevan untuk menutup gap keahlian tersebut.
-* **Checklist Persiapan Kerja:** Dasbor interaktif bagi talenta untuk menandai progres persiapan mereka (misalnya: *CV Updated, Portfolio Project A Completed, Certification B Achieved*) guna mengukur persentase kesiapan kerja mereka secara live.
+Gerbang karir terpadu yang memadukan pencarian loker, analisis kesiapan karir berbasis AI, dan pembuatan CV berstandar ATS. Fitur ini terbagi menjadi 3 Sub-Tab interaktif:
+
+### Sub-Tab A: Lowongan Pekerjaan (Jobs Portal)
+* Menampilkan daftar loker aktif hasil scraping LinkedIn & Kalibrr.
+* Dilengkapi kotak pencarian (search bar) posisi/perusahaan dan filter kategori sektor industri.
+* Kartu lowongan dapat diekspansi untuk menampilkan detail deskripsi pekerjaan dan daftar keahlian yang dibutuhkan, serta memiliki tombol CTA "Lamar" (External Link) untuk melamar langsung ke platform asal.
+
+### Sub-Tab B: Learning Path (Persiapan Kerja)
+* Pengguna menentukan target peran karir (baik peran populer maupun peran kustom).
+* **Kalkulasi Selisih Skill (AI Gap Analysis):** Membandingkan skill gabungan pengguna dengan kebutuhan riil industri kerja, lalu menjabarkan skill yang belum dikuasai.
+* **Rekomendasi Jalur Belajar:** Merancang kurikulum mandiri terstruktur (topik pelatihan, sertifikasi yang disarankan, dan rencana aksi belajar).
+* **Checklist Persiapan Kerja:** Dasbor tugas interaktif (seperti *Perbarui CV*, *Sertifikasi AWS*, dsb.). Progres penyelesaian tugas dihitung dalam bentuk persentase live (Progress Ring) dan status checklist otomatis tersinkronisasi ke tabel database `user_checklists`.
+
+### Sub-Tab C: ATS CV Creator
+* Lembar editor draf CV berstandar ATS internasional berbasis tipografi Georgia Serif klasik yang bersih.
+* **Kustomisasi Tata Letak (Layout Settings):** Pilihan 1 kolom (standar) atau 2 kolom (posisi sidebar di kiri/kanan, lebar sidebar 20-50%, dan jarak spasi kolom 8-40px).
+* **Asisten AI STAR/XYZ:** Kotak dialog AI untuk menulis ulang teks pekerjaan kasar menjadi poin-poin profesional yang berfokus pada hasil/dampak nyata (STAR formula) menggunakan model Google Gemini.
+* **Penyimpanan Otomatis (Autosave):** Sistem melakukan autosave ke database `user_cvs` 2 detik setelah pengguna berhenti mengetik, didukung indikator visual status draf (Tersimpan, Menyimpan, Belum Disimpan).
+* **Cetak PDF Bersih:** Integrasi media query print untuk memastikan CV dapat diunduh sebagai berkas PDF A4 yang bersih tanpa navbar, sidebar, atau tombol editor.
 
 ---
 
@@ -104,3 +125,20 @@ Halaman visual interaktif premium untuk menjelajahi potensi kolaborasi tanpa jen
 Untuk efisiensi kuota biaya API LLM dan kemudahan akses di masa depan:
 * **Penanda Pencarian (Bookmark Match):** Pengguna dapat menyimpan hasil pencarian AI (baik pencarian talenta maupun pencocokan proyek) ke dalam daftar simpanan mereka dengan mengklik tombol "Simpan Hasil".
 * **Dashboard Riwayat AI:** Halaman arsip personal tempat pengguna membaca kembali daftar rekomendasi dan hasil analisis AI sebelumnya secara instan tanpa memicu LLM ulang.
+
+---
+
+## 🛡️ 11. Super Admin Control Panel (`/super-admin`)
+
+Halaman kontrol terpusat bagi pengelola utama platform (khusus pengguna dengan role `super_admin` atau saat berada di lingkungan localhost dev).
+* **Manajemen Komunitas (Cohorts):** Memantau semua kelompok komunitas yang terdaftar, memperpanjang lisensi masa berlaku komunitas (+30 Hari), membekukan (suspend) / mengaktifkan status komunitas, serta menghapus komunitas.
+* **Manajemen Pengguna:** Melihat seluruh pengguna terdaftar dan menaikkan hak akses pengguna biasa menjadi `super_admin` atau mengembalikannya menjadi `member`.
+
+---
+
+## 👥 12. Konsol Admin Komunitas (`/cohort-admin`)
+
+Halaman khusus pengurus komunitas (Cohort Admin) untuk mengelola kelompok secara mandiri.
+* **Pengaturan Komunitas:** Mengubah nama kelompok dan deskripsi visi-misi komunitas.
+* **Kelola Anggota:** Mengundang anggota baru berdasarkan email/username, mengubah status peran anggota menjadi `admin` atau `member`, dan mengeluarkan anggota dari kelompok komunitas.
+* **Statistik Lisensi:** Menampilkan jumlah anggota aktif, tipe paket langganan, dan sisa hari masa aktif komunitas (langganan).
