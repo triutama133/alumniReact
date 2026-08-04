@@ -5,7 +5,7 @@ import { Globe, Sparkles, Code, Brain, Briefcase, ChevronRight, Check } from "lu
 
 export default function LandingPage() {
   return (
-    <div className="relative min-h-screen bg-[#07080a] font-sans text-slate-100 overflow-x-hidden scroll-smooth selection:bg-blue-500/30 selection:text-white">
+    <div className="relative min-h-screen bg-slate-950 font-sans text-slate-100 overflow-x-hidden scroll-smooth selection:bg-blue-600/30 selection:text-white">
 
       {/* --- HERO AREA (Header + Hero Content) --- */}
       <div className="relative w-full min-h-screen flex flex-col justify-between z-10">
@@ -14,21 +14,20 @@ export default function LandingPage() {
         <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
           <video
             src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260328_115001_bcdaa3b4-03de-47e7-ad63-ae3e392c32d4.mp4"
-            className="w-full h-full object-cover opacity-40 scale-105"
+            className="w-full h-full object-cover opacity-35 scale-105"
             muted
             playsInline
             autoPlay
             loop
           />
-          {/* Subtle gradient overlays to blend the video into the black background */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-[#07080a]/65 to-[#07080a]" />
-          <div className="absolute inset-0 bg-radial-gradient from-transparent to-[#07080a]/95" />
+          {/* Standard Tailwind gradients to avoid arbitrary syntax compile failures */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/40 to-slate-950" />
         </div>
 
         {/* Top Navbar */}
         <nav className="relative z-20 w-full px-6 py-6 max-w-6xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 hover:opacity-90 transition-opacity">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 shadow-lg shadow-blue-600/30">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 shadow-lg shadow-blue-600/20">
               <Globe className="h-4.5 w-4.5 text-white" />
             </div>
             <span className="text-base font-extrabold text-white tracking-tight">HubTalent</span>
@@ -45,7 +44,7 @@ export default function LandingPage() {
             <Link href="/login" className="text-xs font-semibold text-slate-350 no-underline hover:text-white transition-colors">
               Login
             </Link>
-            <Link href="/register" className="rounded-full bg-blue-600 px-5 py-2 text-xs font-bold text-white no-underline hover:bg-blue-500 transition-all shadow-sm shadow-blue-600/10">
+            <Link href="/register" className="rounded-full bg-blue-600 px-5 py-2 text-xs font-bold text-white no-underline hover:bg-blue-500 transition-all shadow-sm">
               Sign Up
             </Link>
           </div>
@@ -53,14 +52,14 @@ export default function LandingPage() {
 
         {/* Hero Body */}
         <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 text-center max-w-3xl mx-auto py-16">
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-blue-500/20 bg-blue-500/10 text-blue-400 text-[10px] font-bold uppercase tracking-wider mb-8 animate-fadeIn">
+          <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-blue-500/20 bg-blue-950/40 text-blue-400 text-[10px] font-bold uppercase tracking-wider mb-8 animate-fadeIn">
             <Sparkles className="h-3.5 w-3.5 text-blue-400" />
             Where Ideas Meet Talent & Opportunity
           </div>
 
           <h1 className="mb-6 text-4xl font-extrabold tracking-tight text-white sm:text-5xl md:text-6xl leading-[1.1] animate-fadeIn">
             Where Ideas Meet <br className="hidden sm:inline"/>
-            <span className="bg-gradient-to-r from-blue-400 via-sky-400 to-blue-500 bg-clip-text text-transparent">Talent</span> & Opportunity.
+            <span className="bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">Talent</span> & Opportunity.
           </h1>
 
           <p className="max-w-xl text-slate-350 text-sm md:text-base leading-relaxed mb-10 animate-fadeIn delay-100">
@@ -68,10 +67,10 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto items-center justify-center animate-fadeIn delay-200">
-            <Link href="/register" className="w-full sm:w-auto text-center rounded-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm px-8 py-3.5 transition-all shadow-lg shadow-blue-600/20 border border-blue-500/35">
+            <Link href="/register" className="w-full sm:w-auto text-center rounded-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm px-8 py-3.5 transition-all shadow-lg shadow-blue-600/20">
               Mulai Kolaborasi — Gratis
             </Link>
-            <Link href="/jobs" className="w-full sm:w-auto text-center rounded-full border border-slate-800 bg-slate-900/40 hover:bg-slate-900/85 text-white font-semibold text-sm px-8 py-3.5 transition-all backdrop-blur-sm">
+            <Link href="/jobs" className="w-full sm:w-auto text-center rounded-full border border-slate-800 bg-slate-900/40 hover:bg-slate-900/80 text-white font-semibold text-sm px-8 py-3.5 transition-all backdrop-blur-sm">
               Eksplorasi Lowongan
             </Link>
           </div>
@@ -83,7 +82,7 @@ export default function LandingPage() {
 
 
       {/* --- SECTION: THE 3 PILLARS (Clean grid layout, no video background) --- */}
-      <section className="relative z-20 py-24 bg-[#07080a] border-t border-slate-950">
+      <section className="relative z-20 py-24 bg-slate-950 border-t border-slate-900">
         <div className="max-w-6xl mx-auto px-6 space-y-16">
           
           <div className="text-center space-y-2 max-w-xl mx-auto">
@@ -95,9 +94,9 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             
             {/* Pilar 1 */}
-            <div className="p-8 rounded-2xl bg-[#0b0d10] border border-slate-900 hover:border-blue-500/20 transition-all duration-305 flex flex-col justify-between group">
+            <div className="p-8 rounded-2xl bg-slate-900 border border-slate-800/85 hover:border-blue-500/25 transition-all duration-300 flex flex-col justify-between group">
               <div className="space-y-6">
-                <div className="h-12 w-12 rounded-xl bg-blue-500/5 border border-blue-500/20 flex items-center justify-center text-blue-500 group-hover:scale-105 transition-transform">
+                <div className="h-12 w-12 rounded-xl bg-blue-950/40 border border-blue-800/30 flex items-center justify-center text-blue-400 group-hover:scale-105 transition-transform">
                   <Code className="h-5.5 w-5.5" />
                 </div>
                 <div className="space-y-2.5">
@@ -108,26 +107,26 @@ export default function LandingPage() {
                   </p>
                 </div>
               </div>
-              <div className="mt-8 pt-6 border-t border-slate-900/80 space-y-2.5 text-[11px] text-slate-350">
+              <div className="mt-8 pt-6 border-t border-slate-800/60 space-y-2.5 text-[11px] text-slate-350">
                 <div className="flex items-start gap-2">
-                  <div className="h-4 w-4 rounded-full bg-emerald-500/10 flex items-center justify-center mt-0.5"><Check className="h-3 w-3 text-emerald-400" /></div>
+                  <div className="h-4 w-4 rounded-full bg-emerald-950/40 flex items-center justify-center mt-0.5"><Check className="h-3 w-3 text-emerald-400" /></div>
                   <span><strong>Matchmaking Presisi:</strong> Berdasarkan skill & minat.</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <div className="h-4 w-4 rounded-full bg-emerald-500/10 flex items-center justify-center mt-0.5"><Check className="h-3 w-3 text-emerald-400" /></div>
+                  <div className="h-4 w-4 rounded-full bg-emerald-950/40 flex items-center justify-center mt-0.5"><Check className="h-3 w-3 text-emerald-400" /></div>
                   <span><strong>Pitching Ide:</strong> Tarik talenta terbaik bergabung.</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <div className="h-4 w-4 rounded-full bg-emerald-500/10 flex items-center justify-center mt-0.5"><Check className="h-3 w-3 text-emerald-400" /></div>
+                  <div className="h-4 w-4 rounded-full bg-emerald-950/40 flex items-center justify-center mt-0.5"><Check className="h-3 w-3 text-emerald-400" /></div>
                   <span><strong>Showcase Portfolio:</strong> Pamerkan progress proyek.</span>
                 </div>
               </div>
             </div>
 
             {/* Pilar 2 */}
-            <div className="p-8 rounded-2xl bg-[#0b0d10] border border-slate-900 hover:border-blue-500/20 transition-all duration-305 flex flex-col justify-between group">
+            <div className="p-8 rounded-2xl bg-slate-900 border border-slate-800/85 hover:border-blue-500/25 transition-all duration-300 flex flex-col justify-between group">
               <div className="space-y-6">
-                <div className="h-12 w-12 rounded-xl bg-blue-500/5 border border-blue-500/20 flex items-center justify-center text-blue-550 group-hover:scale-105 transition-transform">
+                <div className="h-12 w-12 rounded-xl bg-blue-950/40 border border-blue-800/30 flex items-center justify-center text-blue-400 group-hover:scale-105 transition-transform">
                   <Brain className="h-5.5 w-5.5" />
                 </div>
                 <div className="space-y-2.5">
@@ -138,26 +137,26 @@ export default function LandingPage() {
                   </p>
                 </div>
               </div>
-              <div className="mt-8 pt-6 border-t border-slate-900/80 space-y-2.5 text-[11px] text-slate-350">
+              <div className="mt-8 pt-6 border-t border-slate-800/60 space-y-2.5 text-[11px] text-slate-350">
                 <div className="flex items-start gap-2">
-                  <div className="h-4 w-4 rounded-full bg-emerald-500/10 flex items-center justify-center mt-0.5"><Check className="h-3 w-3 text-emerald-400" /></div>
+                  <div className="h-4 w-4 rounded-full bg-emerald-950/40 flex items-center justify-center mt-0.5"><Check className="h-3 w-3 text-emerald-400" /></div>
                   <span><strong>Simulasi Interview:</strong> Latihan HR & teknis interaktif.</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <div className="h-4 w-4 rounded-full bg-emerald-500/10 flex items-center justify-center mt-0.5"><Check className="h-3 w-3 text-emerald-400" /></div>
+                  <div className="h-4 w-4 rounded-full bg-emerald-950/40 flex items-center justify-center mt-0.5"><Check className="h-3 w-3 text-emerald-400" /></div>
                   <span><strong>CV & ATS Optimization:</strong> Evaluasi resume instan.</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <div className="h-4 w-4 rounded-full bg-emerald-500/10 flex items-center justify-center mt-0.5"><Check className="h-3 w-3 text-emerald-400" /></div>
+                  <div className="h-4 w-4 rounded-full bg-emerald-950/40 flex items-center justify-center mt-0.5"><Check className="h-3 w-3 text-emerald-400" /></div>
                   <span><strong>Career Roadmap:</strong> Analisis skill gap berbasis lowongan.</span>
                 </div>
               </div>
             </div>
 
             {/* Pilar 3 */}
-            <div className="p-8 rounded-2xl bg-[#0b0d10] border border-slate-900 hover:border-blue-500/20 transition-all duration-305 flex flex-col justify-between group">
+            <div className="p-8 rounded-2xl bg-slate-900 border border-slate-800/85 hover:border-blue-500/25 transition-all duration-300 flex flex-col justify-between group">
               <div className="space-y-6">
-                <div className="h-12 w-12 rounded-xl bg-blue-500/5 border border-blue-500/20 flex items-center justify-center text-blue-500 group-hover:scale-105 transition-transform">
+                <div className="h-12 w-12 rounded-xl bg-blue-950/40 border border-blue-800/30 flex items-center justify-center text-blue-400 group-hover:scale-105 transition-transform">
                   <Briefcase className="h-5.5 w-5.5" />
                 </div>
                 <div className="space-y-2.5">
@@ -168,13 +167,13 @@ export default function LandingPage() {
                   </p>
                 </div>
               </div>
-              <div className="mt-8 pt-6 border-t border-slate-900/80 space-y-2.5 text-[11px] text-slate-350">
+              <div className="mt-8 pt-6 border-t border-slate-800/60 space-y-2.5 text-[11px] text-slate-350">
                 <div className="flex items-start gap-2">
-                  <div className="h-4 w-4 rounded-full bg-emerald-500/10 flex items-center justify-center mt-0.5"><Check className="h-3 w-3 text-emerald-400" /></div>
+                  <div className="h-4 w-4 rounded-full bg-emerald-950/40 flex items-center justify-center mt-0.5"><Check className="h-3 w-3 text-emerald-400" /></div>
                   <span><strong>Update Real-time:</strong> Data terpercaya & selalu terbarui.</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <div className="h-4 w-4 rounded-full bg-emerald-500/10 flex items-center justify-center mt-0.5"><Check className="h-3 w-3 text-emerald-400" /></div>
+                  <div className="h-4 w-4 rounded-full bg-emerald-950/40 flex items-center justify-center mt-0.5"><Check className="h-3 w-3 text-emerald-400" /></div>
                   <span><strong>Filter Spesifik:</strong> Saring cepat berdasarkan peran & tipe kerja.</span>
                 </div>
               </div>
@@ -186,7 +185,7 @@ export default function LandingPage() {
 
 
       {/* --- SECTION: HOW IT WORKS --- */}
-      <section className="relative z-20 py-24 bg-[#07080a] border-t border-slate-950">
+      <section className="relative z-20 py-24 bg-slate-950 border-t border-slate-900">
         <div className="max-w-4xl mx-auto px-6 space-y-12">
           
           <div className="text-center space-y-2">
@@ -198,7 +197,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6">
             
             {/* Step 1 */}
-            <div className="p-8 rounded-2xl bg-[#0b0d10] border border-slate-900 relative overflow-hidden space-y-3">
+            <div className="p-8 rounded-2xl bg-slate-900 border border-slate-800 relative overflow-hidden space-y-3">
               <span className="absolute right-4 top-2 text-6xl font-black text-slate-800/10 select-none">01</span>
               <h4 className="font-extrabold text-sm text-white">1. Connect & Pitch</h4>
               <p className="text-xs text-slate-400 leading-relaxed">
@@ -207,7 +206,7 @@ export default function LandingPage() {
             </div>
 
             {/* Step 2 */}
-            <div className="p-8 rounded-2xl bg-[#0b0d10] border border-slate-900 relative overflow-hidden space-y-3">
+            <div className="p-8 rounded-2xl bg-slate-900 border border-slate-800 relative overflow-hidden space-y-3">
               <span className="absolute right-4 top-2 text-6xl font-black text-slate-800/10 select-none">02</span>
               <h4 className="font-extrabold text-sm text-white">2. Prepare with AI</h4>
               <p className="text-xs text-slate-400 leading-relaxed">
@@ -216,7 +215,7 @@ export default function LandingPage() {
             </div>
 
             {/* Step 3 */}
-            <div className="p-8 rounded-2xl bg-[#0b0d10] border border-slate-900 relative overflow-hidden space-y-3">
+            <div className="p-8 rounded-2xl bg-slate-900 border border-slate-800 relative overflow-hidden space-y-3">
               <span className="absolute right-4 top-2 text-6xl font-black text-slate-800/10 select-none">03</span>
               <h4 className="font-extrabold text-sm text-white">3. Launch & Get Hired</h4>
               <p className="text-xs text-slate-400 leading-relaxed">
@@ -230,7 +229,7 @@ export default function LandingPage() {
 
 
       {/* --- SECTION: BOTTOM CTA (Footer Banner) --- */}
-      <section className="relative z-20 py-24 bg-gradient-to-b from-[#07080a] to-[#0a0c10] border-t border-slate-950 text-center px-6">
+      <section className="relative z-20 py-24 bg-gradient-to-b from-slate-950 to-slate-900 border-t border-slate-900 text-center px-6">
         <div className="max-w-xl mx-auto space-y-6">
           <h3 className="text-3xl font-extrabold text-white sm:text-4xl leading-tight">Siap Eksekusi Ide dan Lompati Karirmu?</h3>
           <p className="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-md mx-auto">
@@ -250,7 +249,7 @@ export default function LandingPage() {
 
 
       {/* --- FOOTER --- */}
-      <footer className="relative z-20 flex flex-col items-center gap-4 pb-12 pt-6 border-t border-slate-950 bg-[#0a0c10] text-slate-500 text-[10px] md:text-xs">
+      <footer className="relative z-20 flex flex-col items-center gap-4 pb-12 pt-6 border-t border-slate-900 bg-slate-950 text-slate-500 text-[10px] md:text-xs">
         <div className="flex gap-4">
           <button aria-label="Instagram" className="rounded-full border border-slate-800 bg-[#07080a] p-2.5 text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><Instagram className="h-4 w-4" /></button>
           <button aria-label="Twitter" className="rounded-full border border-slate-800 bg-[#07080a] p-2.5 text-slate-400 hover:bg-slate-800 hover:text-white transition-all"><Twitter className="h-4 w-4" /></button>
