@@ -9,14 +9,23 @@ export default function LandingPage() {
 
       <video
         src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260328_115001_bcdaa3b4-03de-47e7-ad63-ae3e392c32d4.mp4"
-        className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-25"
+        style={{ opacity: 0.15, position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+        className="pointer-events-none"
         muted
         playsInline
         autoPlay
         loop
       />
 
-      <div className="pointer-events-none absolute inset-0 z-[5] bg-gradient-to-b from-black/95 via-black/75 to-black/95" aria-hidden="true" />
+      <div 
+        style={{ 
+          background: 'linear-gradient(to bottom, rgba(0, 0, 0, 0.93) 0%, rgba(0, 0, 0, 0.78) 50%, rgba(0, 0, 0, 0.95) 100%)',
+          position: 'absolute',
+          inset: 0,
+          zIndex: 5
+        }} 
+        aria-hidden="true" 
+      />
 
       {/* Top Navbar */}
       <nav className="relative z-20 w-full px-6 py-6">
