@@ -16,7 +16,7 @@ export default function LandingPage() {
         loop
       />
 
-      <div className="pointer-events-none absolute inset-0 z-[5] bg-gradient-to-b from-black/65 via-black/35 to-black/75" aria-hidden="true" />
+      <div className="pointer-events-none absolute inset-0 z-[5] bg-gradient-to-b from-black/85 via-black/60 to-black/90" aria-hidden="true" />
 
       {/* Top Navbar */}
       <nav className="relative z-20 w-full px-6 py-6">
