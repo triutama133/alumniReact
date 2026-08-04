@@ -383,16 +383,28 @@ export default function JobsPage() {
                         {/* Job Description */}
                         {job.description && (
                           <div className="space-y-1">
-                            <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">Deskripsi Pekerjaan:</h4>
+                            <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">Deskripsi Ringkas:</h4>
                             <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed whitespace-pre-line">
                               {job.description}
                             </p>
                           </div>
                         )}
 
+                        {/* Job Desk (Tugas & Tanggung Jawab) */}
+                        {job.job_desk && job.job_desk.length > 0 && (
+                          <div className="space-y-1.5">
+                            <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">Tugas & Tanggung Jawab (Job Desk):</h4>
+                            <ul className="list-disc pl-4 text-xs text-slate-600 dark:text-slate-400 space-y-1">
+                              {job.job_desk.map((task, i) => (
+                                <li key={i}>{task}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
                         {/* Job Requirements */}
                         {job.requirements && job.requirements.length > 0 && (
-                          <div className="space-y-1">
+                          <div className="space-y-1.5">
                             <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">Persyaratan / Keahlian yang Dibutuhkan:</h4>
                             <ul className="list-disc pl-4 text-xs text-slate-600 dark:text-slate-400 space-y-1">
                               {job.requirements.map((req, i) => (
