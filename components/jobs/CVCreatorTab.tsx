@@ -23,6 +23,14 @@ import {
   Type
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { playClickSound, playSuccessSound } from '@/lib/audio';
 
 interface LayoutSettings {
@@ -57,6 +65,7 @@ export function CVCreatorTab() {
   const [aiResult, setAiResult] = useState('');
   const [optimizing, setOptimizing] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showConfirmReset, setShowConfirmReset] = useState(false);
 
   // Refs for the editable regions
   const headerRef = useRef<HTMLDivElement>(null);
@@ -203,11 +212,13 @@ export function CVCreatorTab() {
   };
 
   // Generate CV from User Profile
-  const handleGenerateFromProfile = async () => {
+  const handleGenerateFromProfile = () => {
     playClickSound();
-    if (!window.confirm("Apakah Anda yakin ingin me-reset isi CV dan meng-generate ulang otomatis berdasarkan data profil Anda saat ini? Perubahan yang belum disimpan pada draf CV akan hilang.")) {
-      return;
-    }
+    setShowConfirmReset(true);
+  };
+
+  const executeGenerateFromProfile = async () => {
+    setShowConfirmReset(false);
     setGenerating(true);
     try {
       const res = await fetch('/api/jobs/cv?reset=true');
@@ -688,6 +699,36 @@ export function CVCreatorTab() {
         </div>
 
       </div>
+
+      <Dialog open={showConfirmReset} onOpenChange={setShowConfirmReset}>
+        <DialogContent className="sm:max-w-[420px] bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-2xl p-6 shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-slate-900 dark:text-white">
+              Reset & Regenerate CV?
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500 mt-2 leading-relaxed">
+              Apakah Anda yakin ingin me-reset isi CV dan membuat ulang otomatis berdasarkan data profil Anda saat ini? **Semua perubahan yang belum disimpan pada draf CV akan hilang.**
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex sm:justify-end gap-2 mt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => { playClickSound(); setShowConfirmReset(false); }}
+              className="text-xs border-slate-200 dark:border-slate-800 rounded-lg text-slate-700 dark:text-slate-300"
+            >
+              Batal
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => { playClickSound(); executeGenerateFromProfile(); }}
+              className="text-xs bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-semibold border border-transparent"
+            >
+              Ya, Reset & Buat Ulang
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </div>
   );
