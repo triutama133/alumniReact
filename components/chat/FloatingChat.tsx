@@ -2,6 +2,8 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
 import { Send, MessageSquare, ChevronUp, ChevronDown, User, MessageCircle, ArrowLeft } from 'lucide-react';
@@ -39,6 +41,8 @@ interface FloatingChatProps {
 }
 
 export function FloatingChat({ currentUserId, userEmail }: FloatingChatProps) {
+    const pathname = usePathname();
+    const [mounted, setMounted] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
@@ -57,6 +61,12 @@ export function FloatingChat({ currentUserId, userEmail }: FloatingChatProps) {
         setTimeout(() => {
             bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
         }, 100);
+    }, []);
+
+    // Set mounted state
+    useEffect(() => {
+        setMounted(true);
+        return () => setMounted(false);
     }, []);
 
     // Load conversations
@@ -184,17 +194,20 @@ export function FloatingChat({ currentUserId, userEmail }: FloatingChatProps) {
         }
     };
 
+    // Prevent rendering on SSR or when already on the full screen messages page
+    if (!mounted || pathname === '/messages') return null;
+
     const activeConversation = conversations.find(c => c.id === activeConversationId);
 
-    return (
-        <div className="fixed bottom-0 right-8 z-40 w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-t-xl shadow-2xl transition-all duration-300">
+    return createPortal(
+        <div className="fixed bottom-4 right-8 z-50 w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl transition-all duration-300 overflow-hidden">
             {/* Header / Toggle Bar */}
             <div 
                 onClick={() => setIsOpen(!isOpen)}
-                className="px-4 py-3 bg-slate-900 dark:bg-slate-950 text-white rounded-t-xl flex items-center justify-between cursor-pointer select-none hover:bg-slate-800 dark:hover:bg-slate-900 transition-colors"
+                className="px-4 py-3 bg-slate-900 dark:bg-slate-950 text-white flex items-center justify-between cursor-pointer select-none hover:bg-slate-800 dark:hover:bg-slate-900 transition-colors"
             >
                 <div className="flex items-center gap-2">
-                    <MessageSquare className="h-4 w-4 text-blue-400" />
+                    <MessageSquare className="h-4 w-4 text-blue-405" />
                     <span className="text-xs font-bold tracking-wide">Pesan Anda</span>
                     {totalUnread > 0 && (
                         <span className="bg-rose-500 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-full flex items-center justify-center">
@@ -312,6 +325,7 @@ export function FloatingChat({ currentUserId, userEmail }: FloatingChatProps) {
                     )}
                 </div>
             )}
-        </div>
+        </div>,
+        document.body
     );
 }
