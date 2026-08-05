@@ -156,7 +156,7 @@ export default function SearchPage() {
     <div className="container mx-auto py-8 px-4 max-w-5xl stagger-children">
       {/* Header section with ambient glow */}
       <div className="text-center mb-8 relative">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
         <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
           Cari Talenta Terbaik
         </h1>
@@ -172,7 +172,7 @@ export default function SearchPage() {
             onClick={() => setActiveTab('ai')}
             className={`flex items-center gap-2 px-5 py-2 rounded-full text-xs font-semibold transition-all duration-300 ${
               activeTab === 'ai' 
-                ? 'bg-indigo-600 text-white shadow-md' 
+                ? 'bg-primary text-white shadow-sm' 
                 : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
             }`}
           >
@@ -183,7 +183,7 @@ export default function SearchPage() {
             onClick={() => setActiveTab('standard')}
             className={`flex items-center gap-2 px-5 py-2 rounded-full text-xs font-semibold transition-all duration-300 ${
               activeTab === 'standard' 
-                ? 'bg-indigo-600 text-white shadow-md' 
+                ? 'bg-primary text-white shadow-sm' 
                 : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
             }`}
           >
@@ -198,10 +198,10 @@ export default function SearchPage() {
         {activeTab === 'ai' ? (
           <div className="space-y-6">
             {/* AI Search Card */}
-            <Card className="premium-light-card liquid-glass-border shadow-[0_0_30px_rgba(99,102,241,0.05)] text-slate-800 dark:text-slate-200">
+            <Card className="premium-light-card liquid-glass-border shadow-sm text-slate-800 dark:text-slate-200">
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <Cpu className="h-5 w-5 text-indigo-650 dark:text-indigo-400 animate-pulse" />
+                  <Cpu className="h-5 w-5 text-primary animate-pulse" />
                   <CardTitle className="text-slate-900 dark:text-white text-base">Asisten Pencocokan Semantik AI</CardTitle>
                 </div>
                 <CardDescription className="text-xs text-slate-500 dark:text-slate-400">
@@ -215,14 +215,14 @@ export default function SearchPage() {
                        value={aiPrompt}
                        onChange={(e) => setAiPrompt(e.target.value)}
                        placeholder="Jelaskan kebutuhan Anda secara detail (Contoh: Saya butuh talenta yang menguasai desain grafis, mahir menggunakan Canva/Photoshop, dan memiliki minat di bidang sosial kemasyarakatan)..."
-                       className="min-h-[100px] bg-slate-50 border-slate-200 focus:border-indigo-500 text-slate-900 placeholder:text-slate-400 dark:bg-slate-950/40 dark:border-slate-800 dark:text-slate-101 dark:placeholder:text-slate-500 rounded-lg text-sm resize-none"
+                       className="min-h-[100px] bg-slate-50 border-slate-200 focus:border-primary text-slate-900 placeholder:text-slate-400 dark:bg-slate-950/40 dark:border-slate-800 dark:text-slate-101 dark:placeholder:text-slate-500 rounded-lg text-sm resize-none"
                     />
                   </div>
                   <div className="flex justify-end">
                     <Button 
                       type="submit" 
                       disabled={aiLoading} 
-                      className="bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs rounded-full px-6 py-2 shadow-lg transition-all gap-2"
+                      className="bg-primary hover:bg-primary/95 text-white font-medium text-xs rounded-full px-6 py-2 shadow-sm transition-all gap-2 border border-transparent"
                     >
                       {aiLoading ? (
                         <>
@@ -306,7 +306,7 @@ export default function SearchPage() {
                 <Button 
                   type="submit" 
                   disabled={standardLoading}
-                  className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold px-6"
+                  className="bg-primary hover:bg-primary/95 text-white rounded-lg text-xs font-semibold px-6 border border-transparent"
                 >
                   {standardLoading ? 'Mencari...' : 'Cari Talenta'}
                 </Button>
@@ -317,7 +317,7 @@ export default function SearchPage() {
             <div className="stagger-children">
               {standardLoading && (
                 <div className="text-center py-12 text-slate-400">
-                  <div className="h-6 w-6 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin mx-auto mb-3" />
+                  <div className="h-6 w-6 rounded-full border-2 border-primary border-t-transparent animate-spin mx-auto mb-3" />
                   <p className="text-xs">Mencari di database...</p>
                 </div>
               )}

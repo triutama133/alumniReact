@@ -566,9 +566,9 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 max-w-6xl mx-auto px-4 stagger-children">
       {/* 1. Welcome Header (Dynamic Greeting) */}
       <div className="lg:col-span-12 mt-2">
-        <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900/90 to-indigo-950/80 border border-indigo-500/20 text-white shadow-xl backdrop-blur-md relative overflow-hidden">
+        <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900/95 to-slate-950 border border-slate-200 dark:border-white/5 text-white shadow-sm backdrop-blur-md relative overflow-hidden">
           <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
-            <Sparkles className="h-32 w-32 text-indigo-400" />
+            <Sparkles className="h-32 w-32 text-primary" />
           </div>
           <h2 className="text-2xl font-black tracking-tight">
             {new Date().getHours() < 18 ? `Halo, ${userProfile.nama_panggilan || userProfile.nama_lengkap}.` : `Lembur malam ini, ${userProfile.nama_panggilan || userProfile.nama_lengkap}?`}
@@ -603,7 +603,7 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
         <Card className="premium-light-card liquid-glass-border p-5 flex flex-col justify-between hover:shadow-md transition-shadow bg-white dark:bg-[#1b1f23]">
           <div>
             <h4 className="font-extrabold text-sm text-slate-900 dark:text-white mb-1.5 flex items-center gap-1.5">
-              <Sparkles className="h-4.5 w-4.5 text-indigo-500" />
+              <Sparkles className="h-4.5 w-4.5 text-primary" />
               Latihan Interview AI
             </h4>
             <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-4">
@@ -716,7 +716,7 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
                       <span className="text-[10px] text-slate-600 dark:text-slate-400 truncate">
                         {idx + 1}. {t.nama_lengkap}
                       </span>
-                      <span className="text-[9px] font-bold text-indigo-600 dark:text-indigo-400 flex-shrink-0 ml-2">
+                      <span className="text-[9px] font-bold text-primary flex-shrink-0 ml-2">
                         {t.total_proyek} proyek
                       </span>
                     </Link>
@@ -800,8 +800,8 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
       <div className="lg:col-span-6 space-y-6">
         {/* Cohort Workspace (If active) */}
         {activeCohort && (
-          <Card className="premium-light-card liquid-glass-border border-indigo-500/20 p-4 relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-3 flex items-center gap-1 bg-indigo-600/10 dark:bg-indigo-500/10 rounded-bl-lg text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 border-l border-b border-slate-200 dark:border-indigo-500/20">
+          <Card className="premium-light-card liquid-glass-border border-slate-200 dark:border-white/5 p-4 relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-3 flex items-center gap-1 bg-primary/10 rounded-bl-lg text-[10px] font-semibold text-primary border-l border-b border-slate-200 dark:border-white/5">
               <Shield className="h-3 w-3" />
               <span>Eksklusif: {activeCohort.subscription_plan}</span>
             </div>
@@ -816,11 +816,11 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
 
               <div className="flex flex-wrap gap-4 text-[10px] text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-white/5 pt-3">
                 <span className="flex items-center gap-1">
-                  <Users className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+                  <Users className="h-3.5 w-3.5 text-primary" />
                   {members.length} Anggota Terdaftar
                 </span>
                 <span className="flex items-center gap-1">
-                  <Clock className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+                  <Clock className="h-3.5 w-3.5 text-primary" />
                   {getDaysRemaining(activeCohort.expires_at)} Hari Sisa Langganan
                 </span>
               </div>
@@ -832,13 +832,13 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
                     value={newMemberInput}
                     onChange={(e) => setNewMemberInput(e.target.value)}
                     placeholder="Undang anggota (Email atau Username)..."
-                    className="h-8 bg-slate-50 border-slate-200 focus:border-indigo-500 text-xs text-slate-900 placeholder:text-slate-400 dark:bg-slate-950/40 dark:border-slate-800 dark:text-slate-200 dark:placeholder:text-slate-600 rounded-md"
+                    className="h-8 bg-slate-50 border-slate-200 focus:border-primary text-xs text-slate-900 placeholder:text-slate-400 dark:bg-slate-950/40 dark:border-slate-800 dark:text-slate-200 dark:placeholder:text-slate-600 rounded-md"
                   />
                   <Button
                     type="submit"
                     disabled={isAddingMember || !newMemberInput.trim()}
                     size="sm"
-                    className="h-8 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold rounded-md px-3 flex gap-1"
+                    className="h-8 bg-primary hover:bg-primary/95 text-white text-[10px] font-bold rounded-md px-3 flex gap-1 border border-transparent"
                   >
                     {isAddingMember ? 'Mengundang...' : 'Undang'}
                     <PlusCircle className="h-3 w-3" />
@@ -853,8 +853,8 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
         <Card className="premium-light-card liquid-glass-border p-4">
           <form onSubmit={handleCreatePost} className="space-y-4">
             <div className="flex items-start gap-3">
-              <Avatar className="h-10 w-10 border border-slate-200 dark:border-indigo-500/30">
-                <AvatarFallback className="bg-indigo-600 text-white text-sm font-semibold">
+              <Avatar className="h-10 w-10 border border-slate-200 dark:border-slate-800">
+                <AvatarFallback className="bg-primary text-white text-sm font-semibold">
                   {getInitials(userProfile.nama_lengkap)}
                 </AvatarFallback>
               </Avatar>
@@ -866,7 +866,7 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
                     ? `Bagikan ide eksklusif ke komunitas ${activeCohort.name}...`
                     : "Bagikan ide kolaborasi, info proyek, atau pembaruan status..."
                 }
-                className="flex-1 min-h-[70px] bg-slate-50 border-slate-200 focus:border-indigo-500 text-slate-900 placeholder:text-slate-400 dark:bg-slate-900/50 dark:border-slate-800 dark:text-white dark:placeholder:text-slate-500 text-sm resize-none rounded-lg"
+                className="flex-1 min-h-[70px] bg-slate-50 border-slate-200 focus:border-primary text-slate-900 placeholder:text-slate-400 dark:bg-slate-900/50 dark:border-slate-800 dark:text-white dark:placeholder:text-slate-500 text-sm resize-none rounded-lg"
               />
             </div>
 
@@ -901,7 +901,7 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
               <Button
                 type="submit"
                 disabled={isPosting || !content.trim()}
-                className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-900/40 text-white text-xs h-8 px-4 rounded-full shadow-md gap-1.5 transition-all"
+                className="bg-primary hover:bg-primary/95 disabled:bg-slate-700/40 text-white text-xs h-8 px-4 rounded-full shadow-sm gap-1.5 transition-all border border-transparent"
               >
                 <span>Bagikan</span>
                 <Send className="h-3.5 w-3.5" />
@@ -926,7 +926,7 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5 min-w-0">
-                          <Link href={`/profile/${post.user_id}`} className="font-bold text-slate-900 dark:text-white text-sm hover:underline hover:text-indigo-650 dark:hover:text-indigo-300 truncate">
+                          <Link href={`/profile/${post.user_id}`} className="font-bold text-slate-900 dark:text-white text-sm hover:underline hover:text-primary dark:hover:text-primary-foreground/90 truncate">
                             {post.nama_lengkap}
                           </Link>
                           {isNewPost(post.created_at) && (
@@ -941,7 +941,7 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
                       </div>
                       <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
                         {post.aktivitas && (
-                          <Badge className="bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 text-[9px] font-semibold py-0.5 px-2 rounded-full border border-indigo-200 dark:border-indigo-500/20">
+                          <Badge className="bg-primary/5 dark:bg-primary/10 hover:bg-primary/10 text-primary dark:text-primary-foreground/90 text-[9px] font-semibold py-0.5 px-2 rounded-full border border-primary/20">
                             {post.aktivitas}
                           </Badge>
                         )}
@@ -974,7 +974,7 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
                   <CardFooter className="border-t border-slate-200 dark:border-white/5 py-2 flex items-center gap-4 text-slate-500 dark:text-slate-450 text-xs">
                     <button
                       onClick={() => handleLike(post.id)}
-                      className={`flex items-center gap-1 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors py-1 px-2 rounded-md hover:bg-slate-100 dark:hover:bg-white/5 ${hasLiked ? 'text-indigo-600 dark:text-indigo-400 font-bold' : ''}`}
+                      className={`flex items-center gap-1 hover:text-primary dark:hover:text-primary transition-colors py-1 px-2 rounded-md hover:bg-slate-100 dark:hover:bg-white/5 ${hasLiked ? 'text-primary font-bold' : ''}`}
                     >
                       <ThumbsUp className="h-4 w-4" />
                       <span>{post.likes_count}</span>
@@ -982,7 +982,7 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
 
                     <button
                       onClick={() => toggleComments(post.id)}
-                      className={`flex items-center gap-1 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors py-1 px-2 rounded-md hover:bg-slate-100 dark:hover:bg-white/5 ${expandedComments[post.id] ? 'text-indigo-600 dark:text-indigo-400' : ''}`}
+                      className={`flex items-center gap-1 hover:text-primary dark:hover:text-primary transition-colors py-1 px-2 rounded-md hover:bg-slate-100 dark:hover:bg-white/5 ${expandedComments[post.id] ? 'text-primary' : ''}`}
                     >
                       <MessageSquare className="h-4 w-4" />
                       <span>{post.comments_count}</span>
@@ -1033,13 +1033,13 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
                                 }
                               }}
                               placeholder="Tulis komentar..."
-                              className="h-8 bg-slate-50 border-slate-200 focus:border-indigo-500 text-xs text-slate-900 placeholder:text-slate-400 dark:bg-slate-900/50 dark:border-slate-800 dark:text-white dark:placeholder:text-slate-500 rounded-full px-3"
+                              className="h-8 bg-slate-50 border-slate-200 focus:border-primary text-xs text-slate-900 placeholder:text-slate-400 dark:bg-slate-900/50 dark:border-slate-800 dark:text-white dark:placeholder:text-slate-500 rounded-full px-3"
                             />
                             <Button
                               size="sm"
                               onClick={() => handleAddComment(post.id)}
                               disabled={!(commentInputs[post.id] || '').trim()}
-                              className="h-8 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold rounded-full px-3 flex-shrink-0 gap-1"
+                              className="h-8 bg-primary hover:bg-primary/95 text-white text-[10px] font-bold rounded-full px-3 flex-shrink-0 gap-1 border border-transparent"
                             >
                               <Send className="h-3 w-3" />
                             </Button>
@@ -1165,12 +1165,12 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
             </Card>
 
             {/* 6. Community & Engagement Footer Widget */}
-            <Card className="premium-light-card liquid-glass-border p-4 bg-gradient-to-br from-indigo-900/50 to-purple-950/40 border-indigo-500/20 text-white shadow-sm">
-              <h4 className="font-extrabold text-xs text-indigo-300">Kolaborasi dimulai dari sapaan pertama.</h4>
-              <p className="text-[10px] text-slate-300 leading-relaxed mt-1.5 mb-3.5">
+            <Card className="premium-light-card liquid-glass-border p-4 bg-white dark:bg-[#1b1f23] border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 shadow-sm">
+              <h4 className="font-extrabold text-xs text-primary">Kolaborasi dimulai dari sapaan pertama.</h4>
+              <p className="text-[10px] text-slate-550 dark:text-slate-400 leading-relaxed mt-1.5 mb-3.5">
                 Mulai jaringan barumu dengan menyapa talenta lain atau ajukan tawaran bergabung pada ide proyek yang menarik minatmu.
               </p>
-              <Button asChild size="sm" className="w-full bg-white hover:bg-slate-100 text-slate-900 font-bold text-[10px] rounded-md">
+              <Button asChild size="sm" className="w-full bg-primary hover:bg-primary/95 text-white font-bold text-[10px] rounded-md border border-transparent">
                 <Link href="/search">Jelajahi Direktori Talenta</Link>
               </Button>
             </Card>
@@ -1181,7 +1181,7 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
       {/* COHORT CREATION MODAL (Glassmorphic Custom UI) */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="relative w-full max-w-lg p-6 liquid-glass liquid-glass-border border-indigo-500/30 shadow-[0_0_50px_rgba(99,102,241,0.15)] rounded-2xl text-slate-200">
+          <div className="relative w-full max-w-lg p-6 liquid-glass liquid-glass-border border-primary/20 shadow-xl rounded-2xl text-slate-200">
             <button
               onClick={() => setShowCreateModal(false)}
               className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-white/5 text-slate-400 hover:text-white transition-colors"
@@ -1190,7 +1190,7 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
             </button>
 
             <div className="flex items-center gap-2 mb-4">
-              <Lock className="h-5 w-5 text-indigo-400" />
+              <Lock className="h-5 w-5 text-primary" />
               <h2 className="text-xl font-extrabold text-white">Buat Ruang Kelompok Cerdas</h2>
             </div>
 
@@ -1202,7 +1202,7 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
                   value={newCohortName}
                   onChange={(e) => setNewCohortName(e.target.value)}
                   placeholder="Misal: Ikatan Alumni Paramadina Bogor"
-                  className="bg-slate-950/40 border-slate-800 focus:border-indigo-500 text-sm text-slate-100"
+                  className="bg-slate-950/40 border-slate-800 focus:border-primary text-sm text-slate-100"
                 />
               </div>
 
@@ -1212,14 +1212,14 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
                   value={newCohortDesc}
                   onChange={(e) => setNewCohortDesc(e.target.value)}
                   placeholder="Penjelasan singkat tujuan komunitas eksklusif ini..."
-                  className="bg-slate-950/40 border-slate-800 focus:border-indigo-500 text-sm text-slate-100 min-h-[70px] resize-none"
+                  className="bg-slate-950/40 border-slate-800 focus:border-primary text-sm text-slate-100 min-h-[70px] resize-none"
                 />
               </div>
 
               {/* Subscription Plan Chooser */}
               <div className="space-y-2">
                 <label className="text-xs text-slate-400 font-semibold flex items-center gap-1.5">
-                  <CreditCard className="h-3.5 w-3.5 text-indigo-400" />
+                  <CreditCard className="h-3.5 w-3.5 text-primary" />
                   Pilih Paket Langganan (SaaS Billing Mockup)
                 </label>
                 <div className="grid grid-cols-3 gap-3">
@@ -1228,7 +1228,7 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
                     type="button"
                     onClick={() => setSelectedPlan('premium')}
                     className={`flex flex-col items-center p-3 rounded-xl border text-center transition-all ${selectedPlan === 'premium'
-                      ? 'border-indigo-500 bg-indigo-500/10 text-indigo-300 font-bold shadow-md'
+                      ? 'border-primary bg-primary/10 text-primary font-bold shadow-md'
                       : 'border-white/5 bg-slate-900/30 text-slate-400 hover:border-slate-800'
                       }`}
                   >
@@ -1242,7 +1242,7 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
                     type="button"
                     onClick={() => setSelectedPlan('enterprise')}
                     className={`flex flex-col items-center p-3 rounded-xl border text-center transition-all ${selectedPlan === 'enterprise'
-                      ? 'border-indigo-500 bg-indigo-500/10 text-indigo-300 font-bold shadow-md'
+                      ? 'border-primary bg-primary/10 text-primary font-bold shadow-md'
                       : 'border-white/5 bg-slate-900/30 text-slate-400 hover:border-slate-800'
                       }`}
                   >
@@ -1256,7 +1256,7 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
                     type="button"
                     onClick={() => setSelectedPlan('free')}
                     className={`flex flex-col items-center p-3 rounded-xl border text-center transition-all ${selectedPlan === 'free'
-                      ? 'border-indigo-500 bg-indigo-500/10 text-indigo-300 font-bold shadow-md'
+                      ? 'border-primary bg-primary/10 text-primary font-bold shadow-md'
                       : 'border-white/5 bg-slate-900/30 text-slate-400 hover:border-slate-800'
                       }`}
                   >
@@ -1267,8 +1267,8 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
                 </div>
               </div>
 
-              <div className="flex gap-1.5 p-3 rounded-lg bg-indigo-500/5 border border-indigo-500/10 text-[10px] text-indigo-300/95 leading-normal items-start">
-                <Info className="h-4 w-4 mt-0.5 flex-shrink-0 text-indigo-400" />
+              <div className="flex gap-1.5 p-3 rounded-lg bg-primary/5 border border-primary/10 text-[10px] text-slate-700 dark:text-slate-350 leading-normal items-start">
+                <Info className="h-4 w-4 mt-0.5 flex-shrink-0 text-primary" />
                 <p>
                   Mekanisme cohort membatasi visibilitas postingan, pencarian AI, serta manajemen proyek agar terkelompok eksklusif dan aman bagi tim internal Anda. Pembayaran mockup akan langsung menyetujui transaksi Anda secara otomatis.
                 </p>
@@ -1286,7 +1286,7 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
                 <Button
                   type="submit"
                   disabled={isCreatingCohort || !newCohortName.trim()}
-                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-lg px-6 rounded-full"
+                  className="bg-primary hover:bg-primary/95 text-white font-semibold shadow-sm px-6 rounded-full border border-transparent"
                 >
                   {isCreatingCohort ? 'Memproses Langganan...' : 'Bayar & Buat Kelompok'}
                 </Button>

@@ -269,13 +269,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
       
       {/* 1. HEADER CARD (Premium Banner & Avatar) */}
       <Card className="premium-light-card liquid-glass-border text-slate-800 dark:text-slate-200 overflow-hidden relative shadow-sm">
-        <div className="h-28 bg-slate-350 dark:bg-slate-800 border-b border-slate-200 dark:border-white/5 relative">
-          <div className="absolute top-4 left-4 flex gap-2">
-            <Badge className="bg-indigo-50/50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-500/20 text-[10px]">
-              Alumni
-            </Badge>
-          </div>
-        </div>
+        <div className="h-28 bg-slate-350 dark:bg-slate-800 border-b border-slate-200 dark:border-white/5 relative" />
         
         <CardContent className="pt-0 pb-6 px-6 relative flex flex-col md:flex-row md:items-end justify-between gap-6 -mt-10">
           <div className="flex flex-col md:flex-row md:items-end gap-4">
@@ -474,7 +468,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
                 Aktivitas & Karir Saat Ini
               </CardTitle>
               <CardDescription className="text-[10px] text-slate-500 dark:text-slate-400">
-                Pekerjaan, bisnis, atau proyek aktif yang ditekuni alumni
+                Pekerjaan, bisnis, atau proyek aktif yang ditekuni talenta
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-4 space-y-6">
@@ -878,7 +872,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
                 })
               ) : (
                 <div className="text-center py-6 border border-dashed border-slate-200 dark:border-white/10 rounded-md bg-slate-50/50 dark:bg-slate-950/20">
-                  <p className="text-slate-500 dark:text-slate-400 text-xs italic">Alumni belum menambahkan aktivitas saat ini.</p>
+                  <p className="text-slate-500 dark:text-slate-400 text-xs italic">Talenta belum menambahkan aktivitas saat ini.</p>
                 </div>
               )}
             </CardContent>

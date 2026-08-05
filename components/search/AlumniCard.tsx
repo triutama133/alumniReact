@@ -21,11 +21,11 @@ type AlumniCardProps = {
 };
 
 export function AlumniCard({ alumni }: AlumniCardProps) {
-  // Pecah skills untuk ditampilkan sebagai badge
-  const skills = alumni.skill_gabungan?.split(',').map(s => s.trim()).filter(Boolean) || [];
+  // Pecah skills untuk ditampilkan sebagai badge (pisahkan koma atau titik koma)
+  const skills = alumni.skill_gabungan?.split(/[;,]/).map(s => s.trim()).filter(Boolean) || [];
 
   return (
-    <Card className="premium-light-card liquid-glass-border flex flex-col h-full hover:scale-[1.02] hover:border-indigo-500/40 hover:shadow-[0_0_20px_rgba(99,102,241,0.05)] transition-all duration-300 text-slate-800 dark:text-slate-200">
+    <Card className="premium-light-card liquid-glass-border flex flex-col h-full hover:scale-[1.02] hover:border-primary/45 hover:shadow-md transition-all duration-300 text-slate-800 dark:text-slate-200">
       <CardHeader className="flex flex-row items-center gap-3 pb-3">
         <Avatar className="h-12 w-12 border border-slate-200 dark:border-slate-800">
           <AvatarImage src={`https://api.dicebear.com/8.x/initials/svg?seed=${alumni.nama_lengkap}`} />
@@ -38,7 +38,7 @@ export function AlumniCard({ alumni }: AlumniCardProps) {
             {alumni.nama_lengkap}
           </h3>
           <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5" title={`${alumni.aktivitas || ''} • ${alumni.fakultas_jurusan || ''}`}>
-            <span className="font-medium text-indigo-600 dark:text-indigo-400">{alumni.aktivitas}</span>
+            <span className="font-medium text-primary">{alumni.aktivitas}</span>
             {alumni.fakultas_jurusan && ` • ${alumni.fakultas_jurusan}`}
           </p>
         </div>
@@ -50,7 +50,7 @@ export function AlumniCard({ alumni }: AlumniCardProps) {
               <Badge 
                 key={skill} 
                 variant="secondary"
-                className="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400 text-[9px] font-semibold py-0.5 px-2 rounded-full border border-indigo-200 dark:border-indigo-500/20"
+                className="bg-primary/5 hover:bg-primary/10 text-primary dark:bg-primary/10 dark:text-primary-foreground/90 text-[9px] font-semibold py-0.5 px-2 rounded-full border border-primary/20"
               >
                 {skill}
               </Badge>
@@ -64,7 +64,7 @@ export function AlumniCard({ alumni }: AlumniCardProps) {
         ) : (
           <div className="mb-4 h-5" /> // Spacer jika tidak ada skill
         )}
-        <Button asChild className="w-full bg-indigo-600 hover:bg-indigo-500 text-white rounded-full text-xs font-semibold py-1.5 h-9 transition-all mt-auto flex items-center justify-center gap-1">
+        <Button asChild className="w-full bg-primary hover:bg-primary/90 text-white rounded-full text-xs font-semibold py-1.5 h-9 transition-all mt-auto flex items-center justify-center gap-1">
           <Link href={`/profile/${alumni.id}`}>
             <span>Lihat Profil Lengkap</span>
             <ArrowRight className="h-3.5 w-3.5" />
