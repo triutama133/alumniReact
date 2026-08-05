@@ -10,7 +10,7 @@ function getBrevoApiKey() {
 }
 
 function getFromEmail() {
-  return process.env.FROM_EMAIL || 'noreply@dev.hubtalent.id';
+  return process.env.FROM_EMAIL || 'noreply@hubtalent.id';
 }
 
 function getAppUrl() {
