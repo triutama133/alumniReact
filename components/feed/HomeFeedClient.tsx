@@ -891,7 +891,7 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowMediaInput(!showMediaInput)}
-                  className={`text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 h-8 rounded-full px-3 text-xs gap-1.5 ${showMediaInput ? 'text-blue-600 bg-blue-50 dark:text-blue-400 dark:
+                  className={`text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 h-8 rounded-full px-3 text-xs gap-1.5 ${showMediaInput ? 'text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-500/10' : ''}`}
                 >
                   <ImageIcon className="h-4 w-4" />
                   <span>Media</span>
