@@ -2,6 +2,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
@@ -271,11 +272,14 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
               <Menu className="h-5 w-5" />
             </button>
 
-            <Link href="/" className="flex items-center gap-1.5 hover:opacity-90 transition-opacity">
-              <Globe className="h-5 w-5 text-primary" />
-              <span className="font-bold text-sm sm:text-base tracking-tight text-slate-900 dark:text-white hidden md:inline">
-                HubTalent
-              </span>
+            <Link href="/" className="flex items-center hover:opacity-90 transition-opacity">
+              <Image
+                src="/logo.png"
+                alt="HubTalent"
+                width={110}
+                height={30}
+                className="h-7 w-auto dark:brightness-0 dark:invert"
+              />
             </Link>
 
             {userId && (
@@ -546,11 +550,14 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
         <div className="space-y-6">
           {/* Header & Close Button */}
           <div className="flex justify-between items-center">
-            <Link href="/" onClick={() => setIsMobileOpen(false)} className="flex items-center gap-1.5">
-              <Globe className="h-5 w-5 text-primary" />
-              <span className="font-bold text-sm tracking-tight text-slate-900 dark:text-white">
-                HubTalent
-              </span>
+            <Link href="/" onClick={() => setIsMobileOpen(false)} className="flex items-center">
+              <Image
+                src="/logo.png"
+                alt="HubTalent"
+                width={100}
+                height={28}
+                className="h-6 w-auto dark:brightness-0 dark:invert"
+              />
             </Link>
             <button
               onClick={() => setIsMobileOpen(false)}
