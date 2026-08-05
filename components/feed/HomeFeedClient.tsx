@@ -4,13 +4,13 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { 
-  ThumbsUp, 
-  MessageSquare, 
-  Send, 
-  Sparkles, 
-  User, 
-  Image as ImageIcon, 
+import {
+  ThumbsUp,
+  MessageSquare,
+  Send,
+  Sparkles,
+  User,
+  Image as ImageIcon,
   Link as LinkIcon,
   CheckCircle,
   FileText,
@@ -54,6 +54,20 @@ interface Post {
   nama_panggilan: string | null;
   aktivitas: string | null;
   cohort_id?: number | null;
+  is_liked?: boolean;
+}
+
+interface PostComment {
+  id: number;
+  post_id: number;
+  user_id: number;
+  content: string;
+  created_at: string;
+  alumni_db: {
+    nama_lengkap: string | null;
+    nama_panggilan: string | null;
+    aktivitas: string | null;
+  } | null;
 }
 
 interface UserProfile {
@@ -106,19 +120,19 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
   const [mediaUrl, setMediaUrl] = useState('');
   const [showMediaInput, setShowMediaInput] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
-  
+
   // Cohorts State
   const [cohorts, setCohorts] = useState<Cohort[]>([]);
   const [activeCohort, setActiveCohort] = useState<Cohort | null>(null);
   const [isLoadingCohorts, setIsLoadingCohorts] = useState(false);
-  
+
   // Cohorts UI State
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newCohortName, setNewCohortName] = useState('');
   const [newCohortDesc, setNewCohortDesc] = useState('');
   const [selectedPlan, setSelectedPlan] = useState<'free' | 'premium' | 'enterprise'>('premium');
   const [isCreatingCohort, setIsCreatingCohort] = useState(false);
-  
+
   // Cohort Members State
   const [members, setMembers] = useState<CohortMember[]>([]);
   const [isLoadingMembers, setIsLoadingMembers] = useState(false);
@@ -191,7 +205,7 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
     const fetchFeed = async () => {
       setPosts([]);
       try {
-        const url = activeCohort 
+        const url = activeCohort
           ? `/api/posts?cohortId=${activeCohort.id}`
           : '/api/posts';
         const res = await fetch(url);
@@ -233,7 +247,7 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
         const res = await fetch('/api/collaboration-recommendation', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
+          body: JSON.stringify({
             userId: userProfile.id,
             cohortId: activeCohort?.id || null,
             source: 'home'
@@ -373,29 +387,155 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
     }
   };
 
-  // Local likes toggle simulation
+  // Persistent like toggle via API
   const [likedPosts, setLikedPosts] = useState<Record<string | number, boolean>>({});
-  const handleLike = (postId: string | number) => {
-    const isLiked = likedPosts[postId];
-    setLikedPosts({
-      ...likedPosts,
-      [postId]: !isLiked,
-    });
+  const [isLikingPost, setIsLikingPost] = useState<Record<string | number, boolean>>({});
 
-    setPosts(prevPosts => 
+  useEffect(() => {
+    const initialLiked: Record<string | number, boolean> = {};
+    for (const p of posts) {
+      if (p.is_liked) initialLiked[p.id] = true;
+    }
+    setLikedPosts(initialLiked);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialPosts]);
+
+  const handleLike = async (postId: string | number) => {
+    if (isLikingPost[postId]) return;
+
+    const isLiked = likedPosts[postId];
+    // Optimistic update
+    setLikedPosts({ ...likedPosts, [postId]: !isLiked });
+    setPosts(prevPosts =>
       prevPosts.map(p => {
         if (p.id === postId) {
-          return {
-            ...p,
-            likes_count: isLiked ? p.likes_count - 1 : p.likes_count + 1
-          };
+          return { ...p, likes_count: Math.max(0, p.likes_count + (isLiked ? -1 : 1)) };
         }
         return p;
       })
     );
+
+    setIsLikingPost({ ...isLikingPost, [postId]: true });
+    try {
+      const res = await fetch(`/api/posts/${postId}/like`, { method: 'POST' });
+      if (!res.ok) {
+        // Rollback on error
+        setLikedPosts({ ...likedPosts, [postId]: isLiked });
+        setPosts(prevPosts =>
+          prevPosts.map(p => {
+            if (p.id === postId) {
+              return { ...p, likes_count: Math.max(0, p.likes_count + (isLiked ? 1 : -1)) };
+            }
+            return p;
+          })
+        );
+        throw new Error('Gagal menyukai postingan.');
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Gagal menyukai postingan.');
+    } finally {
+      setIsLikingPost({ ...isLikingPost, [postId]: false });
+    }
   };
 
-  const getInitials = (name: string | null) => {
+  // Comments state
+  const [expandedComments, setExpandedComments] = useState<Record<string | number, boolean>>({});
+  const [commentsByPost, setCommentsByPost] = useState<Record<string | number, PostComment[]>>({});
+  const [commentInputs, setCommentInputs] = useState<Record<string | number, string>>({});
+  const [isLoadingComments, setIsLoadingComments] = useState<Record<string | number, boolean>>({});
+
+  const toggleComments = async (postId: string | number) => {
+    const willExpand = !expandedComments[postId];
+    setExpandedComments({ ...expandedComments, [postId]: willExpand });
+
+    if (willExpand && !commentsByPost[postId]) {
+      setIsLoadingComments({ ...isLoadingComments, [postId]: true });
+      try {
+        const res = await fetch(`/api/posts/${postId}/comments`);
+        if (res.ok) {
+          const data = await res.json();
+          setCommentsByPost({ ...commentsByPost, [postId]: data });
+        }
+      } catch (err) {
+        console.error('Error fetching comments:', err);
+      } finally {
+        setIsLoadingComments({ ...isLoadingComments, [postId]: false });
+      }
+    }
+  };
+
+  const handleAddComment = async (postId: string | number) => {
+    const content = (commentInputs[postId] || '').trim();
+    if (!content) return;
+
+    try {
+      const res = await fetch(`/api/posts/${postId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Gagal menambahkan komentar.');
+      }
+
+      const newComment: PostComment = data.comment;
+      setCommentsByPost({
+        ...commentsByPost,
+        [postId]: [...(commentsByPost[postId] || []), newComment],
+      });
+      setCommentInputs({ ...commentInputs, [postId]: '' });
+      setPosts(prevPosts =>
+        prevPosts.map(p => {
+          if (p.id === postId) {
+            return { ...p, comments_count: p.comments_count + 1 };
+          }
+          return p;
+        })
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Gagal menambahkan komentar.');
+    }
+  };
+
+  // Network stats (real-time dari API)
+  const [networkStats, setNetworkStats] = useState<{
+    total_talent: number;
+    distribusi_aktivitas: Record<string, number>;
+    total_proyek_aktif: number;
+    top_talents: Array<{ id: number; nama_lengkap: string; total_proyek: number }>;
+  } | null>(null);
+
+  useEffect(() => {
+    const fetchNetworkStats = async () => {
+      try {
+        const res = await fetch('/api/stats/network');
+        if (res.ok) {
+          setNetworkStats(await res.json());
+        }
+      } catch (err) {
+        console.error('Error fetching network stats:', err);
+      }
+    };
+    fetchNetworkStats();
+  }, []);
+
+  // Hitung dominasi aktivitas teratas
+  const topActivity = networkStats?.distribusi_aktivitas
+    ? Object.entries(networkStats.distribusi_aktivitas).sort((a, b) => b[1] - a[1])[0]
+    : null;
+  const topActivityPercent = networkStats?.total_talent
+    ? Math.round(((topActivity?.[1] ?? 0) / networkStats.total_talent) * 1000) / 10
+    : 0;
+
+  // Helper untuk badge "Baru" (postingan < 2 jam)
+  const isNewPost = (createdAt: string) => {
+    const diffMs = Date.now() - new Date(createdAt).getTime();
+    return diffMs < 2 * 60 * 60 * 1000;
+  };
+
+  const getInitials = (name: string | null | undefined) => {
     if (!name) return 'U';
     return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
   };
@@ -434,7 +574,7 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
             {new Date().getHours() < 18 ? `Halo, ${userProfile.nama_panggilan || userProfile.nama_lengkap}.` : `Lembur malam ini, ${userProfile.nama_panggilan || userProfile.nama_lengkap}?`}
           </h2>
           <p className="text-sm text-slate-350 mt-1 max-w-2xl leading-relaxed">
-            {new Date().getHours() < 18 
+            {new Date().getHours() < 18
               ? "Cek respon proyekmu, lakukan simulasi wawancara AI, atau intip lowongan kerja terbaru yang relevan hari ini."
               : "Ide proyek terbaik sering lahir di jam tenang. Siap mencari rekan kolaborasi baru?"}
           </p>
@@ -507,15 +647,15 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
             {userProfile.fakultas_jurusan && (
               <p className="text-xs text-slate-800 dark:text-slate-200 mt-1">{userProfile.fakultas_jurusan}</p>
             )}
-            
+
             <div className="w-full border-t border-slate-200 dark:border-white/5 my-4 pt-4 text-left space-y-2">
               <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-500 dark:text-slate-400">Kelengkapan Profil</span>
                 <span className="font-bold text-primary">{completeness}%</span>
               </div>
               <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-950/40 rounded-full overflow-hidden border border-slate-200 dark:border-white/5">
-                <div 
-                  className="h-full bg-primary rounded-full transition-all duration-500" 
+                <div
+                  className="h-full bg-primary rounded-full transition-all duration-500"
                   style={{ width: `${completeness}%` }}
                 />
               </div>
@@ -529,7 +669,7 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
                 </p>
               )}
             </div>
-            
+
             <Button asChild size="sm" className="w-full bg-slate-900 hover:bg-slate-800 text-white shadow-sm font-bold text-xs rounded-md dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900">
               <Link href={`/profile/${userProfile.id}`}>Lihat Profil Saya</Link>
             </Button>
@@ -547,26 +687,49 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
               Real-time
             </Badge>
           </div>
-          
+
           <div className="space-y-2 text-[11px] text-slate-600 dark:text-slate-400">
             <div className="flex justify-between items-center">
               <span>👥 Total Talent</span>
-              <span className="font-bold text-slate-900 dark:text-white">115 Terhubung</span>
+              <span className="font-bold text-slate-900 dark:text-white">
+                {networkStats ? `${networkStats.total_talent.toLocaleString('id-ID')} Terhubung` : 'Memuat...'}
+              </span>
             </div>
             <div className="flex justify-between items-center">
-              <span>💼 Profesional IT</span>
-              <span className="font-bold text-slate-900 dark:text-white">63.5% Dominasi</span>
+              <span>{topActivity ? `💼 ${topActivity[0]}` : '💼 Aktivitas Utama'}</span>
+              <span className="font-bold text-slate-900 dark:text-white">
+                {networkStats ? `${topActivityPercent}% Dominasi` : 'Memuat...'}
+              </span>
             </div>
             <div className="flex justify-between items-center">
-              <span>🚀 Sektor Bisnis</span>
-              <span className="font-bold text-slate-900 dark:text-white">19 Aktivitas</span>
+              <span>🚀 Proyek Aktif</span>
+              <span className="font-bold text-slate-900 dark:text-white">
+                {networkStats ? `${networkStats.total_proyek_aktif} Proyek` : 'Memuat...'}
+              </span>
             </div>
+            {networkStats && networkStats.top_talents.length > 0 && (
+              <div className="pt-2 border-t border-slate-200 dark:border-white/5">
+                <p className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">🔥 3 Talenta Terpopuler</p>
+                <div className="space-y-1">
+                  {networkStats.top_talents.map((t, idx) => (
+                    <Link key={t.id} href={`/profile/${t.id}`} className="flex items-center justify-between hover:bg-slate-50 dark:hover:bg-white/5 rounded-md px-1.5 py-0.5 transition-colors">
+                      <span className="text-[10px] text-slate-600 dark:text-slate-400 truncate">
+                        {idx + 1}. {t.nama_lengkap}
+                      </span>
+                      <span className="text-[9px] font-bold text-indigo-600 dark:text-indigo-400 flex-shrink-0 ml-2">
+                        {t.total_proyek} proyek
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-          
-          <Button 
-            asChild 
-            variant="ghost" 
-            size="sm" 
+
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
             onClick={() => playClickSound()}
             className="w-full text-center text-[10px] h-8 bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 shadow-sm font-bold rounded-md dark:bg-slate-900 dark:hover:bg-slate-850 dark:text-white dark:border-slate-800 transition-all"
           >
@@ -583,8 +746,8 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
               <CardTitle className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">Ruang Lingkup</CardTitle>
               <CardDescription className="text-[10px] text-slate-500 dark:text-slate-400">Pilih komunitas eksklusif</CardDescription>
             </div>
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               onClick={() => setShowCreateModal(true)}
               className="h-6 w-6 p-0 rounded-full bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350"
             >
@@ -595,11 +758,10 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
             {/* Public Option */}
             <button
               onClick={() => setActiveCohort(null)}
-              className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs font-semibold transition-all text-left ${
-                activeCohort === null 
-                  ? 'bg-slate-100 text-slate-900 border border-slate-200 dark:bg-white/10 dark:text-white dark:border-white/10 shadow-sm font-bold' 
-                  : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 border border-transparent'
-              }`}
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs font-semibold transition-all text-left ${activeCohort === null
+                ? 'bg-slate-100 text-slate-900 border border-slate-200 dark:bg-white/10 dark:text-white dark:border-white/10 shadow-sm font-bold'
+                : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 border border-transparent'
+                }`}
             >
               <Globe className="h-3.5 w-3.5" />
               <span>Bumi Publik (Umum)</span>
@@ -610,11 +772,10 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
               <button
                 key={cohort.id}
                 onClick={() => setActiveCohort(cohort)}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-xs font-semibold transition-all text-left ${
-                  activeCohort?.id === cohort.id 
-                    ? 'bg-slate-100 text-slate-900 border border-slate-200 dark:bg-white/10 dark:text-white dark:border-white/10 shadow-sm font-bold' 
-                    : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 border border-transparent'
-                }`}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-xs font-semibold transition-all text-left ${activeCohort?.id === cohort.id
+                  ? 'bg-slate-100 text-slate-900 border border-slate-200 dark:bg-white/10 dark:text-white dark:border-white/10 shadow-sm font-bold'
+                  : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 border border-transparent'
+                  }`}
               >
                 <span className="flex items-center gap-2 truncate">
                   <Lock className="h-3.5 w-3.5" />
@@ -644,7 +805,7 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
               <Shield className="h-3 w-3" />
               <span>Eksklusif: {activeCohort.subscription_plan}</span>
             </div>
-            
+
             <div className="space-y-3">
               <div>
                 <h2 className="text-lg font-bold text-slate-900 dark:text-white">{activeCohort.name}</h2>
@@ -673,9 +834,9 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
                     placeholder="Undang anggota (Email atau Username)..."
                     className="h-8 bg-slate-50 border-slate-200 focus:border-indigo-500 text-xs text-slate-900 placeholder:text-slate-400 dark:bg-slate-950/40 dark:border-slate-800 dark:text-slate-200 dark:placeholder:text-slate-600 rounded-md"
                   />
-                  <Button 
-                    type="submit" 
-                    disabled={isAddingMember || !newMemberInput.trim()} 
+                  <Button
+                    type="submit"
+                    disabled={isAddingMember || !newMemberInput.trim()}
                     size="sm"
                     className="h-8 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold rounded-md px-3 flex gap-1"
                   >
@@ -701,7 +862,7 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder={
-                  activeCohort 
+                  activeCohort
                     ? `Bagikan ide eksklusif ke komunitas ${activeCohort.name}...`
                     : "Bagikan ide kolaborasi, info proyek, atau pembaruan status..."
                 }
@@ -730,7 +891,7 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowMediaInput(!showMediaInput)}
-                  className={`text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 h-8 rounded-full px-3 text-xs gap-1.5 ${showMediaInput ? 'text-indigo-600 bg-indigo-50 dark:text-indigo-400 dark:bg-indigo-500/10' : ''}`}
+                  className={`text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 h-8 rounded-full px-3 text-xs gap-1.5 ${showMediaInput ? 'text-blue-600 bg-blue-50 dark:text-blue-400 dark:
                 >
                   <ImageIcon className="h-4 w-4" />
                   <span>Media</span>
@@ -764,9 +925,16 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <Link href={`/profile/${post.user_id}`} className="font-bold text-slate-900 dark:text-white text-sm hover:underline hover:text-indigo-650 dark:hover:text-indigo-300 truncate">
-                          {post.nama_lengkap}
-                        </Link>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <Link href={`/profile/${post.user_id}`} className="font-bold text-slate-900 dark:text-white text-sm hover:underline hover:text-indigo-650 dark:hover:text-indigo-300 truncate">
+                            {post.nama_lengkap}
+                          </Link>
+                          {isNewPost(post.created_at) && (
+                            <Badge className="bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[8px] font-bold py-0.5 px-1.5 rounded-full border border-emerald-500/20 flex-shrink-0">
+                              Baru
+                            </Badge>
+                          )}
+                        </div>
                         <span className="text-[10px] text-slate-500 dark:text-slate-550 flex-shrink-0">
                           {formatRelativeTime(post.created_at)}
                         </span>
@@ -791,9 +959,9 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
                     {post.content}
                     {post.media_url && (
                       <div className="mt-3 overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800/80 bg-slate-50 dark:bg-slate-950/40">
-                        <img 
-                          src={post.media_url} 
-                          alt="Media postingan" 
+                        <img
+                          src={post.media_url}
+                          alt="Media postingan"
                           className="w-full h-auto max-h-[300px] object-cover"
                           onError={(e) => {
                             e.currentTarget.style.display = 'none';
@@ -803,22 +971,83 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
                     )}
                   </CardContent>
 
-                  <CardFooter className="border-t border-slate-200 dark:border-white/5 py-2 flex items-center justify-between text-slate-500 dark:text-slate-450 text-xs">
-                    <div className="flex items-center gap-4">
-                      <button 
-                        onClick={() => handleLike(post.id)}
-                        className={`flex items-center gap-1 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors py-1 px-2 rounded-md hover:bg-slate-100 dark:hover:bg-white/5 ${hasLiked ? 'text-indigo-600 dark:text-indigo-400 font-bold' : ''}`}
-                      >
-                        <ThumbsUp className="h-4 w-4" />
-                        <span>{post.likes_count}</span>
-                      </button>
-                      
-                      <div className="flex items-center gap-1 py-1 px-2">
-                        <MessageSquare className="h-4 w-4" />
-                        <span>{post.comments_count}</span>
-                      </div>
-                    </div>
+                  <CardFooter className="border-t border-slate-200 dark:border-white/5 py-2 flex items-center gap-4 text-slate-500 dark:text-slate-450 text-xs">
+                    <button
+                      onClick={() => handleLike(post.id)}
+                      className={`flex items-center gap-1 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors py-1 px-2 rounded-md hover:bg-slate-100 dark:hover:bg-white/5 ${hasLiked ? 'text-indigo-600 dark:text-indigo-400 font-bold' : ''}`}
+                    >
+                      <ThumbsUp className="h-4 w-4" />
+                      <span>{post.likes_count}</span>
+                    </button>
+
+                    <button
+                      onClick={() => toggleComments(post.id)}
+                      className={`flex items-center gap-1 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors py-1 px-2 rounded-md hover:bg-slate-100 dark:hover:bg-white/5 ${expandedComments[post.id] ? 'text-indigo-600 dark:text-indigo-400' : ''}`}
+                    >
+                      <MessageSquare className="h-4 w-4" />
+                      <span>{post.comments_count}</span>
+                    </button>
                   </CardFooter>
+
+                  {/* Komentar Section */}
+                  {expandedComments[post.id] && (
+                    <div className="border-t border-slate-200 dark:border-white/5 px-4 py-3 space-y-3">
+                      {isLoadingComments[post.id] ? (
+                        <p className="text-[10px] text-slate-500 text-center py-2">Memuat komentar...</p>
+                      ) : (
+                        <>
+                          {(commentsByPost[post.id] || []).length > 0 ? (
+                            <div className="space-y-2">
+                              {(commentsByPost[post.id] || []).map((comment) => (
+                                <div key={comment.id} className="flex items-start gap-2">
+                                  <div className="h-6 w-6 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center justify-center text-[8px] font-bold flex-shrink-0">
+                                    {getInitials(comment.alumni_db?.nama_lengkap)}
+                                  </div>
+                                  <div className="flex-1 min-w-0 bg-slate-50 dark:bg-slate-900/40 rounded-lg px-3 py-2 border border-slate-200/70 dark:border-white/5">
+                                    <div className="flex items-center justify-between gap-2">
+                                      <span className="text-[10px] font-bold text-slate-800 dark:text-slate-200 truncate">
+                                        {comment.alumni_db?.nama_lengkap}
+                                      </span>
+                                      <span className="text-[8px] text-slate-400 flex-shrink-0">
+                                        {formatRelativeTime(comment.created_at)}
+                                      </span>
+                                    </div>
+                                    <p className="text-[11px] text-slate-700 dark:text-slate-300 mt-0.5 whitespace-pre-wrap">{comment.content}</p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-[10px] text-slate-500 text-center py-1">Belum ada komentar.</p>
+                          )}
+
+                          {/* Form komentar */}
+                          <div className="flex items-center gap-2">
+                            <Input
+                              value={commentInputs[post.id] || ''}
+                              onChange={(e) => setCommentInputs({ ...commentInputs, [post.id]: e.target.value })}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                  e.preventDefault();
+                                  handleAddComment(post.id);
+                                }
+                              }}
+                              placeholder="Tulis komentar..."
+                              className="h-8 bg-slate-50 border-slate-200 focus:border-indigo-500 text-xs text-slate-900 placeholder:text-slate-400 dark:bg-slate-900/50 dark:border-slate-800 dark:text-white dark:placeholder:text-slate-500 rounded-full px-3"
+                            />
+                            <Button
+                              size="sm"
+                              onClick={() => handleAddComment(post.id)}
+                              disabled={!(commentInputs[post.id] || '').trim()}
+                              className="h-8 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold rounded-full px-3 flex-shrink-0 gap-1"
+                            >
+                              <Send className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </Card>
               );
             })
@@ -953,7 +1182,7 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
           <div className="relative w-full max-w-lg p-6 liquid-glass liquid-glass-border border-indigo-500/30 shadow-[0_0_50px_rgba(99,102,241,0.15)] rounded-2xl text-slate-200">
-            <button 
+            <button
               onClick={() => setShowCreateModal(false)}
               className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-white/5 text-slate-400 hover:text-white transition-colors"
             >
@@ -964,7 +1193,7 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
               <Lock className="h-5 w-5 text-indigo-400" />
               <h2 className="text-xl font-extrabold text-white">Buat Ruang Kelompok Cerdas</h2>
             </div>
-            
+
             <form onSubmit={handleCreateCohort} className="space-y-4">
               <div className="space-y-1">
                 <label className="text-xs text-slate-400 font-semibold">Nama Kelompok / Himpunan</label>
@@ -998,26 +1227,24 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
                   <button
                     type="button"
                     onClick={() => setSelectedPlan('premium')}
-                    className={`flex flex-col items-center p-3 rounded-xl border text-center transition-all ${
-                      selectedPlan === 'premium'
-                        ? 'border-indigo-500 bg-indigo-500/10 text-indigo-300 font-bold shadow-md'
-                        : 'border-white/5 bg-slate-900/30 text-slate-400 hover:border-slate-800'
-                    }`}
+                    className={`flex flex-col items-center p-3 rounded-xl border text-center transition-all ${selectedPlan === 'premium'
+                      ? 'border-indigo-500 bg-indigo-500/10 text-indigo-300 font-bold shadow-md'
+                      : 'border-white/5 bg-slate-900/30 text-slate-400 hover:border-slate-800'
+                      }`}
                   >
                     <span className="text-xs">Premium</span>
                     <span className="text-[14px] text-white font-extrabold mt-1">Rp 150k</span>
                     <span className="text-[9px] text-slate-400 mt-0.5">/ bulan</span>
                   </button>
-                  
+
                   {/* Enterprise plan option */}
                   <button
                     type="button"
                     onClick={() => setSelectedPlan('enterprise')}
-                    className={`flex flex-col items-center p-3 rounded-xl border text-center transition-all ${
-                      selectedPlan === 'enterprise'
-                        ? 'border-indigo-500 bg-indigo-500/10 text-indigo-300 font-bold shadow-md'
-                        : 'border-white/5 bg-slate-900/30 text-slate-400 hover:border-slate-800'
-                    }`}
+                    className={`flex flex-col items-center p-3 rounded-xl border text-center transition-all ${selectedPlan === 'enterprise'
+                      ? 'border-indigo-500 bg-indigo-500/10 text-indigo-300 font-bold shadow-md'
+                      : 'border-white/5 bg-slate-900/30 text-slate-400 hover:border-slate-800'
+                      }`}
                   >
                     <span className="text-xs">Enterprise</span>
                     <span className="text-[14px] text-white font-extrabold mt-1">Rp 500k</span>
@@ -1028,11 +1255,10 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
                   <button
                     type="button"
                     onClick={() => setSelectedPlan('free')}
-                    className={`flex flex-col items-center p-3 rounded-xl border text-center transition-all ${
-                      selectedPlan === 'free'
-                        ? 'border-indigo-500 bg-indigo-500/10 text-indigo-300 font-bold shadow-md'
-                        : 'border-white/5 bg-slate-900/30 text-slate-400 hover:border-slate-800'
-                    }`}
+                    className={`flex flex-col items-center p-3 rounded-xl border text-center transition-all ${selectedPlan === 'free'
+                      ? 'border-indigo-500 bg-indigo-500/10 text-indigo-300 font-bold shadow-md'
+                      : 'border-white/5 bg-slate-900/30 text-slate-400 hover:border-slate-800'
+                      }`}
                   >
                     <span className="text-xs">Free trial</span>
                     <span className="text-[14px] text-white font-extrabold mt-1">Gratis</span>
@@ -1049,16 +1275,16 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
               </div>
 
               <div className="flex justify-end gap-2 border-t border-white/5 pt-4">
-                <Button 
-                  type="button" 
-                  variant="ghost" 
+                <Button
+                  type="button"
+                  variant="ghost"
                   onClick={() => setShowCreateModal(false)}
                   className="text-slate-400 hover:text-white"
                 >
                   Batal
                 </Button>
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   disabled={isCreatingCohort || !newCohortName.trim()}
                   className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-lg px-6 rounded-full"
                 >

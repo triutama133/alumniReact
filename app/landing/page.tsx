@@ -1,7 +1,11 @@
 "use client";
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Globe, Instagram, Twitter } from "lucide-react";
+import { FeaturePillars } from "@/components/landing/FeaturePillars";
+import { HowItWorks } from "@/components/landing/HowItWorks";
+import { FooterCTA } from "@/components/landing/FooterCTA";
 
 export default function LandingPage() {
   return (
@@ -17,22 +21,27 @@ export default function LandingPage() {
         loop
       />
 
-      <div 
-        style={{ 
+      <div
+        style={{
           background: 'linear-gradient(to bottom, rgba(0, 0, 0, 0.72) 0%, rgba(0, 0, 0, 0.42) 50%, rgba(0, 0, 0, 0.78) 100%)',
           position: 'absolute',
           inset: 0,
           zIndex: 5
-        }} 
-        aria-hidden="true" 
+        }}
+        aria-hidden="true"
       />
 
       {/* Top Navbar */}
       <nav className="relative z-20 w-full px-6 py-6">
         <div className="mx-auto flex max-w-6xl items-center justify-between rounded-full border border-white/20 bg-white/5 px-4 py-3 backdrop-blur-md sm:px-6">
           <div className="flex items-center gap-2">
-            <Globe className="h-5 w-5 text-white" />
-            <span className="text-sm font-semibold text-white sm:text-base">HubTalent</span>
+            <Image
+              src="/logo.png"
+              alt="HubTalent"
+              width={130}
+              height={36}
+              className="h-8 w-auto brightness-0 invert"
+            />
           </div>
           <div className="hidden items-center gap-8 md:flex">
             <Link href="/projects" className="text-sm font-medium text-white/80 no-underline hover:text-white">Kolaborasi Projek</Link>
@@ -74,6 +83,15 @@ export default function LandingPage() {
           </div>
         </div>
       </main>
+
+      {/* Feature Pillars */}
+      <FeaturePillars />
+
+      {/* How It Works */}
+      <HowItWorks />
+
+      {/* Footer CTA Banner */}
+      <FooterCTA />
 
       {/* Footer */}
       <footer className="relative z-10 flex justify-center gap-4 pb-12">

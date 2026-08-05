@@ -9,23 +9,25 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { playClickSound } from '@/lib/audio';
-import { 
-  Globe, 
-  Home, 
-  Search, 
-  FolderKanban, 
-  User, 
-  LogOut, 
-  BarChart3, 
-  Settings, 
-  Shield, 
-  PlusCircle, 
-  Users, 
+import {
+  Globe,
+  Home,
+  Search,
+  FolderKanban,
+  User,
+  LogOut,
+  BarChart3,
+  Settings,
+  Shield,
+  PlusCircle,
+  Users,
   Clock,
   TrendingUp,
   Briefcase,
   Menu,
-  X
+  X,
+  Bell,
+  MessageCircle
 } from 'lucide-react';
 import {
   Select,
@@ -61,6 +63,11 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
   const [activeCohortRole, setActiveCohortRole] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+
+  // Notifications State
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   const handleLogout = () => {
     window.location.href = '/api/logout';
@@ -100,7 +107,7 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
         if (res.ok) {
           const data = await res.json();
           setCohorts(data);
-          
+
           if (activeId !== 'global') {
             const active = data.find((c: any) => String(c.id) === activeId);
             if (active) {
@@ -115,6 +122,21 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
 
     fetchMe();
     fetchCohorts();
+
+    // Fetch notifications
+    const fetchNotifications = async () => {
+      try {
+        const res = await fetch('/api/notifications');
+        if (res.ok) {
+          const data = await res.json();
+          setNotifications(data.notifications || []);
+          setUnreadCount(data.unread_count || 0);
+        }
+      } catch (err) {
+        console.error('Error fetching notifications:', err);
+      }
+    };
+    fetchNotifications();
   }, [userId]);
 
   const handlePortalChange = (val: string) => {
@@ -138,8 +160,52 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
     } else {
       setCookie('active_cohort_id', val);
     }
-    
+
     window.location.reload();
+  };
+
+  const handleNotificationClick = async (notification: any) => {
+    if (!notification.is_read) {
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notification.id ? { ...n, is_read: true } : n))
+      );
+      try {
+        await fetch('/api/notifications/read', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ notificationId: notification.id }),
+        });
+      } catch (err) {
+        console.error('Error marking notification read:', err);
+      }
+    }
+
+    setShowNotifications(false);
+
+    // Navigasi berdasarkan tipe notifikasi
+    if (notification.type === 'post_like' || notification.type === 'post_comment') {
+      window.location.href = '/';
+    } else if (notification.type === 'project_apply' || notification.type === 'project_status') {
+      window.location.href = '/projects';
+    } else if (notification.type === 'chat') {
+      window.location.href = '/messages';
+    } else {
+      window.location.href = '/';
+    }
+  };
+
+  const formatRelativeTime = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const diffMs = Date.now() - date.getTime();
+    const diffMin = Math.floor(diffMs / 60000);
+    if (diffMin < 1) return 'Baru saja';
+    if (diffMin < 60) return `${diffMin} menit lalu`;
+    const diffHour = Math.floor(diffMin / 60);
+    if (diffHour < 24) return `${diffHour} jam lalu`;
+    const diffDay = Math.floor(diffHour / 24);
+    if (diffDay < 7) return `${diffDay} hari lalu`;
+    return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
   };
 
   const handleCreateCohort = async (e: React.FormEvent) => {
@@ -185,13 +251,14 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
     { href: '/projects', label: 'Hub Proyek', icon: FolderKanban },
     { href: '/search', label: 'Cari Talenta', icon: Search },
     { href: '/jobs', label: 'Jobs', icon: Briefcase },
+    { href: '/messages', label: 'Pesan', icon: MessageCircle },
   ];
 
   return (
     <>
       <nav className="sticky top-0 z-50 w-full px-6 py-4">
         <div className="mx-auto flex max-w-7xl items-center justify-between rounded-full border border-slate-200/80 dark:border-white/10 bg-white/85 dark:bg-slate-950/70 px-6 py-3 backdrop-blur-md shadow-md dark:shadow-[0_0_20px_rgba(0,0,0,0.4)] transition-all duration-300">
-          
+
           {/* Brand Logo & Portal Selector */}
           <div className="flex items-center gap-3">
             {/* Mobile Menu Toggle Button */}
@@ -243,11 +310,10 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-semibold transition-all duration-300 ${
-                    isActive
-                      ? 'bg-slate-100 text-slate-900 border border-slate-200 dark:bg-white/10 dark:text-white dark:border-white/10 shadow-sm'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-white/5 border border-transparent'
-                  }`}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-semibold transition-all duration-300 ${isActive
+                    ? 'bg-slate-100 text-slate-900 border border-slate-200 dark:bg-white/10 dark:text-white dark:border-white/10 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-white/5 border border-transparent'
+                    }`}
                 >
                   <Icon className="h-3.5 w-3.5" />
                   {item.label}
@@ -264,26 +330,93 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
                 {userRole === 'super_admin' && (
                   <Link
                     href="/super-admin"
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold border transition-all duration-300 ${
-                      pathname === '/super-admin'
-                        ? 'bg-amber-500/20 text-amber-500 border-amber-500/30'
-                        : 'text-amber-500 hover:bg-amber-500/10 border-amber-500/20'
-                    }`}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold border transition-all duration-300 ${pathname === '/super-admin'
+                      ? 'bg-amber-500/20 text-amber-500 border-amber-500/30'
+                      : 'text-amber-500 hover:bg-amber-500/10 border-amber-500/20'
+                      }`}
                   >
                     <Shield className="h-3 w-3" />
                     <span>Super Admin</span>
                   </Link>
                 )}
 
+                {/* Notification Bell */}
+                <div className="relative">
+                  <button
+                    onClick={() => { playClickSound(); setShowNotifications(!showNotifications); }}
+                    className="relative flex items-center justify-center h-8 w-8 rounded-full border border-slate-200 dark:border-white/10 bg-white/60 dark:bg-slate-900/60 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-all"
+                    aria-label="Notifikasi"
+                  >
+                    <Bell className="h-4 w-4" />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
+                  </button>
+
+                  {showNotifications && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />
+                      <div className="absolute right-0 top-10 z-50 w-80 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950 shadow-2xl overflow-hidden">
+                        <div className="px-4 py-3 border-b border-slate-100 dark:border-white/5 flex items-center justify-between">
+                          <span className="text-xs font-bold text-slate-900 dark:text-white">Notifikasi</span>
+                          {unreadCount > 0 && (
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await fetch('/api/notifications/read-all', { method: 'POST' });
+                                  setUnreadCount(0);
+                                  setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+                                } catch (err) {
+                                  console.error('Error marking all read:', err);
+                                }
+                              }}
+                              className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+                            >
+                              Tandai semua dibaca
+                            </button>
+                          )}
+                        </div>
+                        <div className="max-h-80 overflow-y-auto py-1">
+                          {notifications.length === 0 ? (
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 text-center py-6">
+                              Belum ada notifikasi.
+                            </p>
+                          ) : (
+                            notifications.map((n) => (
+                              <button
+                                key={n.id}
+                                onClick={() => handleNotificationClick(n)}
+                                className={`w-full text-left px-4 py-2.5 flex items-start gap-2.5 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors ${!n.is_read ? 'bg-indigo-50/50 dark:bg-indigo-500/5' : ''}`}
+                              >
+                                <div className="flex-1 min-w-0">
+                                  <p className={`text-[11px] font-semibold truncate ${!n.is_read ? 'text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'}`}>
+                                    {n.title}
+                                  </p>
+                                  <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5">{n.content}</p>
+                                  <p className="text-[9px] text-slate-400 dark:text-slate-500 mt-1">{formatRelativeTime(n.created_at)}</p>
+                                </div>
+                                {!n.is_read && (
+                                  <span className="h-2 w-2 rounded-full bg-indigo-500 mt-1.5 flex-shrink-0" />
+                                )}
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
                 {/* Community Admin Route Shortcut */}
                 {activeCohortId !== 'global' && activeCohortRole === 'admin' && (
                   <Link
                     href="/cohort-admin"
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-bold border transition-all duration-300 ${
-                      pathname === '/cohort-admin'
-                        ? 'bg-slate-100 text-slate-900 border-slate-200 dark:bg-white/10 dark:text-white dark:border-white/10'
-                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-white/5 dark:hover:text-white border-transparent'
-                    }`}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-bold border transition-all duration-300 ${pathname === '/cohort-admin'
+                      ? 'bg-slate-100 text-slate-900 border-slate-200 dark:bg-white/10 dark:text-white dark:border-white/10'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-white/5 dark:hover:text-white border-transparent'
+                      }`}
                   >
                     <Shield className="h-3 w-3" />
                     <span>Kelola Komunitas</span>
@@ -293,11 +426,10 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
                 {userId && (
                   <Link
                     href={`/profile/${userId}`}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-semibold transition-all duration-300 ${
-                      pathname.startsWith(`/profile/${userId}`)
-                        ? 'bg-slate-100 text-slate-900 border border-slate-200 dark:bg-white/10 dark:text-white dark:border-white/10 shadow-sm'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-white/5 border border-transparent'
-                    }`}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-semibold transition-all duration-300 ${pathname.startsWith(`/profile/${userId}`)
+                      ? 'bg-slate-100 text-slate-900 border border-slate-200 dark:bg-white/10 dark:text-white dark:border-white/10 shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-white/5 border border-transparent'
+                      }`}
                   >
                     <User className="h-3.5 w-3.5" />
                     <span className="hidden lg:inline">Profil</span>
@@ -305,11 +437,10 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
                 )}
                 <Link
                   href="/settings"
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-semibold transition-all duration-300 ${
-                    pathname.startsWith('/settings')
-                      ? 'bg-slate-100 text-slate-900 border border-slate-200 dark:bg-white/10 dark:text-white dark:border-white/10 shadow-sm'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-white/5 border border-transparent'
-                  }`}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-semibold transition-all duration-300 ${pathname.startsWith('/settings')
+                    ? 'bg-slate-100 text-slate-900 border border-slate-200 dark:bg-white/10 dark:text-white dark:border-white/10 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-white/5 border border-transparent'
+                    }`}
                 >
                   <Settings className="h-3.5 w-3.5" />
                   <span className="hidden lg:inline">Pengaturan</span>
@@ -389,16 +520,15 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
 
       {/* Mobile Drawer Backdrop */}
       {isMobileOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-40 bg-black/45 backdrop-blur-xs md:hidden"
           onClick={() => setIsMobileOpen(false)}
         />
       )}
 
       {/* Mobile Drawer Content */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-850 shadow-2xl p-6 transition-all duration-300 md:hidden flex flex-col justify-between ${
-        isMobileOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-850 shadow-2xl p-6 transition-all duration-300 md:hidden flex flex-col justify-between ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}>
         <div className="space-y-6">
           {/* Header & Close Button */}
           <div className="flex justify-between items-center">
@@ -408,7 +538,7 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
                 HubTalent
               </span>
             </Link>
-            <button 
+            <button
               onClick={() => setIsMobileOpen(false)}
               className="p-1 hover:bg-slate-100 dark:hover:bg-white/5 rounded text-slate-500 dark:text-slate-400"
             >
@@ -452,11 +582,10 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
                   key={item.href}
                   href={item.href}
                   onClick={() => setIsMobileOpen(false)}
-                  className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-semibold transition-all duration-300 ${
-                    isActive
-                      ? 'bg-slate-100 text-slate-900 border border-slate-200 dark:bg-white/10 dark:text-white dark:border-white/10'
-                      : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5 border border-transparent'
-                  }`}
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-semibold transition-all duration-300 ${isActive
+                    ? 'bg-slate-100 text-slate-900 border border-slate-200 dark:bg-white/10 dark:text-white dark:border-white/10'
+                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5 border border-transparent'
+                    }`}
                 >
                   <Icon className="h-4 w-4" />
                   {item.label}
@@ -478,7 +607,7 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
                   {userEmail}
                 </div>
               </div>
-              
+
               <div className="flex flex-col gap-1.5">
                 {userId && (
                   <Link
@@ -498,7 +627,6 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
                   <Settings className="h-4 w-4" />
                   <span>Pengaturan</span>
                 </Link>
-
                 <Button
                   onClick={() => { setIsMobileOpen(false); handleLogout(); }}
                   variant="ghost"

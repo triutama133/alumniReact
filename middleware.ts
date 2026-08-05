@@ -76,6 +76,7 @@ const publicPaths = [
   '/api/test-db',
   '/favicon.ico',
   '/landing',
+  '/preview',
 ];
 
 export async function middleware(request: NextRequest) {
@@ -95,12 +96,12 @@ export async function middleware(request: NextRequest) {
   if (allCookies.length > 0) {
     allCookies.forEach(cookie => {
       // Log hanya beberapa karakter pertama dari nilai cookie untuk keamanan
-      console.log(`  - ${cookie.name}: ${cookie.value.substring(0, Math.min(cookie.value.length, 10))}...`); 
+      console.log(`  - ${cookie.name}: ${cookie.value.substring(0, Math.min(cookie.value.length, 10))}...`);
     });
   } else {
     console.log('  - Tidak ada cookie yang diterima.');
   }
-  
+
   // Periksa apakah path adalah public (tidak perlu autentikasi)
   const isPublicPath = publicPaths.some(path => currentPath === path || currentPath.startsWith(path + '/'));
 
@@ -221,7 +222,7 @@ export async function middleware(request: NextRequest) {
 // Konfigurasi matcher
 export const config = {
   matcher: [
-    // Lindungi semua route kecuali asset statis dan halaman auth publik.
-    '/((?!_next/static|_next/image|favicon.ico|login|register).*)',
+    // Lindungi semua route kecuali asset statis (dengan ekstensi) dan halaman auth publik.
+    '/((?!_next/static|_next/image|favicon.ico|logo\\.png|logo_icon\\.png|login|register|.*\\..*).*)',
   ],
 };

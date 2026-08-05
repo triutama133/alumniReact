@@ -12,7 +12,7 @@
 - [x] Tambah `GEMINI_API_KEY` ke `.env.local` Next.js — CV Suggest saat ini **selalu gagal 500**
 - [x] Buat endpoint `POST /learning_path` di FastAPI `main.py` — belum ada sama sekali
 - [x] Perbaiki URL hardcode `http://localhost:8000/learning_path` di `learning-path/route.ts` → pakai env var
-- [ ] Pastikan tabel `user_checklists` sudah ada di database Supabase
+- [x] Pastikan tabel `user_checklists` sudah ada di database Supabase (migration `database/migration_010_user_checklists.sql` sudah disiapkan)
 
 **Catatan implementasi (2026-08-04):**
 - Endpoint AI FastAPI sudah memakai dispatcher multi-provider (`gemini`/`deepseek`) dengan fallback otomatis.
@@ -184,12 +184,13 @@ response.headers.set(
 
 **Status:** ✅ Sudah diimplementasi. CSP diperbarui untuk mendukung Cloudflare Turnstile.
 
-### B3. Input Sanitization & SQL Injection Prevention
+### B3. Input Sanitization & SQL Injection Prevention ✅ **SUDAH DIIMPLEMENTASI**
 **Target:** Mencegah injeksi data berbahaya dari form input pengguna.
 
 **Untuk Tim Backend (Next.js Route Handlers):**
 - Selalu gunakan parameterisasi query dari Supabase SDK (sudah dilakukan) — **jangan** pernah interpolasi langsung string ke query SQL.
 - Tambahkan sanitasi HTML untuk field konten postingan dan deskripsi proyek. Install library `sanitize-html`:
+  **Status:** ✅ `sanitize-html` + `@types/sanitize-html` diinstall. Helper `lib/sanitize.ts` dibuat & diterapkan di `POST /api/posts`, komentar, dan pesan chat.
   ```bash
   npm install sanitize-html @types/sanitize-html
   ```
@@ -341,8 +342,9 @@ APP_URL=https://your-domain.example
 
 ## 🏠 Bagian D: Peningkatan Home Feed — Lebih Hidup & Insightful
 
-### D1. Widget Statistik Real (bukan data statis)
+### D1. Widget Statistik Real (bukan data statis) ✅ **SUDAH DIIMPLEMENTASI**
 **Masalah saat ini:** Widget "Sinergi Jejaring" di sidebar menampilkan angka statis hardcoded ("115 Terhubung", "63.5% Dominasi").
+**Status:** ✅ `GET /api/stats/network` dibuat (total_talent, distribusi_aktivitas, total_proyek_aktif, top_talents) dengan cache 5 menit. `HomeFeedClient.tsx` sudah memakai data real + menampilkan 3 Talenta Terpopuler.
 
 **[NEW] API Endpoint `GET /api/stats/network`** — Mengambil statistik jejaring secara dinamis:
 ```typescript
@@ -362,11 +364,12 @@ APP_URL=https://your-domain.example
 - Tambahkan **Progress Ring** di atas tombol "Dapatkan Wawasan AI" yang menunjukkan persentase kesiapan profil pengguna (berapa % field profil terisi).
 - Tampilkan **3 rekomendasi proyek kolaborasi terpopuler** berdasarkan kecocokan skill, sebagai *teaser* sebelum pengguna mengklik analisis penuh.
 
-### D3. Feed Aktivitas Komunitas Real-time
+### D3. Feed Aktivitas Komunitas Real-time ✅ **SUDAH DIIMPLEMENTASI**
 **Peningkatan komponen postingan feed:**
 - Tambahkan skeleton loading yang animatif saat memuat kiriman baru.
-- Tampilkan badge **"Baru"** pada postingan yang diunggah dalam 2 jam terakhir.
+- Tambahkan badge **"Baru"** pada postingan yang diunggah dalam 2 jam terakhir.
 - Tambahkan **tombol Suka (👍) dan Komentar (💬)** pada setiap postingan.
+**Status:** ✅ API `POST /api/posts/[id]/like` + `GET/POST /api/posts/[id]/comments` dibuat. UI like persisten (bukan simulasi), komentar kolapsibel, badge "Baru" diterapkan. Tabel `post_likes` & `post_comments` dibuat di migration 014.
   - **[NEW] API `POST /api/posts/[id]/like`**: Toggle like pada postingan.
   - **[NEW] API `GET & POST /api/posts/[id]/comments`**: Membaca dan menambahkan komentar.
   - **Tabel database `post_likes`**: `(post_id, user_id, created_at)` — unik per pasangan.
@@ -381,7 +384,8 @@ APP_URL=https://your-domain.example
 
 ## 💼 Bagian E: Manajemen Pelamar Proyek (Project Applicant Review)
 
-### E1. API Endpoints Baru
+### E1. API Endpoints Baru ✅ **SUDAH DIIMPLEMENTASI**
+**Status:** ✅ `GET /api/projects/[id]/applications` (validasi ownership + JOIN alumni_db) dan `POST /api/projects/applications/review` (accept/reject + notifikasi ke pelamar) sudah dibuat.
 **`GET /api/projects/[id]/applications`** *(Backend harus memvalidasi bahwa requestor adalah owner)*:
 ```typescript
 // 1. Baca x-user-id dari header JWT
@@ -399,7 +403,8 @@ APP_URL=https://your-domain.example
 // 3. Jika accepted → INSERT ke notifications tabel untuk pelamar (lihat Bagian F)
 ```
 
-### E2. Perubahan Frontend
+### E2. Perubahan Frontend ✅ **SUDAH DIIMPLEMENTASI**
+**Status:** ✅ Tab **"Kelola Pelamar"** ditambahkan (hanya owner) dengan kartu pelamar + tombol Terima/Tolak + konfirmasi.
 **[MODIFY] [ProjectDetailClient.tsx](file:///Users/triutama/Documents/Project/TalentHubIndonesia/talent-hub-v2/components/projects/ProjectDetailClient.tsx):**
 - Tampilkan tab baru **"Kelola Pelamar"** hanya ketika `isOwner === true`.
 - Setiap kartu pelamar menampilkan: nama, aktivitas, kota, skill, dan status lamaran.
@@ -409,7 +414,8 @@ APP_URL=https://your-domain.example
 
 ## 🔔 Bagian F: Sistem Notifikasi In-App
 
-### F1. Database (DDL)
+### F1. Database (DDL) ✅ **SUDAH DIIMPLEMENTASI**
+**Status:** ✅ Tabel `notifications` dibuat di `database/migration_014_community_features.sql` (sesuai DDL).
 ```sql
 CREATE TABLE IF NOT EXISTS public.notifications (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -425,12 +431,14 @@ CREATE TABLE IF NOT EXISTS public.notifications (
 CREATE INDEX idx_notifications_user_unread ON public.notifications(user_id) WHERE is_read = false;
 ```
 
-### F2. API Endpoints
+### F2. API Endpoints ✅ **SUDAH DIIMPLEMENTASI**
+**Status:** ✅ `GET /api/notifications`, `POST /api/notifications/read`, `POST /api/notifications/read-all` semua sudah dibuat.
 - **`GET /api/notifications`**: Ambil 20 notifikasi terbaru milik user. Sertakan total `unread_count`.
 - **`POST /api/notifications/read`**: Body `{ notificationId: number }`. Tandai `is_read = true`.
 - **`POST /api/notifications/read-all`**: Tandai semua notifikasi user sebagai sudah dibaca.
 
-### F3. Komponen Frontend
+### F3. Komponen Frontend ✅ **SUDAH DIIMPLEMENTASI**
+**Status:** ✅ Bell notifikasi di Navbar dengan badge unread, dropdown daftar notifikasi + relative time, tombol "Tandai semua dibaca", dan navigasi per tipe.
 **[MODIFY] [Navbar.tsx](file:///Users/triutama/Documents/Project/TalentHubIndonesia/talent-hub-v2/components/layout/Navbar.tsx):**
 - Tambahkan tombol `🔔` di sebelah avatar pengguna.
 - Badge merah dengan angka `unread_count` (hilang saat angka = 0).
@@ -459,7 +467,8 @@ const { data } = await supabase.storage
 
 ---
 
-## 📊 Bagian H: Dasbor Analitik Cohort Admin
+## 📊 Bagian H: Dasbor Analitik Cohort Admin ✅ **SUDAH DIIMPLEMENTASI**
+**Status:** ✅ Halaman `/cohort-admin/analytics` dibuat dengan total alumni, distribusi aktivitas, top domisili, top keahlian, grafik angkatan, dan insight otomatis dari `/api/analytics`.
 
 **[NEW] `app/(main)/cohort-admin/analytics/page.tsx`:**
 - **Distribusi aktivitas** anggota (diagram pai/bar menggunakan `recharts`).
@@ -498,7 +507,8 @@ const { data } = await supabase.storage
     Supabase PostgreSQL (tabel messages)
 ```
 
-### J1. Database — DDL Tabel Chat
+### J1. Database — DDL Tabel Chat ✅ **SUDAH DIIMPLEMENTASI**
+**Status:** ✅ Tabel `conversations`, `conversation_participants`, `messages` + Realtime dibuat di `database/migration_014_community_features.sql`.
 ```sql
 -- Migration: migration_013_chat.sql
 
@@ -537,7 +547,8 @@ CREATE INDEX idx_participants_user ON public.conversation_participants(user_id);
 ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;
 ```
 
-### J2. API Endpoints (Next.js Route Handlers)
+### J2. API Endpoints (Next.js Route Handlers) ✅ **SUDAH DIIMPLEMENTASI**
+**Status:** ✅ `GET/POST /api/conversations` + `GET/POST /api/conversations/[id]/messages` sudah dibuat dengan validasi kepesertaan, sanitasi, last_read_at, unread_count, dan notifikasi.
 
 **`GET /api/conversations`** — Ambil daftar percakapan aktif milik user:
 ```typescript
@@ -572,7 +583,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;
 // Return: { messageId, createdAt }
 ```
 
-### J3. Implementasi Frontend Real-time
+### J3. Implementasi Frontend Real-time ✅ **SUDAH DIIMPLEMENTASI**
+**Status:** ✅ Halaman `/messages` + `components/chat/ChatWindow.tsx` dibuat. Sidebar percakapan, bubble chat, unread badge, subscribe Supabase Realtime (pesan muncul real-time tanpa refresh).
 
 **[NEW] `app/(main)/messages/page.tsx`** — Halaman chat utama:
 - Sidebar kiri: daftar percakapan + indikator pesan belum dibaca (badge angka merah)
@@ -955,7 +967,8 @@ Landing page publik terdiri dari 5 seksi berurutan:
 
 ---
 
-### L1.3 Section Fitur Utama — The 3 Pillars
+### L1.3 Section Fitur Utama — The 3 Pillars ✅ **SUDAH DIIMPLEMENTASI**
+**Status:** ✅ Komponen `components/landing/FeaturePillars.tsx` dibuat dengan 3 kartu pilar + badge "Segera Hadir" untuk Job Aggregator.
 
 **File:** `components/landing/FeaturePillars.tsx`
 
@@ -989,7 +1002,8 @@ Tiga kartu fitur dengan layout grid (1 kolom di mobile, 3 kolom di desktop):
 
 ---
 
-### L1.4 Section Alur Kerja — How It Works
+### L1.4 Section Alur Kerja — How It Works ✅ **SUDAH DIIMPLEMENTASI**
+**Status:** ✅ `components/landing/HowItWorks.tsx` dibuat dengan 3 langkah + nomor dekoratif + connector.
 
 **File:** `components/landing/HowItWorks.tsx`
 
@@ -1008,7 +1022,8 @@ Tiga kartu fitur dengan layout grid (1 kolom di mobile, 3 kolom di desktop):
 
 ---
 
-### L1.5 Footer CTA Banner
+### L1.5 Footer CTA Banner ✅ **SUDAH DIIMPLEMENTASI**
+**Status:** ✅ `components/landing/FooterCTA.tsx` dibuat dengan CTA "Buat Akun Sekarang — 100% Gratis".
 
 **File:** `components/landing/FooterCTA.tsx`
 

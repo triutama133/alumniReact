@@ -4,13 +4,13 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { 
-  Sparkles, 
-  User, 
-  Calendar, 
-  ArrowLeft, 
-  Cpu, 
-  CheckCircle, 
+import {
+  Sparkles,
+  User,
+  Calendar,
+  ArrowLeft,
+  Cpu,
+  CheckCircle,
   AlertCircle,
   Clock,
   Briefcase,
@@ -25,7 +25,9 @@ import {
   FileText,
   ChevronRight,
   TrendingUp,
-  RefreshCw
+  RefreshCw,
+  Users,
+  X
 } from 'lucide-react';
 import { JarvisScanHUD } from '@/components/ui/JarvisScanHUD';
 import { TypewriterReveal } from '@/components/ui/TypewriterReveal';
@@ -72,6 +74,22 @@ interface Application {
   role: string;
 }
 
+interface ApplicantDetail {
+  id: number | string;
+  status: string;
+  role: string;
+  created_at: string;
+  user_id: number;
+  alumni_db: {
+    id: number;
+    nama_lengkap: string | null;
+    nama_panggilan: string | null;
+    aktivitas: string | null;
+    skill_gabungan: string | null;
+    kota_domisili: string | null;
+  } | null;
+}
+
 interface ProjectDetailClientProps {
   project: Project;
   userId: number | null; // Nullable to support guest public view
@@ -82,14 +100,73 @@ interface ProjectDetailClientProps {
 export function ProjectDetailClient({ project, userId, isOwner, initialApplication }: ProjectDetailClientProps) {
   const [application, setApplication] = useState<Application | null>(initialApplication);
   const [isApplying, setIsApplying] = useState(false);
-  
+
   // States for AI Search/Rec
   const [aiReport, setAiReport] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
 
   // States for Project Details tabs
-  const [activeTab, setActiveTab] = useState<'details' | 'plan' | 'milestones' | 'updates'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'plan' | 'milestones' | 'updates' | 'applicants'>('details');
+
+  // Applicants state (owner only)
+  const [applicants, setApplicants] = useState<ApplicantDetail[]>([]);
+  const [isLoadingApplicants, setIsLoadingApplicants] = useState(false);
+
+  const loadApplicants = async () => {
+    if (!isOwner) return;
+    setIsLoadingApplicants(true);
+    try {
+      const res = await fetch(`/api/projects/${project.id}/applications`);
+      if (res.ok) {
+        setApplicants(await res.json());
+      } else {
+        const data = await res.json().catch(() => null);
+        console.error('Error loading applicants:', data?.error);
+      }
+    } catch (err) {
+      console.error('Error loading applicants:', err);
+    } finally {
+      setIsLoadingApplicants(false);
+    }
+  };
+
+  const handleReviewApplicant = async (applicant: ApplicantDetail, action: 'accept' | 'reject') => {
+    const confirmMsg = action === 'accept'
+      ? `Terima lamaran dari ${applicant.alumni_db?.nama_lengkap || 'pelamar ini'} untuk proyek "${project.title}"?`
+      : `Tolak lamaran dari ${applicant.alumni_db?.nama_lengkap || 'pelamar ini'}?`;
+
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      const res = await fetch('/api/projects/applications/review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ applicationId: Number(applicant.id), action }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Gagal memproses lamaran.');
+      }
+
+      toast.success(data.message || 'Status lamaran diperbarui.');
+      setApplicants(prev =>
+        prev.map(a => a.id === applicant.id ? { ...a, status: action === 'accept' ? 'accepted' : 'rejected' } : a)
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Gagal memproses lamaran.');
+    }
+  };
+
+  // Muat aplikasi saat tab applicants dibuka pertama kali
+  const handleTabClick = (tab: 'details' | 'plan' | 'milestones' | 'updates' | 'applicants') => {
+    playClickSound();
+    setActiveTab(tab);
+    if (tab === 'applicants' && applicants.length === 0) {
+      loadApplicants();
+    }
+  };
 
   // Owner dashboard state updates
   const [isPublic, setIsPublic] = useState(project.is_public);
@@ -418,50 +495,57 @@ Berikan analisis dalam format rapi:
 
             {/* TAB SELECTORS */}
             <div className="flex border-b border-slate-200 dark:border-slate-800 px-6">
-              <button 
-                onClick={() => { playClickSound(); setActiveTab('details'); }}
-                className={`py-3 text-xs font-bold border-b-2 px-3 transition-all ${
-                  activeTab === 'details' 
-                    ? 'border-slate-900 text-slate-900 dark:border-white dark:text-white' 
-                    : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
-                }`}
+              <button
+                onClick={() => handleTabClick('details')}
+                className={`py-3 text-xs font-bold border-b-2 px-3 transition-all ${activeTab === 'details'
+                  ? 'border-slate-900 text-slate-900 dark:border-white dark:text-white'
+                  : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
+                  }`}
               >
                 Deskripsi & Kebutuhan
               </button>
-              <button 
-                onClick={() => { playClickSound(); setActiveTab('plan'); }}
-                className={`py-3 text-xs font-bold border-b-2 px-3 transition-all ${
-                  activeTab === 'plan' 
-                    ? 'border-slate-900 text-slate-900 dark:border-white dark:text-white' 
-                    : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
-                }`}
+              <button
+                onClick={() => handleTabClick('plan')}
+                className={`py-3 text-xs font-bold border-b-2 px-3 transition-all ${activeTab === 'plan'
+                  ? 'border-slate-900 text-slate-900 dark:border-white dark:text-white'
+                  : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
+                  }`}
               >
                 Rencana Kerja (Roadmap)
               </button>
-              <button 
-                onClick={() => { playClickSound(); setActiveTab('milestones'); }}
-                className={`py-3 text-xs font-bold border-b-2 px-3 transition-all ${
-                  activeTab === 'milestones' 
-                    ? 'border-slate-900 text-slate-900 dark:border-white dark:text-white' 
-                    : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
-                }`}
+              <button
+                onClick={() => handleTabClick('milestones')}
+                className={`py-3 text-xs font-bold border-b-2 px-3 transition-all ${activeTab === 'milestones'
+                  ? 'border-slate-900 text-slate-900 dark:border-white dark:text-white'
+                  : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
+                  }`}
               >
                 Milestones ({milestones.filter(m => m.done).length}/{milestones.length})
               </button>
-              <button 
-                onClick={() => { playClickSound(); setActiveTab('updates'); }}
-                className={`py-3 text-xs font-bold border-b-2 px-3 transition-all ${
-                  activeTab === 'updates' 
-                    ? 'border-slate-900 text-slate-900 dark:border-white dark:text-white' 
-                    : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
-                }`}
+              <button
+                onClick={() => handleTabClick('updates')}
+                className={`py-3 text-xs font-bold border-b-2 px-3 transition-all ${activeTab === 'updates'
+                  ? 'border-slate-900 text-slate-900 dark:border-white dark:text-white'
+                  : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
+                  }`}
               >
                 Log Harian ({updates.length})
               </button>
+              {isOwner && (
+                <button
+                  onClick={() => handleTabClick('applicants')}
+                  className={`py-3 text-xs font-bold border-b-2 px-3 transition-all ${activeTab === 'applicants'
+                    ? 'border-slate-900 text-slate-900 dark:border-white dark:text-white'
+                    : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
+                    }`}
+                >
+                  Kelola Pelamar ({applicants.filter(a => a.status === 'pending').length})
+                </button>
+              )}
             </div>
 
             <CardContent className="space-y-6 pt-6 pb-6 min-h-[250px]">
-              
+
               {/* TAB 1: DETAILS */}
               {activeTab === 'details' && (
                 <div className="space-y-6 animate-fadeIn">
@@ -481,8 +565,8 @@ Berikan analisis dalam format rapi:
                       </h4>
                       <div className="flex flex-wrap gap-1.5 pl-2.5">
                         {project.required_skills.map((skill) => (
-                          <Badge 
-                            key={skill} 
+                          <Badge
+                            key={skill}
                             variant="secondary"
                             className="bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-900/50 dark:hover:bg-slate-900/50 dark:text-slate-350 text-[10px] py-1 px-3 rounded-md border border-slate-250 dark:border-white/5"
                           >
@@ -511,8 +595,8 @@ Berikan analisis dalam format rapi:
 
                   {isEditingPlan ? (
                     <div className="space-y-3">
-                      <Textarea 
-                        value={planText} 
+                      <Textarea
+                        value={planText}
                         onChange={(e) => setPlanText(e.target.value)}
                         placeholder="Tuliskan detail rencana pelaksanaan proyek, deadline utama, dan cara eksekusi proyek..."
                         className="min-h-[160px] bg-slate-50 dark:bg-slate-900 text-xs border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-md"
@@ -546,10 +630,10 @@ Berikan analisis dalam format rapi:
                   {/* Add Milestone input (Owner only) */}
                   {isOwner && (
                     <div className="flex gap-2 max-w-md">
-                      <Input 
-                        value={newMilestoneTitle} 
+                      <Input
+                        value={newMilestoneTitle}
                         onChange={(e) => setNewMilestoneTitle(e.target.value)}
-                        placeholder="Judul milestone baru..." 
+                        placeholder="Judul milestone baru..."
                         onKeyDown={(e) => e.key === 'Enter' && addMilestone()}
                         className="h-9 bg-slate-50 dark:bg-slate-900 text-xs border-slate-200 dark:border-slate-800"
                       />
@@ -562,16 +646,15 @@ Berikan analisis dalam format rapi:
                   {/* Milestones List */}
                   <div className="space-y-2 pt-2">
                     {milestones.map((m, idx) => (
-                      <div 
-                        key={idx} 
-                        className={`p-3 border rounded-md flex justify-between items-center transition-all ${
-                          m.done 
-                            ? 'bg-emerald-500/5 border-emerald-500/20 text-slate-500 dark:text-slate-400' 
-                            : 'bg-slate-50/50 hover:bg-slate-50 dark:bg-slate-950/30 dark:hover:bg-slate-950/55 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200'
-                        }`}
+                      <div
+                        key={idx}
+                        className={`p-3 border rounded-md flex justify-between items-center transition-all ${m.done
+                          ? 'bg-emerald-500/5 border-emerald-500/20 text-slate-500 dark:text-slate-400'
+                          : 'bg-slate-50/50 hover:bg-slate-50 dark:bg-slate-950/30 dark:hover:bg-slate-950/55 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200'
+                          }`}
                       >
                         <div className="flex items-center gap-2">
-                          <input 
+                          <input
                             type="checkbox"
                             checked={m.done}
                             onChange={() => toggleMilestone(idx)}
@@ -597,6 +680,85 @@ Berikan analisis dalam format rapi:
               )}
 
               {/* TAB 4: DAILY UPDATES LOG */}
+              {activeTab === 'applicants' && isOwner && (
+                <div className="space-y-4 animate-fadeIn">
+                  <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-2">
+                    <h4 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
+                      <Users className="h-4 w-4 text-primary" /> Kelola Pelamar Proyek
+                    </h4>
+                    <Button onClick={() => loadApplicants()} className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold h-8 px-34 rounded-md" size="sm">
+                      <RefreshCw className="h-3 w-3" /> Refresh
+                    </Button>
+                  </div>
+
+                  {isLoadingApplicants ? (
+                    <p className="text-center text-xs text-slate-400 py-8">Memuat pelamar...</p>
+                  ) : applicants.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Users className="h-10 w-10 mx-auto text-slate-300 dark:text-slate-600 mb-2" />
+                      <p className="text-xs text-slate-400">Belum ada yang melamar proyek ini.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {applicants.map((applicant) => (
+                        <div key={applicant.id} className="flex items-start justify-between gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
+                          <div className="min-w-0">
+                            <Link href={`/profile/${applicant.user_id}`} className="font-bold text-xs text-slate-900 dark:text-white hover:underline truncate">
+                              {applicant.alumni_db?.nama_lengkap || 'Talent'}
+                            </Link>
+                            <div className="flex flex-wrap gap-1.5 mt-1">
+                              {applicant.alumni_db?.aktivitas && (
+                                <Badge className="text-[8px] font-semibold bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/20">
+                                  {applicant.alumni_db.aktivitas}
+                                </Badge>
+                              )}
+                              {applicant.alumni_db?.kota_domisili && (
+                                <Badge className="text-[8px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                                  {applicant.alumni_db.kota_domisili}
+                                </Badge>
+                              )}
+                            </div>
+                            {applicant.alumni_db?.skill_gabungan && (
+                              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1.5 line-clamp-2">
+                                {applicant.alumni_db.skill_gabungan}
+                              </p>
+                            )}
+                            <p className="text-[9px] text-slate-400 mt-1.5">
+                              Melamar: {new Date(applicant.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })} • Peran: {applicant.role || 'collaborator'}
+                            </p>
+                          </div>
+
+                          <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                            <Badge className={`text-[9px] px-2.5 py-0.5 rounded-full font-bold ${getStatusColor(applicant.status)}`}>
+                              {getStatusText(applicant.status)}
+                            </Badge>
+                            {applicant.status === 'pending' && (
+                              <div className="flex gap-1.5">
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleReviewApplicant(applicant, 'accept')}
+                                  className="h-7 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold rounded-md px-3 gap-1"
+                                >
+                                  <CheckCircle className="h-3 w-3" /> Terima
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleReviewApplicant(applicant, 'reject')}
+                                  className="h-7 border-rose-300 text-rose-600 hover:bg-rose-50 dark:border-rose-500/30 dark:text-rose-400 dark:hover:bg-rose-500/10 text-[10px] font-bold rounded-md px-3 gap-1"
+                                >
+                                  <X className="h-3 w-3" /> Tolak
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {activeTab === 'updates' && (
                 <div className="space-y-4 animate-fadeIn">
                   <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-2">
@@ -616,19 +778,19 @@ Berikan analisis dalam format rapi:
                       <h5 className="text-xs font-bold text-slate-850 dark:text-white uppercase tracking-wider">Tulis Log Harian</h5>
                       <div className="space-y-1">
                         <label className="text-[10px] font-bold text-slate-500 uppercase">Judul Perkembangan</label>
-                        <Input 
-                          value={newUpdateTitle} 
+                        <Input
+                          value={newUpdateTitle}
                           onChange={(e) => setNewUpdateTitle(e.target.value)}
-                          placeholder="Contoh: Integrasi database & API" 
+                          placeholder="Contoh: Integrasi database & API"
                           className="h-9 bg-white dark:bg-slate-900 text-xs border-slate-200 dark:border-slate-800"
                         />
                       </div>
                       <div className="space-y-1">
                         <label className="text-[10px] font-bold text-slate-500 uppercase">Konten Perkembangan</label>
-                        <Textarea 
-                          value={newUpdateContent} 
+                        <Textarea
+                          value={newUpdateContent}
                           onChange={(e) => setNewUpdateContent(e.target.value)}
-                          placeholder="Tuliskan apa saja perkembangan, tantangan, atau langkah berikutnya..." 
+                          placeholder="Tuliskan apa saja perkembangan, tantangan, atau langkah berikutnya..."
                           className="bg-white dark:bg-slate-900 text-xs border-slate-200 dark:border-slate-800 min-h-[90px]"
                         />
                       </div>
@@ -650,14 +812,14 @@ Berikan analisis dalam format rapi:
                         <span className="absolute -left-[31px] top-1 h-4.5 w-4.5 rounded-full border-2 border-primary bg-white dark:bg-[#1b1f23] flex items-center justify-center">
                           <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                         </span>
-                        
+
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <h5 className="font-bold text-sm text-slate-900 dark:text-white leading-tight">{update.title}</h5>
                           <span className="text-[10px] text-slate-400 font-medium">
                             {new Date(update.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                           </span>
                         </div>
-                        
+
                         <p className="text-xs text-slate-650 dark:text-slate-400 leading-relaxed whitespace-pre-line pl-1.5 border-l border-slate-100 dark:border-slate-900/50 py-0.5">
                           {update.content}
                         </p>
@@ -671,7 +833,7 @@ Berikan analisis dalam format rapi:
               )}
 
             </CardContent>
-            
+
             {/* FOOTER ACTION */}
             <CardFooter className="border-t border-slate-200 dark:border-white/5 py-4 bg-slate-50 dark:bg-slate-950/20 flex flex-wrap items-center justify-between gap-4">
               {userId === null ? (
@@ -691,8 +853,8 @@ Berikan analisis dalam format rapi:
                   </Badge>
                 </div>
               ) : (
-                <Button 
-                  onClick={handleApply} 
+                <Button
+                  onClick={handleApply}
                   disabled={isApplying}
                   className="bg-primary hover:bg-primary/95 text-white font-bold text-xs px-6 py-2 rounded-md shadow-sm transition-all"
                 >
@@ -714,7 +876,7 @@ Berikan analisis dalam format rapi:
 
         {/* RIGHT COLUMN: Controls Panel & AI scout */}
         <div className="lg:col-span-4 space-y-6">
-          
+
           {/* Owner Dashboard Control (Visibilitas) */}
           {isOwner && (
             <Card className="bg-white dark:bg-[#1b1f23] border-slate-200 dark:border-slate-800 shadow-sm">
@@ -728,15 +890,14 @@ Berikan analisis dalam format rapi:
                     <div className="text-xs font-bold text-slate-900 dark:text-white">Visibilitas Publik</div>
                     <div className="text-[10px] text-slate-500 leading-snug">Izinkan diakses tanpa akun</div>
                   </div>
-                  <Button 
+                  <Button
                     onClick={toggleVisibility}
                     variant={isPublic ? 'default' : 'outline'}
                     size="sm"
-                    className={`h-8 text-xs font-bold rounded-md ${
-                      isPublic 
-                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white' 
-                        : 'border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
-                    }`}
+                    className={`h-8 text-xs font-bold rounded-md ${isPublic
+                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                      : 'border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                      }`}
                   >
                     {isPublic ? 'Publik' : 'Privat'}
                   </Button>
@@ -761,7 +922,7 @@ Berikan analisis dalam format rapi:
                     <p className="text-xs text-slate-700 dark:text-slate-350 leading-normal">
                       Temukan kandidat alumni terbaik dari database yang memiliki keahlian dan minat yang cocok untuk menyukseskan proyek ini.
                     </p>
-                    <Button 
+                    <Button
                       onClick={handleOwnerAISearch}
                       disabled={aiLoading}
                       className="w-full bg-primary hover:bg-primary/95 text-white font-bold text-xs py-2 rounded-md shadow-sm transition-all gap-1.5"
@@ -784,7 +945,7 @@ Berikan analisis dalam format rapi:
                     <p className="text-xs text-slate-700 dark:text-slate-350 leading-normal">
                       Gunakan AI Engine untuk menganalisis kecocokan profil, keahlian, dan aktivitas Anda dengan kebutuhan spesifik proyek ini.
                     </p>
-                    <Button 
+                    <Button
                       onClick={handleUserAIMatch}
                       disabled={aiLoading}
                       className="w-full bg-primary hover:bg-primary/95 text-white font-bold text-xs py-2 rounded-md shadow-sm transition-all gap-1.5"
