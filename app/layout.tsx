@@ -17,6 +17,11 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: 'HubTalent',
   description: 'HubTalent — Platform kolaborasi dan pengembangan karir berbasis AI untuk talenta Indonesia',
+  icons: {
+    icon: '/logo_icon.png',
+    shortcut: '/logo_icon.png',
+    apple: '/logo_icon.png',
+  },
 };
 
 export default function RootLayout({
