@@ -1,8 +1,6 @@
-// app/(main)/layout.tsx
-// PENTING: Pastikan TIDAK ADA 'use client' di atas baris ini.
-// File ini adalah Server Component.
 import { headers } from 'next/headers';
-import Navbar from '@/components/layout/Navbar'; // <-- IMPORT NAVBAR DARI FILE TERPISAH
+import Navbar from '@/components/layout/Navbar';
+import { FloatingChat } from '@/components/chat/FloatingChat';
 
 // Layout utama yang akan membungkus halaman-halaman di grup (main)
 export default async function MainLayout({
@@ -21,6 +19,7 @@ export default async function MainLayout({
       <main className="flex-1 py-6 sm:py-8">
         <div className="app-shell stagger-children">{children}</div>
       </main>
+      {userId && <FloatingChat currentUserId={Number(userId)} userEmail={userEmail} />}
     </div>
   );
 }
