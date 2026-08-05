@@ -2,6 +2,7 @@
 
 import Script from 'next/script';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { RefreshCw } from 'lucide-react';
 
 type TurnstileWidgetProps = {
   siteKey: string;
@@ -23,8 +24,11 @@ declare global {
 
 export function TurnstileWidget({ siteKey, onVerify, onExpire, onError, resetSignal = 0 }: TurnstileWidgetProps) {
   const [scriptReady, setScriptReady] = useState(false);
+  const [remountKey, setRemountKey] = useState(0);
   const widgetIdRef = useRef<string | null>(null);
-  const containerId = useMemo(() => `turnstile-${Math.random().toString(36).slice(2, 11)}`, []);
+  
+  // Re-generate containerId when remountKey changes to force a fresh render target
+  const containerId = useMemo(() => `turnstile-${Math.random().toString(36).slice(2, 11)}`, [remountKey]);
 
   const onVerifyRef = useRef(onVerify);
   const onExpireRef = useRef(onExpire);
@@ -36,53 +40,88 @@ export function TurnstileWidget({ siteKey, onVerify, onExpire, onError, resetSig
     onErrorRef.current = onError;
   }, [onVerify, onExpire, onError]);
 
+  // Effect to load and render Turnstile widget
   useEffect(() => {
     if (!scriptReady || !siteKey || !window.turnstile) {
       return;
     }
 
     if (widgetIdRef.current) {
-      window.turnstile.remove(widgetIdRef.current);
+      try {
+        window.turnstile.remove(widgetIdRef.current);
+      } catch (err) {
+        console.warn('Failed to remove old turnstile widget:', err);
+      }
       widgetIdRef.current = null;
     }
 
-    const widgetId = window.turnstile.render(`#${containerId}`, {
-      sitekey: siteKey,
-      callback: (token: string) => onVerifyRef.current(token),
-      'expired-callback': () => {
-        onExpireRef.current?.();
-      },
-      'error-callback': () => {
-        onErrorRef.current?.();
-      },
-      theme: 'auto',
-    });
-
-    widgetIdRef.current = widgetId;
+    try {
+      const widgetId = window.turnstile.render(`#${containerId}`, {
+        sitekey: siteKey,
+        callback: (token: string) => onVerifyRef.current(token),
+        'expired-callback': () => {
+          onExpireRef.current?.();
+        },
+        'error-callback': () => {
+          onErrorRef.current?.();
+        },
+        theme: 'auto',
+      });
+      widgetIdRef.current = widgetId;
+    } catch (err) {
+      console.error('Error rendering Turnstile widget:', err);
+    }
 
     return () => {
       if (widgetIdRef.current && window.turnstile) {
-        window.turnstile.remove(widgetIdRef.current);
+        try {
+          window.turnstile.remove(widgetIdRef.current);
+        } catch (err) {
+          console.warn('Failed to remove turnstile widget during cleanup:', err);
+        }
         widgetIdRef.current = null;
       }
     };
   }, [containerId, scriptReady, siteKey]);
 
+  // Reset turnstile when resetSignal from parent changes
   useEffect(() => {
     if (!widgetIdRef.current || !window.turnstile) {
       return;
     }
-    window.turnstile.reset(widgetIdRef.current);
+    try {
+      window.turnstile.reset(widgetIdRef.current);
+    } catch (err) {
+      console.warn('Failed to reset turnstile:', err);
+    }
   }, [resetSignal]);
 
+  const handleManualReset = () => {
+    // 1. Clear verification token in parent
+    onExpireRef.current?.();
+    // 2. Force re-mount of the Turnstile widget by incrementing the remountKey
+    setRemountKey(prev => prev + 1);
+  };
+
   return (
-    <>
+    <div className="space-y-1.5">
       <Script
         src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
         strategy="afterInteractive"
         onLoad={() => setScriptReady(true)}
       />
-      <div id={containerId} className="min-h-16" />
-    </>
+      <div key={remountKey} id={containerId} className="min-h-16" />
+      
+      <div className="flex justify-start">
+        <button
+          type="button"
+          onClick={handleManualReset}
+          className="text-[10px] text-slate-500 hover:text-primary dark:text-slate-400 dark:hover:text-primary flex items-center gap-1 transition-colors py-0.5 focus:outline-none font-medium"
+        >
+          <RefreshCw className="h-3 w-3 animate-hover-spin" />
+          <span>Gagal memuat verifikasi? Klik untuk muat ulang</span>
+        </button>
+      </div>
+    </div>
   );
 }
