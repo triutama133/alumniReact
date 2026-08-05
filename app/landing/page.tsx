@@ -44,10 +44,10 @@ export default function LandingPage() {
             />
           </div>
           <div className="hidden items-center gap-8 md:flex">
-            <Link href="/projects" className="text-sm font-medium text-white/80 no-underline hover:text-white">Kolaborasi Projek</Link>
-            <Link href="/jobs" className="text-sm font-medium text-white/80 no-underline hover:text-white">AI Career Prep</Link>
-            <Link href="/jobs" className="text-sm font-medium text-white/80 no-underline hover:text-white">Lowongan Kerja</Link>
-            <Link href="/search" className="text-sm font-medium text-white/80 no-underline hover:text-white">Cari Talenta</Link>
+            <Link href="/preview/projects" className="text-sm font-medium text-white/80 no-underline hover:text-white">Kolaborasi Projek</Link>
+            <Link href="/preview/jobs" className="text-sm font-medium text-white/80 no-underline hover:text-white">AI Career Prep</Link>
+            <Link href="/preview/jobs" className="text-sm font-medium text-white/80 no-underline hover:text-white">Lowongan Kerja</Link>
+            <Link href="/login" className="text-sm font-medium text-white/80 no-underline hover:text-white">Cari Talenta</Link>
           </div>
           <div className="flex items-center gap-3 sm:gap-4">
             <Link href="/register" className="text-xs font-medium text-white/90 no-underline hover:text-white sm:text-sm">Sign Up</Link>
@@ -75,7 +75,7 @@ export default function LandingPage() {
               Mulai Kolaborasi — Gratis
             </Link>
             <Link
-              href="/jobs"
+              href="/preview/jobs"
               className="w-full sm:w-auto inline-flex items-center justify-center rounded-full border border-white/20 bg-white/5 text-white px-8 py-3 text-sm font-semibold no-underline hover:bg-white/15 transition-colors"
             >
               Eksplorasi Lowongan
