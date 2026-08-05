@@ -23,7 +23,7 @@ declare global {
 }
 
 export function TurnstileWidget({ siteKey, onVerify, onExpire, onError, resetSignal = 0 }: TurnstileWidgetProps) {
-  const [scriptReady, setScriptReady] = useState(false);
+  const [scriptReady, setScriptReady] = useState(() => typeof window !== 'undefined' && !!window.turnstile);
   const [remountKey, setRemountKey] = useState(0);
   const widgetIdRef = useRef<string | null>(null);
   
@@ -39,6 +39,13 @@ export function TurnstileWidget({ siteKey, onVerify, onExpire, onError, resetSig
     onExpireRef.current = onExpire;
     onErrorRef.current = onError;
   }, [onVerify, onExpire, onError]);
+
+  // Check if turnstile script is already loaded on mount (useful for client-side navigation)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.turnstile) {
+      setScriptReady(true);
+    }
+  }, []);
 
   // Effect to load and render Turnstile widget
   useEffect(() => {
@@ -99,7 +106,33 @@ export function TurnstileWidget({ siteKey, onVerify, onExpire, onError, resetSig
   const handleManualReset = () => {
     // 1. Clear verification token in parent
     onExpireRef.current?.();
-    // 2. Force re-mount of the Turnstile widget by incrementing the remountKey
+
+    // 2. If Turnstile script didn't load or was blocked, try to inject it manually
+    if (typeof window !== 'undefined' && !window.turnstile) {
+      console.log('Turnstile script missing, force injecting script tag...');
+      const scriptId = 'cloudflare-turnstile-script-manual';
+      const existingScript = document.getElementById(scriptId);
+      if (existingScript) {
+        existingScript.remove();
+      }
+      const script = document.createElement('script');
+      script.id = scriptId;
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        setScriptReady(true);
+        // Force remount once script finishes loading
+        setRemountKey(prev => prev + 1);
+      };
+      script.onerror = () => {
+        console.error('Failed to load Turnstile script manually.');
+      };
+      document.body.appendChild(script);
+      return;
+    }
+
+    // 3. Force re-mount of the Turnstile widget by incrementing the remountKey
     setRemountKey(prev => prev + 1);
   };
 
