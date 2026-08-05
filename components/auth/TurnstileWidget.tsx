@@ -26,6 +26,16 @@ export function TurnstileWidget({ siteKey, onVerify, onExpire, onError, resetSig
   const widgetIdRef = useRef<string | null>(null);
   const containerId = useMemo(() => `turnstile-${Math.random().toString(36).slice(2, 11)}`, []);
 
+  const onVerifyRef = useRef(onVerify);
+  const onExpireRef = useRef(onExpire);
+  const onErrorRef = useRef(onError);
+
+  useEffect(() => {
+    onVerifyRef.current = onVerify;
+    onExpireRef.current = onExpire;
+    onErrorRef.current = onError;
+  }, [onVerify, onExpire, onError]);
+
   useEffect(() => {
     if (!scriptReady || !siteKey || !window.turnstile) {
       return;
@@ -38,12 +48,12 @@ export function TurnstileWidget({ siteKey, onVerify, onExpire, onError, resetSig
 
     const widgetId = window.turnstile.render(`#${containerId}`, {
       sitekey: siteKey,
-      callback: (token: string) => onVerify(token),
+      callback: (token: string) => onVerifyRef.current(token),
       'expired-callback': () => {
-        onExpire?.();
+        onExpireRef.current?.();
       },
       'error-callback': () => {
-        onError?.();
+        onErrorRef.current?.();
       },
       theme: 'auto',
     });
@@ -56,7 +66,7 @@ export function TurnstileWidget({ siteKey, onVerify, onExpire, onError, resetSig
         widgetIdRef.current = null;
       }
     };
-  }, [containerId, onError, onExpire, onVerify, scriptReady, siteKey]);
+  }, [containerId, scriptReady, siteKey]);
 
   useEffect(() => {
     if (!widgetIdRef.current || !window.turnstile) {
