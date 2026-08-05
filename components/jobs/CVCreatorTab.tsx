@@ -91,11 +91,6 @@ export function CVCreatorTab() {
         });
 
         initialContent.current = data.htmlContent || { header: '', main: '', sidebar: '' };
-        
-        // Inject content into contentEditable elements
-        if (headerRef.current) headerRef.current.innerHTML = initialContent.current.header;
-        if (mainRef.current) mainRef.current.innerHTML = initialContent.current.main;
-        if (sidebarRef.current) sidebarRef.current.innerHTML = initialContent.current.sidebar;
       } catch (err: any) {
         toast.error('Gagal memuat data CV', { description: err.message });
       } finally {
@@ -104,6 +99,15 @@ export function CVCreatorTab() {
     }
     loadCV();
   }, []);
+
+  // Inject content once editable elements are mounted (loading is false)
+  useEffect(() => {
+    if (!loading) {
+      if (headerRef.current) headerRef.current.innerHTML = initialContent.current.header;
+      if (mainRef.current) mainRef.current.innerHTML = initialContent.current.main;
+      if (sidebarRef.current) sidebarRef.current.innerHTML = initialContent.current.sidebar;
+    }
+  }, [loading]);
 
   // Trigger autosave on settings change
   useEffect(() => {

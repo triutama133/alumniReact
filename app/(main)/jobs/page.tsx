@@ -138,6 +138,31 @@ export default function JobsPage() {
     fetchSavedChecklist(target);
   }, [analysisResult, selectedRole, customRole]);
 
+  // Load saved learning path on page mount
+  useEffect(() => {
+    async function loadSavedPath() {
+      try {
+        const res = await fetch('/api/learning-path');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.path_data) {
+            const role = data.target_role;
+            if (POPULAR_ROLES.includes(role)) {
+              setSelectedRole(role);
+            } else {
+              setSelectedRole('custom');
+              setCustomRole(role);
+            }
+            setAnalysisResult(data.path_data);
+          }
+        }
+      } catch (err) {
+        console.error('Error loading saved learning path:', err);
+      }
+    }
+    loadSavedPath();
+  }, []);
+
   // Toggle Task Checklist
   const handleToggleTask = async (task: string) => {
     playClickSound();
