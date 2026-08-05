@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { TurnstileWidget } from '@/components/auth/TurnstileWidget'
+import { Loader2 } from 'lucide-react'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -18,7 +19,8 @@ export default function LoginPage() {
   const [turnstileResetSignal, setTurnstileResetSignal] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(false)
-  const router = useRouter() // router digunakan untuk redirect, jadi tidak unused
+  const [isRedirecting, setIsRedirecting] = useState<boolean>(false)
+  const router = useRouter()
 
   useEffect(() => {
     const fetchTurnstileConfig = async () => {
@@ -61,25 +63,23 @@ export default function LoginPage() {
       })
       
       if (response.ok) {
+        setIsRedirecting(true);
         router.replace('/');
         return; 
       }
 
       const data = await response.json();
 
-      if (!response.ok) {
-        setError(data.error || 'Terjadi kesalahan saat login.');
-        setTurnstileToken('')
-        setTurnstileResetSignal((prev) => prev + 1)
-        return;
-      }
+      setError(data.error || 'Terjadi kesalahan saat login.');
+      setTurnstileToken('')
+      setTurnstileResetSignal((prev) => prev + 1)
+      setIsLoading(false);
 
-    } catch (err: unknown) { // Perbaikan: Ganti 'any' dengan 'unknown'
+    } catch (err: unknown) {
       setError('Terjadi kesalahan jaringan atau yang tidak terduga.');
       console.error('[CLIENT] Unexpected error during login process:', (err as Error).message);
       setTurnstileToken('')
       setTurnstileResetSignal((prev) => prev + 1)
-    } finally {
       setIsLoading(false);
     }
   }
@@ -108,7 +108,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                disabled={isLoading}
+                disabled={isLoading || isRedirecting}
               />
             </div>
             <div className="grid gap-2">
@@ -119,7 +119,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                disabled={isLoading}
+                disabled={isLoading || isRedirecting}
               />
               <div className="text-right">
                 <Link href="/forgot-password" className="text-xs underline text-slate-600 hover:text-slate-900">
@@ -142,8 +142,9 @@ export default function LoginPage() {
               )}
             </div>
             {error && <p className="text-sm text-red-500">{error}</p>}
-            <Button type="submit" className="w-full" disabled={isLoading || !turnstileToken}>
-              {isLoading ? 'Sedang memproses...' : 'Login'}
+            <Button type="submit" className="w-full flex items-center justify-center gap-2" disabled={isLoading || isRedirecting || !turnstileToken}>
+              {(isLoading || isRedirecting) && <Loader2 className="h-4 w-4 animate-spin" />}
+              {isRedirecting ? 'Mengalihkan ke beranda...' : isLoading ? 'Sedang memproses...' : 'Login'}
             </Button>
           </form>
           

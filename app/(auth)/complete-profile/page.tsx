@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import * as z from 'zod'
+import { Loader2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -439,6 +440,7 @@ export default function CompleteProfilePage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [pageReady, setPageReady] = useState(false)
+  const [isRedirecting, setIsRedirecting] = useState(false)
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -587,6 +589,7 @@ export default function CompleteProfilePage() {
 
   async function onSubmit(values: FormValues) {
     setLoading(true)
+    let success = false
 
     try {
       const response = await fetch('/api/complete-profile', {
@@ -607,12 +610,19 @@ export default function CompleteProfilePage() {
       }
 
       toast.success('Profil berhasil disimpan!')
-      router.push('/')
+      success = true
+      setIsRedirecting(true)
+      
+      // Force cache reload and redirect via full reload
+      router.refresh()
+      window.location.href = '/'
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Terjadi kesalahan saat menyimpan profil.'
       toast.error('Terjadi kesalahan', { description: message })
     } finally {
-      setLoading(false)
+      if (!success) {
+        setLoading(false)
+      }
     }
   }
 
@@ -952,8 +962,9 @@ export default function CompleteProfilePage() {
                 </section>
               )}
 
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'Menyimpan...' : 'Simpan Profil & Lanjutkan'}
+              <Button type="submit" className="w-full flex items-center justify-center gap-2" disabled={loading || isRedirecting}>
+                {(loading || isRedirecting) && <Loader2 className="h-4 w-4 animate-spin" />}
+                {isRedirecting ? 'Mengalihkan ke beranda...' : loading ? 'Menyimpan...' : 'Simpan Profil & Lanjutkan'}
               </Button>
             </form>
           </Form>
