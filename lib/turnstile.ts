@@ -70,7 +70,7 @@ export function getTurnstileSiteKey(): string | undefined {
 }
 
 function getTurnstileSecretKey(): string | undefined {
-  return getEnvValue(['TURNSTILE_SECRET_KEY', 'secret_key_cloudflare_turnstile']);
+  return getEnvValue(['TURNSTILE_SECRET', 'TURNSTILE_SECRET_KEY', 'secret_key_cloudflare_turnstile']);
 }
 
 export async function verifyTurnstileToken({ token, remoteIp }: VerifyTurnstileArgs) {
