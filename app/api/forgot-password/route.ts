@@ -196,7 +196,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Gagal memproses permintaan reset password.' }, { status: 500 });
     }
 
-    await sendPasswordResetEmail(user.email, token);
+    await sendPasswordResetEmail(user.email, token, req.nextUrl.origin);
     clearForgotFailures(localAttemptKey);
     await clearPersistentFailures('forgot_password', persistentAttemptKey);
 

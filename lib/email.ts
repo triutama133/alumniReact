@@ -39,9 +39,9 @@ async function sendBrevoEmail(payload: BrevoSendEmailPayload) {
   }
 }
 
-export async function sendPasswordResetEmail(to: string, token: string) {
+export async function sendPasswordResetEmail(to: string, token: string, origin?: string) {
   const fromEmail = getFromEmail();
-  const appUrl = getAppUrl();
+  const appUrl = origin || getAppUrl();
   const resetUrl = `${appUrl.replace(/\/$/, '')}/reset-password?token=${encodeURIComponent(token)}`;
 
   try {
