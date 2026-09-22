@@ -1,4 +1,4 @@
-# Database Audit Results - Indonesia Talent Hub
+# Database Audit Results - HubTalent
 
 **Audit Date:** 2026-06-13  
 **Auditor:** [Your Name]  

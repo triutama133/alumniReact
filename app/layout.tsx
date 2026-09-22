@@ -2,6 +2,8 @@
 import './globals.css'; // File CSS global Anda
 import { Geist, Geist_Mono } from "next/font/google"; // Import font
 import RootMotionShell from '@/components/layout/RootMotionShell';
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 // Inisialisasi font Geist
 const geistSans = Geist({
@@ -33,6 +35,8 @@ export default function RootLayout({
     <html lang="id">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <RootMotionShell>{children}</RootMotionShell>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

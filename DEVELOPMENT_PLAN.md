@@ -1,531 +1,119 @@
-# Indonesia Talent Hub - Development Plan
+# HubTalent - Development Plan
 
-**Tanggal:** 13 Juni 2026  
-**Status Project:** Partially Developed - Perlu Development Lanjutan
+**Last updated:** September 22, 2026 (supersedes the June 13, 2026 assessment below)
+**Status Project:** Core platform implemented — remaining work is hardening, not building from scratch.
+
+> **Why this document changed:** The original June 2026 version of this plan estimated the project at ~40% complete, with landing page, home feed, edit profile, conditional profile forms, and 6 of 9 activity tables all marked as missing. A source-code audit on September 22, 2026 (cross-checking every page, API route, and database migration) found that **all of those items are actually implemented**. This document has been rewritten to reflect verified reality instead of the earlier estimate. The original phase-by-phase roadmap is kept below (§5) for historical reference, with each item marked against what's actually done.
 
 ---
 
 ## 📋 Executive Summary
 
-Project Indonesia Talent Hub adalah platform untuk menghubungkan alumni universitas (fokus IPB) dalam mencari talenta dan kolaborasi berbasis profil yang lengkap. Platform ini terinspirasi LinkedIn dengan fitur unggulan: AI-powered matching untuk project dan talent recommendation.
+HubTalent is a platform connecting university alumni/community members for talent discovery and project collaboration, combining a LinkedIn-style profile/feed system with AI-assisted matching (talent search, project recommendation, career learning paths, CV writing).
 
-**Current Progress:** ~40% complete
-- ✅ Authentication system (login/register)
-- ✅ Basic profile system
-- ✅ Projects CRUD
-- ✅ Talent search
-- ⚠️ Profile form sangat basic (tidak sesuai requirement PDF)
-- ❌ Landing page
-- ❌ Home feed/posting functionality
-- ❌ Edit profile
-- ❌ Conditional profile forms
-- ❌ AI collaboration recommendation (partial - ada API tapi belum fully integrated)
+**Verified current state (Sept 22, 2026):**
+- ✅ Authentication (custom JWT, bcrypt, Turnstile captcha, session versioning, rate limiting)
+- ✅ Landing page
+- ✅ Full onboarding profile form — 9 activity types, each with its own conditional sub-form and database table
+- ✅ Profile view and edit (both fully functional, not stubs)
+- ✅ Home feed with posting, likes, and comments
+- ✅ Direct messaging (1-to-1 chat, Realtime-enabled)
+- ✅ Notifications (bell UI + backing table, triggered by likes/comments/messages)
+- ✅ Talent & project search (traditional filters + AI-assisted)
+- ✅ Projects hub (create, apply, review applicants, visibility toggle, plan/milestones, progress updates)
+- ✅ Jobs portal (DB-backed listing/search/filter)
+- ✅ Learning path (real AI skill-gap analysis grounded in live job postings, persisted checklist)
+- ✅ ATS CV builder with AI rewriting (Google Gemini), the most production-hardened AI feature in the repo
+- ✅ Super Admin panel (cohort & user management)
+- ✅ Cohort Admin panel (member management)
+- ❌ Nodes network relationship visualization — not built
+- ❌ Saved AI matches / bookmarking — not built
+- ⚠️ Several features work but have real gaps (see §2)
 
----
-
-## 🎯 Comparison: Current vs Required
-
-### **1. Pages & Routes**
-
-| Page | PDF Requirement | Current Status | Gap |
-|------|----------------|----------------|-----|
-| Landing Page | ✅ Required | ❌ Missing | Need to create |
-| Login/Register | ✅ Required | ✅ Complete | - |
-| Complete Profile | ✅ Required (25 Q + conditional) | ⚠️ Basic only (6 fields) | **Major gap** |
-| Home/Beranda | ✅ Feed + posting | ✅ Basic feed | Missing posting feature |
-| Search Talent | ✅ Required | ✅ Present | Need enhancement |
-| Search Project | ✅ Required | ✅ Present (via /projects) | Need separate tab |
-| Profile View | ✅ Required | ✅ Present | Need enhancement |
-| Edit Profile | ✅ Required | ❌ Missing | Need to create |
-| Header/Navbar | ✅ LinkedIn-style | ✅ Present | Need polish |
-
-### **2. Profile Form Fields**
-
-**Current Fields (6):**
-- nama_lengkap
-- nama_panggilan
-- angkatan
-- fakultas_jurusan
-- aktivitas (single choice)
-- skill_gabungan
-
-**Required Fields (PDF - 25 questions + conditional):**
-
-#### BAB I: Profil Utama (Q1-Q25)
-1. ✅ Email (handled by auth)
-2. ✅ Nama lengkap
-3. ✅ Nama panggilan
-4. ❌ Tahun lahir
-5. ❌ Jenis kelamin
-6. ❌ Kota/kabupaten domisili
-7. ❌ Nomor handphone (format 62xxx)
-8. ❌ Pendidikan terakhir (dropdown)
-9. ❌ Nama institusi pendidikan terakhir
-10. ❌ Jurusan/program studi
-11. ❌ Tahun kelulusan
-12. ⚠️ Keahlian (ada, tapi perlu structured format)
-13. ❌ Bahasa yang dikuasai
-14. ❌ Sertifikasi
-15. ❌ Link Instagram (optional)
-16. ❌ Link LinkedIn (optional)
-17. ⚠️ Aktivitas/pekerjaan - **CRITICAL GAP**
-    - Current: single choice
-    - Required: **multi-select checkbox** dengan status keaktifan
-18. ❌ Pelatihan yang diikuti (paragraf)
-19. ❌ Jenis dukungan yang dibutuhkan (multi-select)
-20. ❌ Bidang kontribusi/minat (multi-select)
-21. ❌ Peran dalam kolaborasi (multi-select)
-22. ❌ Link portofolio
-23. Missing number in PDF
-24. ❌ Pengalaman proyek/komunitas sosial
-25. ❌ Ketersediaan waktu kolaborasi
-
-#### BAB II: Conditional Follow-up Questions
-**Current:** Hanya 3 aktivitas dengan follow-up sederhana
-**Required:** 9 aktivitas dengan pertanyaan detail:
-
-1. **Profesional Institusi** ✅ (partial - need more fields)
-2. **Entrepreneur/Wirausaha** ✅ (partial - need more fields)
-3. **Pekerja Sosial/NGO** ❌ (missing table & fields)
-4. **Content Creator** ❌ (missing table & fields)
-5. **Ibu Rumah Tangga** ✅ (exists but incomplete)
-6. **Mahasiswa/Fresh Graduate** ❌ (missing table & fields)
-7. **Pekerja Informal/Freelance** ❌ (missing table & fields)
-8. **Petani/Nelayan/Peternak** ❌ (missing table & fields)
-9. **Guru/Pendidik** ❌ (missing table & fields)
-
-### **3. Database Schema**
-
-**Existing Tables:**
-- `user` (authentication)
-- `alumni_db` (main profile - incomplete)
-- `alumni_pekerja` (basic fields)
-- `alumni_bisnis` (basic fields)
-- `alumni_rumah_tangga` (basic fields)
-- `projects`
-
-**Missing Tables:**
-- `alumni_sosial` (NGO workers)
-- `alumni_kreatif` (content creators)
-- `alumni_mahasiswa` (students/fresh grad)
-- `alumni_informal` (freelancers)
-- `alumni_agri` (farmers/fishermen)
-- `alumni_pendidik` (educators)
-
-**Fields to Add to `alumni_db`:**
-```sql
--- Missing from current schema
-tahun_lahir INTEGER
-jenis_kelamin VARCHAR
-kota_domisili VARCHAR
-nomor_handphone VARCHAR
-pendidikan_terakhir VARCHAR
-nama_institusi_pendidikan_terakhir VARCHAR
-jurusan_studi VARCHAR
-tahun_kelulusan INTEGER
-bahasa_dikuasai TEXT
-sertifikasi TEXT
-instagram_link VARCHAR
-linkedin_link VARCHAR
-pelatihan_diikuti TEXT
-jenis_dukungan_dibutuhkan TEXT  -- comma-separated or JSON
-bidang_kontribusi_minat TEXT    -- comma-separated or JSON
-peran_kolaborasi_minat TEXT     -- comma-separated or JSON
-portofolio_link VARCHAR
-pengalaman_proyek_sosial TEXT
-ketersediaan_waktu VARCHAR
-```
+For the full per-feature audit with file references, see [`docs/CAPSTONE_PROJECT_DOCUMENTATION.md`](./docs/CAPSTONE_PROJECT_DOCUMENTATION.md).
 
 ---
 
-## 🚀 Development Roadmap
+## 🎯 2. What Actually Remains (Verified Gaps)
 
-### **PHASE 1: Database & Backend Foundation** (Priority: HIGH)
-**Estimated Time:** 3-4 days
+Unlike the original plan, these are not "build from scratch" items — they are fixes, hardening, or well-scoped additions on top of a working system.
 
-#### 1.1 Database Migration
-- [ ] Update `alumni_db` schema (add 15+ missing fields)
-- [ ] Create 6 missing conditional tables:
-  - [ ] `alumni_sosial`
-  - [ ] `alumni_kreatif`
-  - [ ] `alumni_mahasiswa`
-  - [ ] `alumni_informal`
-  - [ ] `alumni_agri`
-  - [ ] `alumni_pendidik`
-- [ ] Update existing conditional tables (add missing fields per PDF)
-- [ ] Add indexes for search optimization
+### 2.1 Security & reliability hardening (Priority: HIGH)
+- [ ] **Super Admin access control**: currently gated only at the API-handler level, with a condition that allows access when the request host contains `localhost`/`127.0.0.1` — not gated at `middleware.ts`. Tighten this before any real deployment.
+- [ ] **Rate limiting** is in-memory (`Map` in `middleware.ts`) — resets on restart and doesn't work across multiple server instances. Move to a shared store (e.g. Redis) for production.
+- [ ] **Database migration history is incomplete**: `projects.is_public`, `projects.plan`, `projects.milestones`, and the `project_updates` table are used throughout the app but have no corresponding file in `database/migration_*.sql`. Backfill these so the schema is reproducible from migrations alone.
 
-**SQL Script Example:**
-```sql
--- Update alumni_db
-ALTER TABLE alumni_db
-  ADD COLUMN tahun_lahir INTEGER,
-  ADD COLUMN jenis_kelamin VARCHAR(20),
-  ADD COLUMN kota_domisili VARCHAR(100),
-  ADD COLUMN nomor_handphone VARCHAR(20),
-  -- ... (all missing fields)
-  MODIFY COLUMN aktivitas TEXT; -- Change to support comma-separated values
+### 2.2 Feature completion (Priority: MEDIUM)
+- [ ] **Cohort-admin analytics page** currently calls `/api/analytics` without a `cohortId` filter, so it shows platform-wide stats instead of the community-scoped stats implied by its placement — pass the cohort ID through.
+- [ ] **Project listing bypasses the API layer**: `app/api/projects` only implements `POST`; the `/projects` listing page queries Supabase directly from a server component instead. Either add a `GET` handler for consistency or document this as an intentional pattern.
+- [ ] **Cohort licensing has no billing enforcement**: `subscription_plan`/`subscription_status`/`expires_at` exist on `cohorts`, but nothing blocks usage once a cohort's license expires, and there's no payment integration. "Extending a license" just adds 30 days to a date field manually.
+- [ ] **AI daily usage quota** (`ai_daily_usage` table, atomic RPC) is only wired into `cv-suggest`. Extend it to `talent-search`, `project-recommendation`, and `learning-path` for repo-wide AI cost protection.
 
--- Create alumni_sosial
-CREATE TABLE alumni_sosial (
-  id SERIAL PRIMARY KEY,
-  alumni_id UUID REFERENCES alumni_db(id) ON DELETE CASCADE,
-  keahlian_sosial TEXT,
-  pengalaman_proyek_sosial TEXT,
-  isu_fokus TEXT,
-  nama_organisasi VARCHAR(255),
-  pengalaman_bermitra_sosial BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+### 2.3 Features described in planning docs but not built (Priority: decide scope before capstone submission)
+- [ ] **Nodes network visualization** (`docs/04_features.md` §9): no page exists; the closest artifact (a network-stats API route) is currently being deleted, not built. Decide whether to build a minimal version or drop it from the stated feature set.
+- [ ] **Saved AI matches / bookmarking** (`docs/04_features.md` §10): no `saved_matches` table or bookmark UI exists. Either build it or remove the claim from feature docs.
+- [ ] **Job data sourcing**: docs claim jobs are scraped from LinkedIn/Kalibrr; no scraper exists in the repo, and job data appears to have been seeded manually (a migration script contains hardcoded local developer paths). If automated scraping is a stated project goal, this is the most concrete remaining build item.
 
--- Repeat for other 5 tables...
-```
-
-#### 1.2 Update Type Definitions
-- [ ] Update `lib/types.ts` with new fields
-- [ ] Create comprehensive type for all 9 aktivitas
-- [ ] Add type for multi-select fields (arrays)
-
-#### 1.3 API Routes Enhancement
-- [ ] Update `/api/complete-profile` to handle 25 main fields + conditionals
-- [ ] Update `/api/get-profile` to return all new fields
-- [ ] Add validation for conditional logic (aktivitas multi-select)
-- [ ] Add `/api/update-profile` for edit functionality
+### 2.4 Upgrade path (Priority: LOW — good "future work" material for a capstone defense)
+- [ ] **AI matching is keyword-weighted + LLM narration, not embedding-based semantic search.** A genuine next step is adding vector embeddings (e.g. `pgvector`) for real semantic retrieval, positioned as a stated improvement rather than something to claim is already done.
 
 ---
 
-### **PHASE 2: Complete Profile Form Rebuild** (Priority: HIGH)
-**Estimated Time:** 5-6 days
+## 🗄️ 3. Database Schema (verified ground truth)
 
-#### 2.1 Form Architecture
-- [ ] Design multi-step form UI (3-4 steps):
-  1. **Step 1:** Profil Dasar (Q1-Q11)
-  2. **Step 2:** Keahlian & Kontak (Q12-Q16)
-  3. **Step 3:** Aktivitas & Minat (Q17-Q25)
-  4. **Step 4:** Conditional Questions (based on Q17 selections)
+Tables confirmed via migration files in `database/`, in addition to base tables created before the migration history began (`user`, `alumni_db`, `projects`, `project_applications`):
 
-- [ ] Implement form state management (React Hook Form + Zod)
-- [ ] Add progress indicator
-- [ ] Add form validation per step
-
-#### 2.2 Question Components
-Create reusable components for each question type:
-- [ ] Text input (short & long)
-- [ ] Number input
-- [ ] Dropdown/Select (single choice)
-- [ ] Checkbox group (multi-select)
-- [ ] Radio group
-- [ ] Textarea (paragraph)
-- [ ] URL input (with validation)
-- [ ] Phone input (with format validation 62xxx)
-
-#### 2.3 Conditional Logic Implementation
-- [ ] Implement dynamic form rendering based on Q17 (aktivitas selection)
-- [ ] Add status keaktifan sub-question for each aktivitas
-- [ ] Hide conditional sections if aktivitas >5 years ago
-- [ ] Ensure only relevant conditional tables are populated
-
-#### 2.4 Form Submission
-- [ ] Implement multi-table insert logic
-- [ ] Handle transaction for data consistency
-- [ ] Add error handling & rollback
-- [ ] Show success message & redirect
-
-**Example Structure:**
-```tsx
-// app/(auth)/complete-profile/page.tsx (rebuild)
-const AKTIVITAS_OPTIONS = [
-  { value: 'profesional', label: 'Profesional Institusi' },
-  { value: 'entrepreneur', label: 'Entrepreneur/Wirausaha' },
-  { value: 'sosial', label: 'Pekerja Sosial/NGO' },
-  { value: 'kreatif', label: 'Content Creator' },
-  { value: 'irt', label: 'Ibu Rumah Tangga' },
-  { value: 'mahasiswa', label: 'Mahasiswa/Fresh Graduate' },
-  { value: 'informal', label: 'Pekerja Informal/Freelance' },
-  { value: 'agri', label: 'Petani/Nelayan/Peternak' },
-  { value: 'pendidik', label: 'Guru/Pendidik' },
-];
-
-// Conditional rendering
-{selectedAktivitas.includes('sosial') && statusAktif('sosial') && (
-  <AktivitasSosialForm />
-)}
-```
+| Table | Purpose |
+|---|---|
+| `alumni_db` | Core profile fields |
+| `alumni_pekerja`, `alumni_bisnis`, `alumni_sosial`, `alumni_kreatif`, `alumni_rumah_tangga`, `alumni_mahasiswa`, `alumni_informal`, `alumni_agri`, `alumni_pendidik` | One per activity type — **all 9 exist and are actively used**, contradicting the June 2026 plan's claim that 6 were missing |
+| `alumni_education_histories` | Repeatable education history entries |
+| `projects`, `project_applications` | Project CRUD and applications |
+| `posts`, `post_likes`, `post_comments` | Social feed |
+| `conversations`, `conversation_participants`, `messages` | Direct messaging |
+| `notifications` | In-app notifications |
+| `cohorts`, `cohort_members` | Community/cohort grouping and membership roles |
+| `password_reset_tokens` | Password reset flow |
+| `auth_security_events`, `auth_security_state`, `account_security_audit_logs` | Security audit/lockout tracking |
+| `auth_session_versions` | Forces logout of stale JWTs after password change |
+| `ai_daily_usage` | Per-user daily AI request quota (currently only enforced on `cv-suggest`) |
+| `user_checklists` | Learning-path checklist progress |
+| `ai_recommendations` | Stored AI recommendation results |
+| `jobs` | Job postings shown in the Jobs portal |
+| `user_cvs` | Saved CV drafts |
+| `user_learning_paths` | Saved learning-path results |
 
 ---
 
-### **PHASE 3: Landing Page & Navigation** (Priority: MEDIUM)
-**Estimated Time:** 2-3 days
+## 🏗️ 4. Architecture Notes
 
-#### 3.1 Landing Page
-- [ ] Create `/app/page.tsx` (root landing)
-- [ ] Design hero section with value proposition
-- [ ] Add feature highlights
-- [ ] Add CTA buttons (Login/Register)
-- [ ] Add statistics (optional: total users, projects, etc.)
-- [ ] Make it responsive
-
-#### 3.2 Navigation Update
-- [ ] Update middleware to allow public access to landing
-- [ ] Redirect authenticated users from landing to `/home`
-- [ ] Add proper navigation in header
-- [ ] Implement active route highlighting
+- **Auth**: fully custom JWT (via `jose`), httpOnly cookie, bcrypt password hashing — **not** Supabase Auth.
+- **Database access**: Supabase is used purely as a hosted Postgres client (service-role key, raw `.from(table)` queries), bypassing Row Level Security. All authorization is enforced in application code.
+- **AI**: most AI endpoints (`talent-search`, `project-recommendation`, most of `collaboration-recommendation`, `learning-path`) proxy to a **separate FastAPI (Python) microservice** (`main.py` at repo root, and a more complete copy at `Alumni AI/alumni_ai/main.py`), which calls **Google Gemini** directly via REST. `cv-suggest` also calls Gemini directly from the Next.js server. **Google Gemini is the only LLM provider used anywhere in the codebase** — no OpenAI, no DeepSeek, no other providers.
 
 ---
 
-### **PHASE 4: Profile View & Edit** (Priority: MEDIUM)
-**Estimated Time:** 3-4 days
+## 📜 5. Original Roadmap (June 2026) — Reconciled Against Reality
 
-#### 4.1 Enhanced Profile View
-- [ ] Display all 25 main fields
-- [ ] Display conditional fields based on aktivitas
-- [ ] Add tabbed interface for better organization:
-  - Tab: Profil Umum
-  - Tab: Keahlian & Pengalaman
-  - Tab: Aktivitas Profesional (dynamic based on selected aktivitas)
-- [ ] Add visual elements (badges for skills, icons, etc.)
-- [ ] Show "incomplete profile" warning if fields missing
+The phases below are kept for historical/process documentation. Each is now marked against what was actually verified as built by September 2026.
 
-#### 4.2 Edit Profile Page
-- [ ] Create `/app/(main)/profile/edit/[userId]/page.tsx`
-- [ ] Reuse complete-profile form components
-- [ ] Pre-populate with existing data
-- [ ] Allow partial updates (not force all fields)
-- [ ] Add "Save" & "Cancel" buttons
-- [ ] Implement optimistic UI updates
-
-#### 4.3 Settings Page (Optional but Recommended)
-- [ ] Create `/app/(main)/settings/page.tsx`
-- [ ] Allow password change
-- [ ] Allow email update
-- [ ] Privacy settings (who can see profile, etc.)
-
----
-
-### **PHASE 5: Home Feed & Social Features** (Priority: MEDIUM)
-**Estimated Time:** 4-5 days
-
-#### 5.1 Posts System
-- [ ] Create `posts` table in database:
-  ```sql
-  CREATE TABLE posts (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES alumni_db(id) ON DELETE CASCADE,
-    content TEXT NOT NULL,
-    media_url VARCHAR,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  );
-  ```
-- [ ] Create API routes:
-  - [ ] `POST /api/posts` (create post)
-  - [ ] `GET /api/posts` (fetch feed)
-  - [ ] `DELETE /api/posts/[id]` (delete own post)
-  - [ ] `PUT /api/posts/[id]` (edit own post)
-
-#### 5.2 Feed UI
-- [ ] Update `/app/(main)/page.tsx` (Home)
-- [ ] Add post composer (textarea + submit)
-- [ ] Display feed (reverse chronological)
-- [ ] Add post cards with:
-  - User avatar & name
-  - Timestamp
-  - Content
-  - Edit/Delete for own posts
-- [ ] Implement infinite scroll or pagination
-
-#### 5.3 Engagement Features (Optional for MVP)
-- [ ] Like/reaction system
-- [ ] Comment system
-- [ ] Share functionality
-
----
-
-### **PHASE 6: Search Enhancement** (Priority: LOW-MEDIUM)
-**Estimated Time:** 2-3 days
-
-#### 6.1 Talent Search Enhancement
-- [ ] Add advanced filters:
-  - Aktivitas (multi-select)
-  - Skills (multi-select with autocomplete)
-  - Location (kota_domisili)
-  - Availability (ketersediaan_waktu)
-- [ ] Improve search result cards (show more info)
-- [ ] Add sort options (relevance, newest, etc.)
-
-#### 6.2 Project Search
-- [ ] Create separate `/app/(main)/projects/search/page.tsx` or tab
-- [ ] Add filters:
-  - Status (open, closed, in-progress)
-  - Required skills
-  - Project owner
-- [ ] Implement project cards in search results
-
----
-
-### **PHASE 7: AI Features Integration** (Priority: MEDIUM)
-**Estimated Time:** 3-4 days
-
-#### 7.1 Collaboration Recommendation
-- [ ] Fix existing `/api/collaboration-recommendation`
-- [ ] Ensure it uses complete profile data (25 fields)
-- [ ] Improve prompt engineering for better recommendations
-- [ ] Add loading states and error handling
-- [ ] Cache recommendations (optional)
-
-#### 7.2 Project-Talent Matching
-- [ ] Create `/api/project-match` endpoint
-- [ ] Input: project description + required skills
-- [ ] Output: ranked list of matching alumni
-- [ ] Integrate with project creation flow
-- [ ] Add "Find Talent for This Project" button on project detail
-
-#### 7.3 Talent Discovery
-- [ ] Create `/api/talent-discovery` endpoint
-- [ ] Suggest similar profiles
-- [ ] Suggest potential collaborators based on complementary skills
-
----
-
-### **PHASE 8: Polish & Production Ready** (Priority: LOW)
-**Estimated Time:** 3-4 days
-
-#### 8.1 UI/UX Refinement
-- [ ] Consistent design system (colors, typography, spacing)
-- [ ] Add loading skeletons
-- [ ] Improve error messages
-- [ ] Add empty states
-- [ ] Mobile responsiveness check on all pages
-
-#### 8.2 Performance Optimization
-- [ ] Implement proper caching strategies
-- [ ] Optimize images (Next.js Image component)
-- [ ] Code splitting
-- [ ] Database query optimization (add indexes)
-- [ ] Implement pagination on all lists
-
-#### 8.3 Testing & QA
-- [ ] Unit tests for critical API routes
-- [ ] Integration tests for auth flow
-- [ ] E2E tests for complete profile flow
-- [ ] Manual testing on multiple devices/browsers
-- [ ] Fix all ESLint warnings (cleanup from earlier fixes)
-
-#### 8.4 Documentation
-- [ ] API documentation
-- [ ] Database schema documentation
-- [ ] Setup/installation guide
-- [ ] User manual (optional)
-
-#### 8.5 Deployment Preparation
-- [ ] Environment variables setup guide
-- [ ] Database migration scripts
-- [ ] CI/CD pipeline (optional)
-- [ ] Monitoring & logging setup
-
----
-
-## 📊 Effort Estimation Summary
-
-| Phase | Priority | Estimated Days | Complexity |
-|-------|----------|----------------|------------|
-| Phase 1: Database & Backend | HIGH | 3-4 | Medium |
-| Phase 2: Complete Profile Form | HIGH | 5-6 | High |
-| Phase 3: Landing Page | MEDIUM | 2-3 | Low |
-| Phase 4: Profile View & Edit | MEDIUM | 3-4 | Medium |
-| Phase 5: Home Feed | MEDIUM | 4-5 | Medium |
-| Phase 6: Search Enhancement | LOW-MEDIUM | 2-3 | Low |
-| Phase 7: AI Features | MEDIUM | 3-4 | Medium-High |
-| Phase 8: Polish & Production | LOW | 3-4 | Medium |
-| **TOTAL** | - | **25-33 days** | - |
-
-**Realistic Timeline:** 6-8 minggu (dengan 1 developer full-time)
-
----
-
-## 🎯 Recommended Development Sequence
-
-### **Sprint 1 (Week 1-2): Foundation**
-Focus: Database & Core Profile System
-- Phase 1: Database Migration
-- Phase 2: Complete Profile Form (partial)
-
-**Deliverable:** Functional profile collection matching PDF requirement
-
-### **Sprint 2 (Week 3-4): User Experience**
-Focus: Navigation & Profile Management
-- Phase 2: Complete Profile Form (finish)
-- Phase 3: Landing Page
-- Phase 4: Profile View & Edit
-
-**Deliverable:** Complete user profile journey (register → profile → view → edit)
-
-### **Sprint 3 (Week 5-6): Social & Discovery**
-Focus: Community Features
-- Phase 5: Home Feed
-- Phase 6: Search Enhancement
-
-**Deliverable:** LinkedIn-like experience with feed and search
-
-### **Sprint 4 (Week 7-8): Intelligence & Polish**
-Focus: AI Features & Production Ready
-- Phase 7: AI Features
-- Phase 8: Polish & Production
-
-**Deliverable:** Production-ready application with AI matching
-
----
-
-## ⚠️ Critical Decisions Needed
-
-1. **Multi-select Aktivitas Storage:**
-   - Option A: Comma-separated string in `alumni_db.aktivitas`
-   - Option B: JSON array in PostgreSQL
-   - Option C: Separate junction table `alumni_aktivitas`
-   - **Recommendation:** Option B (JSON array) - easiest to query and maintain
-
-2. **Status Keaktifan Tracking:**
-   - Should we store historical aktivitas or only current?
-   - **Recommendation:** Store timestamp for each aktivitas entry
-
-3. **Profile Completeness:**
-   - Force users to complete ALL 25 questions?
-   - Or allow partial profiles?
-   - **Recommendation:** Require core fields (Q1-Q17), make others optional but encourage completion
-
-4. **AI Service Architecture:**
-   - Keep FastAPI backend separate? (current)
-   - Or integrate LLM directly in Next.js API routes?
-   - **Recommendation:** Keep separate for scalability
-
-5. **File Upload for Sertifikasi/Portofolio:**
-   - Do we need file upload feature?
-   - Or just links?
-   - **Recommendation:** Start with links only (Q14, Q22), add upload in future
-
----
-
-## 📝 Next Immediate Steps
-
-If you want to start development NOW, here's what to do:
-
-1. **Create database migration script** for Phase 1.1
-2. **Update `lib/types.ts`** with comprehensive AlumniProfileType
-3. **Create new Zod schema** for complete profile form (25 fields)
-4. **Sketch out multi-step form UI** wireframe/mockup
-5. **Test database changes** in development environment
-
-Would you like me to:
-- Generate the database migration SQL?
-- Create the updated TypeScript types?
-- Build the multi-step form component structure?
-- Or start with a specific phase?
+| Phase | Original Status (June 2026) | Verified Status (Sept 2026) |
+|---|---|---|
+| Phase 1: Database & Backend Foundation | Not started | ✅ Done — all 9 activity tables + supporting tables exist and are used |
+| Phase 2: Complete Profile Form Rebuild | Not started | ✅ Done — single long-page form (not the planned multi-step wizard), all conditional sections work |
+| Phase 3: Landing Page & Navigation | Not started | ✅ Done |
+| Phase 4: Profile View & Edit | Not started | ✅ Done — both fully functional |
+| Phase 5: Home Feed & Social Features | Not started | ✅ Done — posts, likes, comments, plus messaging and notifications (not originally scoped in this phase, but built) |
+| Phase 6: Search Enhancement | Not started | ✅ Done — dual-mode (filters + AI) |
+| Phase 7: AI Features Integration | Partial | ✅ Mostly done — collaboration recommendation, project matching, talent search, learning path, and CV suggestion all call real AI; see §2.4 for the one architectural upgrade still open (embeddings) |
+| Phase 8: Polish & Production Ready | Not started | ⚠️ Partial — see §2.1 for the concrete remaining hardening items (rate limiting, access control, migration backfill) |
 
 ---
 
 ## 🔗 References
 
-- PDF Document: "Project Talent Hub - Panduan Instrumen Pertanyaan"
+- Verified feature-by-feature audit: [`docs/CAPSTONE_PROJECT_DOCUMENTATION.md`](./docs/CAPSTONE_PROJECT_DOCUMENTATION.md)
+- Feature specification (corrected in place against source code): [`docs/04_features.md`](./docs/04_features.md)
 - Current Codebase: `/Users/triutama/Documents/Project/TalentHubIndonesia/talent-hub-v2`
 - Supabase Documentation: https://supabase.com/docs
 - Next.js 15 Documentation: https://nextjs.org/docs

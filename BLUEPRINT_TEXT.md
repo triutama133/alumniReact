@@ -1,7 +1,7 @@
 BLUEPRINT & PANDUAN STRUKTUR PROYEK 
-INDONESIA TALENT HUB (LLM-POWERED) 
+HUBTALENT (LLM-POWERED) 
 BAB I: RINGKASAN EKSEKUTIF PROYEK 
-Indonesia Talent Hub adalah platform ekosistem digital bertenaga AI (LLM-Powered) yang 
+HubTalent adalah platform ekosistem digital bertenaga AI (LLM-Powered) yang 
 dirancang untuk menghubungkan alumni universitas (berawal dari alumni IPB dan 
 dikembangkan secara universal) guna memfasilitasi pencarian talenta, pencocokan proyek, dan 
 akselerasi kolaborasi strategis secara otomatis melalui pendekatan semantic analysis. Ide 

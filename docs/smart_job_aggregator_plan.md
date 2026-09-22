@@ -228,7 +228,7 @@ User Profile → Skills + Experience + Preferred Category
                        ▼
            ┌───────────────────────┐
            │  Vector Embedding     │
-           │  (OpenAI / DeepSeek)  │
+           │  (Google Gemini)      │
            └───────────┬───────────┘
                        │
                        ▼

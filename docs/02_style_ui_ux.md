@@ -1,12 +1,12 @@
 # 02. Style & UI/UX - Design System & Styling Guidelines
 
-Dokumen ini menjelaskan pedoman desain, palet warna, tipografi, dan standar antarmuka (UI/UX) untuk menghasilkan aplikasi **Indonesia Talent Hub** yang tampak premium, modern, dan responsif.
+Dokumen ini menjelaskan pedoman desain, palet warna, tipografi, dan standar antarmuka (UI/UX) untuk menghasilkan aplikasi **HubTalent** yang tampak premium, modern, dan responsif.
 
 ---
 
 ## 🎨 Palet Warna & Tema (Design Tokens)
 
-Indonesia Talent Hub menggunakan sistem tema modern dengan dukungan penuh untuk **Mode Terang (Light)** dan **Mode Gelap (Dark)**. Identitas warna menggunakan aksen Indigo premium dipadukan dengan latar belakang gelap yang elegan.
+HubTalent menggunakan sistem tema modern dengan dukungan penuh untuk **Mode Terang (Light)** dan **Mode Gelap (Dark)**. Identitas warna menggunakan aksen Indigo premium dipadukan dengan latar belakang gelap yang elegan.
 
 Berikut variabel CSS utama yang didefinisikan di `globals.css`:
 

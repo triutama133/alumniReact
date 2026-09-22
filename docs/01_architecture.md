@@ -1,6 +1,6 @@
 # 01. Architecture - Next.js App Router & Folder Structure
 
-Dokumen ini menjelaskan struktur arsitektur, organisasi folder, dan alur data aplikasi **Indonesia Talent Hub v2** berbasis Next.js 15 App Router.
+Dokumen ini menjelaskan struktur arsitektur, organisasi folder, dan alur data aplikasi **HubTalent v2** berbasis Next.js 15 App Router.
 
 ---
 

@@ -1,4 +1,4 @@
-# Indonesia Talent Hub - Blueprint Analysis & Gap Assessment
+# HubTalent - Blueprint Analysis & Gap Assessment
 
 **Tanggal:** 13 Juni 2026  
 **Document:** Comparative Analysis antara Blueprint Final vs Current Implementation
@@ -7,7 +7,7 @@
 
 ## 📘 Executive Summary
 
-Berdasarkan **Blueprint Final** yang diberikan, project Indonesia Talent Hub memiliki visi yang lebih terstruktur sebagai **LLM-Powered Platform** dengan emphasis pada:
+Berdasarkan **Blueprint Final** yang diberikan, project HubTalent memiliki visi yang lebih terstruktur sebagai **LLM-Powered Platform** dengan emphasis pada:
 - Semantic search menggunakan AI/LLM
 - Dual-mode project discovery (manual + AI-powered)
 - Comprehensive 24-question onboarding

@@ -6,7 +6,7 @@ Dokumen ini menjelaskan strategi keamanan aplikasi, autentikasi berbasis JWT, ke
 
 ## 🔒 Otentikasi & Sesi Pengguna (JWT Cookie)
 
-Indonesia Talent Hub menggunakan sistem otentikasi kustom mandiri untuk melindungi data pengguna:
+HubTalent menggunakan sistem otentikasi kustom mandiri untuk melindungi data pengguna:
 1. **Hashing Kustom Sisi Server (Tabel `user`):** Proses pendaftaran dan verifikasi kata sandi dikelola langsung pada tabel kustom `public.user`. Kata sandi di-hash menggunakan algoritma **Bcrypt** (`bcryptjs` dengan 10 salt rounds) langsung di dalam API Route Next.js sebelum disimpan ke database. Pendekatan ini membuat sistem otentikasi sepenuhnya independen dari modul bawaan Supabase Auth, sehingga memudahkan migrasi masa depan ke VPS atau server PostgreSQL standar apa pun tanpa adanya ketergantungan (vendor lock-in).
 2. **HTTP-Only Cookies (Next.js Level):** 
    * Setelah login berhasil, backend Route Handler membuat JWT token yang berisi payload `user_id`, `email`, dan status profil (`profile_completed`, `must_change_password`).

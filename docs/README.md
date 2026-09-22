@@ -1,6 +1,6 @@
-# Indonesia Talent Hub - Development Guides Index
+# HubTalent - Development Guides Index
 
-Selamat datang di pusat panduan pengembangan **Indonesia Talent Hub v2**. Folder ini berisi dokumentasi terstruktur untuk membantu Anda membangun, mengembangkan, dan memelihara aplikasi ini dengan terarah.
+Selamat datang di pusat panduan pengembangan **HubTalent v2**. Folder ini berisi dokumentasi terstruktur untuk membantu Anda membangun, mengembangkan, dan memelihara aplikasi ini dengan terarah.
 
 ---
 

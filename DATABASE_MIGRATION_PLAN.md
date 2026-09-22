@@ -1,4 +1,4 @@
-# Indonesia Talent Hub - Database Migration Plan
+# HubTalent - Database Migration Plan
 
 **Tanggal:** 13 Juni 2026  
 **Status:** Planning  
