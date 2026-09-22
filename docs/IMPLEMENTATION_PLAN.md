@@ -41,6 +41,7 @@ Condensed from the two removed plans — see `CAPSTONE_PROJECT_DOCUMENTATION.md`
 - [ ] **No real media upload.** No `supabase.storage` usage, no upload API route, no `<input type="file">` anywhere in the app. Post "media" is just a pasted external URL field. If profile photos or real image uploads are a stated goal, this needs building from scratch (Supabase Storage bucket + upload route + UI).
 - [ ] **Document required environment variables.** There's no `.env.example` and no env-var list in `README.md` (which is still unmodified Next.js boilerplate). Add a documented list of required variables (`GEMINI_API_KEY`, `BREVO_API_KEY`, `FROM_EMAIL`, `FASTAPI_URL`, `INTERNAL_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, Turnstile keys, etc.) so the app can be set up from a clean checkout without spelunking through the code.
 - [ ] Remaining items already tracked in `DEVELOPMENT_PLAN.md` §2.2 (not repeated in full here): cohort-admin analytics page not actually cohort-scoped, project listing bypassing the API layer, cohort licensing with no billing enforcement, AI daily usage quota only enforced on `cv-suggest`.
+- [ ] **Onboarding form is missing 3 specific fields from the original blueprint brief** and the entire ">5 years auto-skip" conditional-logic requirement — see [`../BLUEPRINT.md`](../BLUEPRINT.md) Part 2 for the exact field names and evidence (not repeated here).
 
 ### 2.3 Low priority — cleanup / nice-to-have
 
