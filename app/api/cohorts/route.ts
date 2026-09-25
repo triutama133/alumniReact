@@ -97,22 +97,10 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Fetch user's role to check if super_admin or premium
-    const { data: userRecord, error: userErr } = await supabaseAdmin
-      .from('user')
-      .select('role')
-      .eq('id', userId)
-      .single();
-
-    if (userErr || !userRecord) {
-      return NextResponse.json({ error: 'Gagal memverifikasi status akun.' }, { status: 500 });
-    }
-
-    if (userRecord.role !== 'super_admin' && userRecord.role !== 'premium') {
-      return NextResponse.json({ 
-        error: 'Pembuatan komunitas khusus untuk anggota Premium (Segera Hadir). Silakan hubungi Super Admin untuk meningkatkan akun Anda.' 
-      }, { status: 403 });
-    }
+    // Any authenticated user can create a community — there is no real premium/billing
+    // system wired up anywhere in the app (subscription fields below are placeholders
+    // for a future paywall, not an enforced restriction), so gating this on a 'premium'
+    // role that nothing can ever assign would make the feature permanently unreachable.
 
     // 1. Insert new cohort (mocking 30 days subscription)
     const { data: newCohort, error: cohortError } = await supabaseAdmin
