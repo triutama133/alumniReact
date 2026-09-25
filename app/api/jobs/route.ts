@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('search') || '';
     const category = searchParams.get('category') || 'All';
+    const source = searchParams.get('source') || 'all'; // 'all' | 'database' | 'user'
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '10', 10);
 
@@ -47,6 +48,11 @@ export async function GET(req: NextRequest) {
     // Filter by category
     if (category && category !== 'All') {
       query = query.eq('category', category);
+    }
+
+    // Filter by source (database-scraped vs user-submitted), so the UI can keep them separate
+    if (source === 'database' || source === 'user') {
+      query = query.eq('source', source);
     }
 
     // Filter by search term

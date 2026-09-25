@@ -83,6 +83,7 @@ export default function JobsPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'database' | 'user'>('all');
   const [categories, setCategories] = useState<string[]>(['All']);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -257,7 +258,7 @@ export default function JobsPage() {
   const fetchJobs = useCallback(async () => {
     setLoadingJobs(true);
     try {
-      const url = `/api/jobs?search=${encodeURIComponent(search)}&category=${encodeURIComponent(category)}&page=${page}&limit=5`;
+      const url = `/api/jobs?search=${encodeURIComponent(search)}&category=${encodeURIComponent(category)}&source=${sourceFilter}&page=${page}&limit=5`;
       const res = await fetch(url);
       if (!res.ok) throw new Error('Gagal mengambil lowongan kerja.');
       const data = await res.json();
@@ -272,13 +273,19 @@ export default function JobsPage() {
     } finally {
       setLoadingJobs(false);
     }
-  }, [search, category, page]);
+  }, [search, category, sourceFilter, page]);
 
   useEffect(() => {
     if (activeTab === 'jobs') {
       fetchJobs();
     }
-  }, [activeTab, page, category, fetchJobs]);
+  }, [activeTab, page, category, sourceFilter, fetchJobs]);
+
+  const handleSourceFilterChange = (value: 'all' | 'database' | 'user') => {
+    playClickSound();
+    setSourceFilter(value);
+    setPage(1);
+  };
 
   const handleSearch = () => {
     playClickSound();
@@ -418,6 +425,43 @@ export default function JobsPage() {
               )}
             </div>
           </Card>
+
+          {/* Source Filter — keeps community-posted jobs visually separate from database listings */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Sumber:</span>
+            <div className="flex gap-1 bg-slate-100 dark:bg-slate-900/60 p-1 rounded-md border border-slate-200 dark:border-white/5">
+              <button
+                onClick={() => handleSourceFilterChange('all')}
+                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                  sourceFilter === 'all'
+                    ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-950 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
+                }`}
+              >
+                Semua
+              </button>
+              <button
+                onClick={() => handleSourceFilterChange('database')}
+                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                  sourceFilter === 'database'
+                    ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-950 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
+                }`}
+              >
+                Lowongan Umum
+              </button>
+              <button
+                onClick={() => handleSourceFilterChange('user')}
+                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                  sourceFilter === 'user'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
+                }`}
+              >
+                Dipasang Komunitas
+              </button>
+            </div>
+          </div>
 
           {/* Jobs List Grid */}
           {loadingJobs ? (

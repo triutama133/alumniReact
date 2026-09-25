@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import CollaborationRecommendationButton from '@/components/profile/CollaborationRecommendationButton';
 import CareerRecommendationButton from '@/components/profile/CareerRecommendationButton';
 import { CustomUserForProjectCard } from '@/lib/types';
-import { formatDateRange } from '@/lib/formatDateRange';
+import { formatDateRange, sortByRecency } from '@/lib/formatDateRange';
 import { 
   Briefcase, 
   Store, 
@@ -507,7 +507,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
               {userActivities.length > 0 ? (
                 userActivities.map((act) => {
                   if (act === 'Pekerja' && profile.alumni_pekerja?.length) {
-                    return profile.alumni_pekerja.map((data, index) => (
+                    return sortByRecency(profile.alumni_pekerja).map((data, index) => (
                       <div key={`${act}-${index}`} className="p-4 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1b1f23] space-y-3 animate-in fade-in duration-200">
                         <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/5 pb-2">
                           <span className="flex items-center gap-2 font-bold text-slate-900 dark:text-white text-sm">
@@ -556,7 +556,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
                     ));
                   }
                   if (act === 'Bisnis' && profile.alumni_bisnis?.length) {
-                    return profile.alumni_bisnis.map((data, index) => (
+                    return sortByRecency(profile.alumni_bisnis).map((data, index) => (
                       <div key={`${act}-${index}`} className="p-4 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1b1f23] space-y-3 animate-in fade-in duration-200">
                         <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/5 pb-2">
                           <span className="flex items-center gap-2 font-bold text-slate-900 dark:text-white text-sm">
@@ -615,7 +615,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
                     ));
                   }
                   if (act === 'Sosial' && profile.alumni_sosial?.length) {
-                    return profile.alumni_sosial.map((data, index) => (
+                    return sortByRecency(profile.alumni_sosial).map((data, index) => (
                       <div key={`${act}-${index}`} className="p-4 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1b1f23] space-y-3 animate-in fade-in duration-200">
                         <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/5 pb-2">
                           <span className="flex items-center gap-2 font-bold text-slate-900 dark:text-white text-sm">
@@ -659,7 +659,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
                     ));
                   }
                   if (act === 'Kreatif' && profile.alumni_kreatif?.length) {
-                    return profile.alumni_kreatif.map((data, index) => (
+                    return sortByRecency(profile.alumni_kreatif).map((data, index) => (
                       <div key={`${act}-${index}`} className="p-4 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1b1f23] space-y-3 animate-in fade-in duration-200">
                         <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/5 pb-2">
                           <span className="flex items-center gap-2 font-bold text-slate-900 dark:text-white text-sm">
@@ -700,7 +700,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
                     ));
                   }
                   if (act === 'Rumah Tangga' && profile.alumni_rumah_tangga?.length) {
-                    return profile.alumni_rumah_tangga.map((data, index) => (
+                    return sortByRecency(profile.alumni_rumah_tangga).map((data, index) => (
                       <div key={`${act}-${index}`} className="p-4 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1b1f23] space-y-3 animate-in fade-in duration-200">
                         <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/5 pb-2">
                           <span className="flex items-center gap-2 font-bold text-slate-900 dark:text-white text-sm">
@@ -737,7 +737,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
                     ));
                   }
                   if (act === 'Mahasiswa' && profile.alumni_mahasiswa?.length) {
-                    return profile.alumni_mahasiswa.map((data, index) => (
+                    return sortByRecency(profile.alumni_mahasiswa).map((data, index) => (
                       <div key={`${act}-${index}`} className="p-4 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1b1f23] space-y-3 animate-in fade-in duration-200">
                         <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/5 pb-2">
                           <span className="flex items-center gap-2 font-bold text-slate-900 dark:text-white text-sm">
@@ -778,7 +778,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
                     ));
                   }
                   if (act === 'Informal' && profile.alumni_informal?.length) {
-                    return profile.alumni_informal.map((data, index) => (
+                    return sortByRecency(profile.alumni_informal).map((data, index) => (
                       <div key={`${act}-${index}`} className="p-4 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1b1f23] space-y-3 animate-in fade-in duration-200">
                         <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/5 pb-2">
                           <span className="flex items-center gap-2 font-bold text-slate-900 dark:text-white text-sm">
@@ -811,7 +811,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
                     ));
                   }
                   if (act === 'Agri' && profile.alumni_agri?.length) {
-                    return profile.alumni_agri.map((data, index) => (
+                    return sortByRecency(profile.alumni_agri).map((data, index) => (
                       <div key={`${act}-${index}`} className="p-4 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1b1f23] space-y-3 animate-in fade-in duration-200">
                         <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/5 pb-2">
                           <span className="flex items-center gap-2 font-bold text-slate-900 dark:text-white text-sm">
@@ -859,7 +859,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
                     ));
                   }
                   if (act === 'Pendidik' && profile.alumni_pendidik?.length) {
-                    return profile.alumni_pendidik.map((data, index) => (
+                    return sortByRecency(profile.alumni_pendidik).map((data, index) => (
                       <div key={`${act}-${index}`} className="p-4 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1b1f23] space-y-3 animate-in fade-in duration-200">
                         <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/5 pb-2">
                           <span className="flex items-center gap-2 font-bold text-slate-900 dark:text-white text-sm">

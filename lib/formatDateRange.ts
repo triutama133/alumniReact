@@ -54,3 +54,24 @@ export function isOlderThanFiveYears(entry: ActivityDateRange): boolean {
   const diff = monthsSinceEnded(entry)
   return diff !== null && diff >= 60
 }
+
+function monthIndex(year?: number | null, month?: number | null): number {
+  if (!year) return -Infinity
+  return year * 12 + (month || 1)
+}
+
+/** "Recency" sort key: ongoing entries rank as if ending now, ended ones by their end date, undated legacy entries last. */
+function recencyKey(entry: ActivityDateRange): number {
+  if (entry.is_current) {
+    const now = new Date()
+    return monthIndex(now.getFullYear(), now.getMonth() + 1)
+  }
+  if (entry.end_year) return monthIndex(entry.end_year, entry.end_month)
+  if (entry.start_year) return monthIndex(entry.start_year, entry.start_month)
+  return -Infinity
+}
+
+/** Sorts activity entries newest/ongoing first. Does not mutate the input array. */
+export function sortByRecency<T extends ActivityDateRange>(entries: T[]): T[] {
+  return [...entries].sort((a, b) => recencyKey(b) - recencyKey(a))
+}
