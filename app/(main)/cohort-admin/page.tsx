@@ -1,7 +1,7 @@
 // app/(main)/cohort-admin/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { Shield, Users, Settings, UserMinus, UserCheck, Plus, AlertCircle, RefreshCw, Clock, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,10 @@ export default function CohortAdminPage() {
   // Invite member state
   const [inviteInput, setInviteInput] = useState('');
   const [isInviting, setIsInviting] = useState(false);
+  const [inviteSuggestions, setInviteSuggestions] = useState<Array<{ id: number; nama_lengkap: string; nama_panggilan: string; email: string }>>([]);
+  const [showInviteSuggestions, setShowInviteSuggestions] = useState(false);
+  const [isSearchingInvitees, setIsSearchingInvitees] = useState(false);
+  const inviteBoxRef = useRef<HTMLDivElement>(null);
 
   const getCookie = (name: string) => {
     if (typeof document === 'undefined') return null;
@@ -83,6 +87,54 @@ export default function CohortAdminPage() {
   useEffect(() => {
     fetchData();
   }, [activeCohortId]);
+
+  // Typeahead: search existing alumni by name as the admin types, so they can pick
+  // someone from the database instead of having to know their exact email/username.
+  useEffect(() => {
+    const query = inviteInput.trim();
+    if (query.length < 2) {
+      setInviteSuggestions([]);
+      setIsSearchingInvitees(false);
+      return;
+    }
+
+    setIsSearchingInvitees(true);
+    const timeout = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/alumni/search?q=${encodeURIComponent(query)}`);
+        if (res.ok) {
+          const data = await res.json();
+          const memberUserIds = new Set(members.map((m) => m.user_id));
+          setInviteSuggestions((data || []).filter((a: { id: number }) => !memberUserIds.has(a.id)));
+          setShowInviteSuggestions(true);
+        }
+      } catch {
+        // Silent — the admin can still type a full email/username and submit directly.
+      } finally {
+        setIsSearchingInvitees(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [inviteInput, members]);
+
+  // Close the suggestions dropdown when clicking outside the invite box.
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (inviteBoxRef.current && !inviteBoxRef.current.contains(e.target as Node)) {
+        setShowInviteSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSelectInvitee = (alumni: { nama_lengkap: string; email: string }) => {
+    playClickSound();
+    setInviteInput(alumni.email);
+    setShowInviteSuggestions(false);
+    setInviteSuggestions([]);
+  };
 
   const handleUpdateDetails = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -294,18 +346,46 @@ export default function CohortAdminPage() {
               
               {/* Add member inline form */}
               <form onSubmit={handleInviteMember} className="flex gap-2 w-full sm:w-auto">
-                <Input
-                  value={inviteInput}
-                  onChange={(e) => setInviteInput(e.target.value)}
-                  placeholder="Email / username anggota..."
-                  className="h-8 bg-slate-50 border-slate-200 text-xs dark:bg-slate-900/40 dark:border-white/5 dark:text-white rounded-md w-full sm:w-48 placeholder:text-slate-400"
-                  required
-                />
+                <div ref={inviteBoxRef} className="relative w-full sm:w-56">
+                  <Input
+                    value={inviteInput}
+                    onChange={(e) => setInviteInput(e.target.value)}
+                    onFocus={() => { if (inviteSuggestions.length > 0) setShowInviteSuggestions(true); }}
+                    placeholder="Cari nama, atau ketik email..."
+                    className="h-8 bg-slate-50 border-slate-200 text-xs dark:bg-slate-900/40 dark:border-white/5 dark:text-white rounded-md w-full placeholder:text-slate-400"
+                    autoComplete="off"
+                    required
+                  />
+                  {showInviteSuggestions && (isSearchingInvitees || inviteSuggestions.length > 0) && (
+                    <div className="absolute top-full left-0 mt-1 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-lg shadow-lg z-20 max-h-56 overflow-y-auto">
+                      {isSearchingInvitees ? (
+                        <div className="flex items-center gap-2 px-3 py-2 text-xs text-slate-400">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Mencari...
+                        </div>
+                      ) : (
+                        inviteSuggestions.map((alumni) => (
+                          <button
+                            key={alumni.id}
+                            type="button"
+                            onClick={() => handleSelectInvitee(alumni)}
+                            className="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+                          >
+                            <div className="font-semibold text-slate-900 dark:text-white">
+                              {alumni.nama_lengkap}
+                              {alumni.nama_panggilan && <span className="font-normal text-slate-400"> ({alumni.nama_panggilan})</span>}
+                            </div>
+                            <div className="text-[10px] text-slate-500">{alumni.email}</div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
                 <Button
                   type="submit"
                   disabled={isInviting || !inviteInput.trim()}
                   size="sm"
-                  className="h-8 bg-indigo-650 hover:bg-indigo-600 text-white text-xs rounded-md flex gap-1.5"
+                  className="h-8 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded-md flex gap-1.5 flex-shrink-0"
                 >
                   {isInviting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
                   <span>{isInviting ? 'Mengundang...' : 'Undang'}</span>
