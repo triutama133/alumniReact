@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { headers } from 'next/headers';
+import { randomBytes } from 'crypto';
 import * as z from 'zod';
 
 const cohortSchema = z.object({
@@ -103,6 +104,8 @@ export async function POST(req: NextRequest) {
     // role that nothing can ever assign would make the feature permanently unreachable.
 
     // 1. Insert new cohort (mocking 30 days subscription)
+    // join_key is generated for every cohort up front (not just private ones) so an
+    // admin can flip visibility to 'private' later without a separate "generate key" step.
     const { data: newCohort, error: cohortError } = await supabaseAdmin
       .from('cohorts')
       .insert({
@@ -111,7 +114,8 @@ export async function POST(req: NextRequest) {
         owner_id: userId,
         subscription_plan: 'premium',
         subscription_status: 'active',
-        expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        join_key: randomBytes(6).toString('hex'),
       })
       .select('*')
       .single();

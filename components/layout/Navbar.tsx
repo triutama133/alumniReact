@@ -25,7 +25,8 @@ import {
   Menu,
   X,
   Bell,
-  MessageCircle
+  MessageCircle,
+  Compass
 } from 'lucide-react';
 import {
   Select,
@@ -217,6 +218,7 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
     { href: '/search', label: 'Cari Talenta', icon: Search },
     { href: '/jobs', label: 'Jobs', icon: Briefcase },
     { href: '/messages', label: 'Pesan', icon: MessageCircle },
+    { href: '/community/discover', label: 'Jelajahi Komunitas', icon: Compass },
   ];
 
   return (

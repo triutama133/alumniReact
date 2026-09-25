@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { headers } from 'next/headers';
+import { randomBytes } from 'crypto';
 
 export async function POST(
   req: NextRequest,
@@ -108,6 +109,41 @@ export async function POST(
       }
 
       return NextResponse.json({ message: 'Profil komunitas berhasil diperbarui.' });
+    }
+
+    if (action === 'update_join_settings') {
+      const { visibility, joinMode } = body;
+      if (visibility !== 'public' && visibility !== 'private') {
+        return NextResponse.json({ error: 'Visibilitas tidak valid.' }, { status: 400 });
+      }
+      if (joinMode !== 'auto' && joinMode !== 'approval') {
+        return NextResponse.json({ error: 'Mode bergabung tidak valid.' }, { status: 400 });
+      }
+
+      const { error: updateErr } = await supabaseAdmin
+        .from('cohorts')
+        .update({ visibility, join_mode: joinMode })
+        .eq('id', cohortId);
+
+      if (updateErr) {
+        return NextResponse.json({ error: 'Gagal memperbarui pengaturan bergabung.' }, { status: 500 });
+      }
+
+      return NextResponse.json({ message: 'Pengaturan visibilitas & bergabung berhasil diperbarui.' });
+    }
+
+    if (action === 'regenerate_join_key') {
+      const newKey = randomBytes(6).toString('hex');
+      const { error: updateErr } = await supabaseAdmin
+        .from('cohorts')
+        .update({ join_key: newKey })
+        .eq('id', cohortId);
+
+      if (updateErr) {
+        return NextResponse.json({ error: 'Gagal membuat ulang kode undangan.' }, { status: 500 });
+      }
+
+      return NextResponse.json({ message: 'Kode undangan baru berhasil dibuat.', join_key: newKey });
     }
 
     return NextResponse.json({ error: 'Aksi tidak dikenal.' }, { status: 400 });

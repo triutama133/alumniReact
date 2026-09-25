@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
-import { Shield, Users, Settings, UserMinus, UserCheck, Plus, AlertCircle, RefreshCw, Clock, Trash2, Loader2 } from 'lucide-react';
+import { Shield, Users, Settings, UserMinus, UserCheck, Plus, AlertCircle, RefreshCw, Clock, Trash2, Loader2, Globe, Lock, KeyRound, Copy, Check, X, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -22,6 +22,18 @@ export default function CohortAdminPage() {
   const [cohortName, setCohortName] = useState('');
   const [cohortDesc, setCohortDesc] = useState('');
   const [isUpdatingDetails, setIsUpdatingDetails] = useState(false);
+
+  // Visibility & join settings state
+  const [visibility, setVisibility] = useState<'public' | 'private'>('private');
+  const [joinMode, setJoinMode] = useState<'auto' | 'approval'>('approval');
+  const [isSavingJoinSettings, setIsSavingJoinSettings] = useState(false);
+  const [isRegeneratingKey, setIsRegeneratingKey] = useState(false);
+  const [copiedInviteLink, setCopiedInviteLink] = useState(false);
+
+  // Join requests (pending approval) state
+  const [joinRequests, setJoinRequests] = useState<any[]>([]);
+  const [isLoadingRequests, setIsLoadingRequests] = useState(false);
+  const [processingRequestId, setProcessingRequestId] = useState<number | null>(null);
 
   // Invite member state
   const [inviteInput, setInviteInput] = useState('');
@@ -70,17 +82,37 @@ export default function CohortAdminPage() {
       setActiveCohort(active);
       setCohortName(active.name);
       setCohortDesc(active.description || '');
+      setVisibility(active.visibility === 'public' ? 'public' : 'private');
+      setJoinMode(active.join_mode === 'auto' ? 'auto' : 'approval');
 
       // 2. Fetch cohort members
       const membersRes = await fetch(`/api/cohorts/${activeCohortId}/members`);
       if (!membersRes.ok) throw new Error('Gagal memuat daftar anggota.');
-      
+
       const membersData = await membersRes.json();
       setMembers(membersData);
+
+      // 3. Fetch pending join requests
+      fetchJoinRequests();
     } catch (err: any) {
       setError(err.message || 'Terjadi kesalahan saat memuat data.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchJoinRequests = async () => {
+    if (!activeCohortId || activeCohortId === 'global') return;
+    setIsLoadingRequests(true);
+    try {
+      const res = await fetch(`/api/cohorts/${activeCohortId}/join-requests`);
+      if (res.ok) {
+        setJoinRequests(await res.json());
+      }
+    } catch {
+      // Silent — the requests card simply stays empty; the admin can retry via fetchData.
+    } finally {
+      setIsLoadingRequests(false);
     }
   };
 
@@ -163,6 +195,84 @@ export default function CohortAdminPage() {
       toast.error('Error', { description: err.message });
     } finally {
       setIsUpdatingDetails(false);
+    }
+  };
+
+  const handleSaveJoinSettings = async () => {
+    playClickSound();
+    setIsSavingJoinSettings(true);
+    try {
+      const res = await fetch(`/api/cohorts/${activeCohortId}/admin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'update_join_settings', visibility, joinMode }),
+      });
+      const resData = await res.json();
+      if (!res.ok) throw new Error(resData.error || 'Gagal memperbarui pengaturan.');
+
+      toast.success('Pengaturan visibilitas & bergabung berhasil disimpan!');
+      await fetchData();
+    } catch (err: any) {
+      toast.error('Error', { description: err.message });
+    } finally {
+      setIsSavingJoinSettings(false);
+    }
+  };
+
+  const handleRegenerateKey = async () => {
+    if (!confirm('Buat ulang kode undangan? Tautan undangan lama yang sudah dibagikan tidak akan berfungsi lagi.')) return;
+    playClickSound();
+    setIsRegeneratingKey(true);
+    try {
+      const res = await fetch(`/api/cohorts/${activeCohortId}/admin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'regenerate_join_key' }),
+      });
+      const resData = await res.json();
+      if (!res.ok) throw new Error(resData.error || 'Gagal membuat ulang kode undangan.');
+
+      toast.success('Kode undangan baru berhasil dibuat!');
+      await fetchData();
+    } catch (err: any) {
+      toast.error('Error', { description: err.message });
+    } finally {
+      setIsRegeneratingKey(false);
+    }
+  };
+
+  const handleCopyInviteLink = async () => {
+    if (!activeCohort?.join_key) return;
+    const link = `${window.location.origin}/community/join/${activeCohortId}?key=${activeCohort.join_key}`;
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopiedInviteLink(true);
+      toast.success('Tautan undangan disalin!');
+      setTimeout(() => setCopiedInviteLink(false), 2000);
+    } catch {
+      toast.error('Gagal menyalin tautan. Salin secara manual.');
+    }
+  };
+
+  const handleJoinRequestAction = async (requestId: number, action: 'approve' | 'reject') => {
+    playClickSound();
+    setProcessingRequestId(requestId);
+    try {
+      const res = await fetch(`/api/cohorts/${activeCohortId}/join-requests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId, action }),
+      });
+      const resData = await res.json();
+      if (!res.ok) throw new Error(resData.error || 'Gagal memproses permintaan.');
+
+      toast.success(resData.message);
+      setJoinRequests((prev) => prev.filter((r) => r.id !== requestId));
+      if (action === 'approve') await fetchData();
+    } catch (err: any) {
+      toast.error('Error', { description: err.message });
+    } finally {
+      setProcessingRequestId(null);
     }
   };
 
@@ -333,10 +443,160 @@ export default function CohortAdminPage() {
               </form>
             </CardContent>
           </Card>
+
+          {/* Visibility & Join Settings */}
+          <Card className="premium-light-card liquid-glass-border">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                {visibility === 'public' ? <Globe className="h-4.5 w-4.5 text-indigo-500" /> : <Lock className="h-4.5 w-4.5 text-indigo-500" />}
+                <CardTitle className="text-base font-bold">Visibilitas & Bergabung</CardTitle>
+              </div>
+              <CardDescription className="text-xs">Atur siapa yang bisa menemukan dan bergabung ke komunitas ini.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase">Visibilitas</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { playClickSound(); setVisibility('public'); }}
+                    className={`flex items-center justify-center gap-1.5 h-9 rounded-lg text-xs font-semibold border transition-colors ${visibility === 'public' ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-white/5 text-slate-600 dark:text-slate-400'}`}
+                  >
+                    <Globe className="h-3.5 w-3.5" /> Publik
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { playClickSound(); setVisibility('private'); }}
+                    className={`flex items-center justify-center gap-1.5 h-9 rounded-lg text-xs font-semibold border transition-colors ${visibility === 'private' ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-white/5 text-slate-600 dark:text-slate-400'}`}
+                  >
+                    <Lock className="h-3.5 w-3.5" /> Privat
+                  </button>
+                </div>
+                <p className="text-[10px] text-slate-400">
+                  {visibility === 'public' ? 'Muncul di halaman "Jelajahi Komunitas" untuk semua pengguna.' : 'Tersembunyi — hanya bisa diakses lewat tautan undangan.'}
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase">Mode Bergabung</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { playClickSound(); setJoinMode('auto'); }}
+                    className={`h-9 rounded-lg text-xs font-semibold border transition-colors ${joinMode === 'auto' ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-white/5 text-slate-600 dark:text-slate-400'}`}
+                  >
+                    Otomatis
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { playClickSound(); setJoinMode('approval'); }}
+                    className={`h-9 rounded-lg text-xs font-semibold border transition-colors ${joinMode === 'approval' ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-white/5 text-slate-600 dark:text-slate-400'}`}
+                  >
+                    Perlu Persetujuan
+                  </button>
+                </div>
+                <p className="text-[10px] text-slate-400">
+                  {joinMode === 'auto' ? 'Siapa pun yang bergabung (publik atau lewat kode) langsung menjadi anggota.' : 'Permintaan bergabung harus disetujui admin terlebih dahulu.'}
+                </p>
+              </div>
+
+              <Button
+                onClick={handleSaveJoinSettings}
+                disabled={isSavingJoinSettings || (visibility === activeCohort?.visibility && joinMode === activeCohort?.join_mode)}
+                className="w-full h-9 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg gap-1.5"
+              >
+                {isSavingJoinSettings && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                {isSavingJoinSettings ? 'Menyimpan...' : 'Simpan Pengaturan'}
+              </Button>
+
+              {activeCohort?.join_key && (
+                <div className="space-y-1.5 pt-2 border-t border-slate-200 dark:border-white/5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1"><KeyRound className="h-3 w-3" /> Tautan Undangan</label>
+                  <div className="flex gap-1.5">
+                    <Button
+                      type="button"
+                      onClick={handleCopyInviteLink}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 h-8 text-[10px] font-mono truncate justify-start px-2.5"
+                    >
+                      {copiedInviteLink ? <Check className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" /> : <Copy className="h-3.5 w-3.5 flex-shrink-0" />}
+                      <span className="truncate">{`/community/join/${activeCohortId}?key=${activeCohort.join_key}`}</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={handleRegenerateKey}
+                      disabled={isRegeneratingKey}
+                      variant="outline"
+                      size="sm"
+                      className="h-8 px-2.5 flex-shrink-0"
+                      title="Buat ulang kode undangan"
+                    >
+                      {isRegeneratingKey ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                    </Button>
+                  </div>
+                  <p className="text-[10px] text-slate-400">Bagikan tautan ini untuk mengundang seseorang ke komunitas privat.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Right column: Member Management */}
         <div className="lg:col-span-8 space-y-6">
+          {/* Pending Join Requests */}
+          {(isLoadingRequests || joinRequests.length > 0) && (
+            <Card className="premium-light-card liquid-glass-border border-amber-500/20">
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-2">
+                  <UserPlus className="h-4.5 w-4.5 text-amber-500" />
+                  <CardTitle className="text-base font-bold">Permintaan Bergabung {joinRequests.length > 0 && `(${joinRequests.length})`}</CardTitle>
+                </div>
+                <CardDescription className="text-xs">Pengguna yang meminta untuk bergabung dan menunggu persetujuan Anda.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                {isLoadingRequests ? (
+                  <div className="flex items-center gap-2 px-6 py-4 text-xs text-slate-400">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Memuat permintaan...
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-100 dark:divide-white/5">
+                    {joinRequests.map((req) => (
+                      <div key={req.id} className="flex items-center justify-between p-4">
+                        <div>
+                          <div className="font-semibold text-sm text-slate-900 dark:text-white">
+                            {req.nama_lengkap}
+                            {req.nama_panggilan && <span className="font-normal text-xs text-slate-400"> ({req.nama_panggilan})</span>}
+                          </div>
+                          <div className="text-xs text-slate-500">{req.email}</div>
+                        </div>
+                        <div className="flex gap-1.5">
+                          <Button
+                            size="sm"
+                            disabled={processingRequestId === req.id}
+                            onClick={() => handleJoinRequestAction(req.id, 'approve')}
+                            className="h-7 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold rounded-md px-3 gap-1"
+                          >
+                            {processingRequestId === req.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />} Terima
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={processingRequestId === req.id}
+                            onClick={() => handleJoinRequestAction(req.id, 'reject')}
+                            className="h-7 border-rose-300 text-rose-600 hover:bg-rose-50 dark:border-rose-500/30 dark:text-rose-400 dark:hover:bg-rose-500/10 text-[10px] font-bold rounded-md px-3 gap-1"
+                          >
+                            {processingRequestId === req.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3" />} Tolak
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           <Card className="premium-light-card liquid-glass-border">
             <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200 dark:border-white/5 pb-4">
               <div>
