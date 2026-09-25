@@ -15,6 +15,9 @@ export type ProjectWithOwner = {
     id: number; // alumni_db.id is bigint → number
     nama_lengkap: string;
   }[] | null;
+  // The viewing user's own application status for this project, if any (attached
+  // server-side on the listing page so cards can show "Sudah Melamar" etc.)
+  applied_status?: 'pending' | 'accepted' | 'rejected' | null;
 };
 
 // Definisikan bentuk data untuk kartu hasil pencarian alumni

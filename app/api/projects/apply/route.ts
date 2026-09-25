@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { headers } from 'next/headers';
+import { createNotification } from '@/lib/notifications';
 
 export async function POST(req: NextRequest) {
   try {
@@ -58,18 +59,38 @@ export async function POST(req: NextRequest) {
     }
 
     // Buat pengajuan baru
-    const { error: insertError } = await supabaseAdmin
+    const { data: newApplication, error: insertError } = await supabaseAdmin
       .from('project_applications')
       .insert({
         project_id: projectId,
         user_id: userId,
         status: 'pending',
         role: 'collaborator'
-      });
+      })
+      .select('id')
+      .single();
 
     if (insertError) {
       console.error('[PROJECT_APPLY] Error inserting application:', insertError.message);
       return NextResponse.json({ error: 'Gagal mengirimkan pengajuan kolaborasi.' }, { status: 500 });
+    }
+
+    // Beri tahu pemilik proyek — sebelumnya pemilik hanya tahu jika mengecek tab
+    // "Kelola Pelamar" secara manual.
+    const { data: project } = await supabaseAdmin
+      .from('projects')
+      .select('owner_id, title')
+      .eq('id', projectId)
+      .maybeSingle();
+
+    if (project?.owner_id) {
+      await createNotification({
+        userId: Number(project.owner_id),
+        title: 'Ada pelamar baru!',
+        content: `Seseorang mengajukan diri sebagai kolaborator untuk proyek "${project.title}" yang Anda buat.`,
+        type: 'project_apply',
+        relatedId: newApplication?.id ?? null,
+      });
     }
 
     return NextResponse.json({ message: 'Pengajuan kolaborasi berhasil dikirim!' }, { status: 201 });

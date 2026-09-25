@@ -32,6 +32,17 @@ export function ProjectCard({ project }: ProjectCardProps) {
             <User className="h-3 w-3 text-slate-500" />
             <span>Oleh: {project.owner?.[0]?.nama_lengkap || 'Anonim'}</span>
           </CardDescription>
+          {project.applied_status && (
+            <Badge className={`w-fit mt-1.5 text-[9px] font-bold px-2 py-0.5 rounded-full ${
+              project.applied_status === 'accepted'
+                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                : project.applied_status === 'rejected'
+                ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+            }`}>
+              {project.applied_status === 'accepted' ? 'Lamaran Diterima' : project.applied_status === 'rejected' ? 'Lamaran Ditolak' : 'Sudah Melamar'}
+            </Badge>
+          )}
         </CardHeader>
         <CardContent className="flex-grow pb-4">
           <p className="text-xs text-slate-700 dark:text-slate-300 line-clamp-3 leading-relaxed mb-4">

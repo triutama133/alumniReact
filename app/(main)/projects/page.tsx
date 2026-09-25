@@ -60,6 +60,22 @@ export default async function ProjectsPage({
 
     const { data, error } = await dbQuery.order('created_at', { ascending: false });
     if (!error && data) projects = data;
+
+    // Attach the viewing user's own application status per project, so cards can show
+    // "Sudah Melamar" without needing to open every project's detail page to find out.
+    if (userId && projects.length > 0) {
+      const { data: myApplications } = await supabase
+        .from('project_applications')
+        .select('project_id, status')
+        .eq('user_id', userId)
+        .in('project_id', projects.map((p) => p.id));
+
+      const statusByProjectId = new Map((myApplications || []).map((a) => [a.project_id, a.status]));
+      projects = projects.map((project) => ({
+        ...project,
+        applied_status: statusByProjectId.get(project.id) || null,
+      }));
+    }
   }
 
   let userFullName = '';
