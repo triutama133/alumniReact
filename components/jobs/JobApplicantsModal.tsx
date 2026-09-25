@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { Users, CheckCircle, X, RefreshCw } from 'lucide-react'
+import { Users, CheckCircle, X, RefreshCw, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -58,6 +58,7 @@ function getStatusText(status: string) {
 export default function JobApplicantsModal({ open, onOpenChange, jobId, jobTitle }: JobApplicantsModalProps) {
   const [applicants, setApplicants] = useState<Applicant[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [reviewingId, setReviewingId] = useState<number | null>(null)
 
   const loadApplicants = async () => {
     setIsLoading(true)
@@ -89,6 +90,7 @@ export default function JobApplicantsModal({ open, onOpenChange, jobId, jobTitle
       : `Tolak lamaran dari ${applicant.alumni_db?.nama_lengkap || 'pelamar ini'}?`
     if (!window.confirm(confirmMsg)) return
 
+    setReviewingId(applicant.id)
     try {
       const res = await fetch('/api/jobs/applications/review', {
         method: 'POST',
@@ -102,6 +104,8 @@ export default function JobApplicantsModal({ open, onOpenChange, jobId, jobTitle
       setApplicants((prev) => prev.map((a) => (a.id === applicant.id ? { ...a, status: action === 'accept' ? 'accepted' : 'rejected' } : a)))
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Gagal memproses lamaran.')
+    } finally {
+      setReviewingId(null)
     }
   }
 
@@ -161,11 +165,11 @@ export default function JobApplicantsModal({ open, onOpenChange, jobId, jobTitle
                   </Badge>
                   {applicant.status === 'pending' && (
                     <div className="flex gap-1.5">
-                      <Button size="sm" onClick={() => handleReview(applicant, 'accept')} className="h-7 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold rounded-md px-3 gap-1">
-                        <CheckCircle className="h-3 w-3" /> Terima
+                      <Button size="sm" disabled={reviewingId === applicant.id} onClick={() => handleReview(applicant, 'accept')} className="h-7 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold rounded-md px-3 gap-1">
+                        {reviewingId === applicant.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3" />} Terima
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => handleReview(applicant, 'reject')} className="h-7 border-rose-300 text-rose-600 hover:bg-rose-50 dark:border-rose-500/30 dark:text-rose-400 dark:hover:bg-rose-500/10 text-[10px] font-bold rounded-md px-3 gap-1">
-                        <X className="h-3 w-3" /> Tolak
+                      <Button size="sm" variant="outline" disabled={reviewingId === applicant.id} onClick={() => handleReview(applicant, 'reject')} className="h-7 border-rose-300 text-rose-600 hover:bg-rose-50 dark:border-rose-500/30 dark:text-rose-400 dark:hover:bg-rose-500/10 text-[10px] font-bold rounded-md px-3 gap-1">
+                        {reviewingId === applicant.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3" />} Tolak
                       </Button>
                     </div>
                   )}

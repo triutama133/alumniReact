@@ -4,7 +4,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
-import { Send, MessageCircle, Users, ArrowLeft } from 'lucide-react';
+import { Send, MessageCircle, Users, ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -313,7 +313,7 @@ export function ChatWindow({ currentUserId, userEmail }: ChatWindowProps) {
                                 disabled={!input.trim() || isSending}
                                 className="h-10 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-full px-4 gap-1.5 flex-shrink-0"
                             >
-                                <Send className="h-4 w-4" />
+                                {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                                 <span className="hidden sm:inline">Kirim</span>
                             </Button>
                         </div>

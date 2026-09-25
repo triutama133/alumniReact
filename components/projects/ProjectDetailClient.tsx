@@ -27,7 +27,8 @@ import {
   TrendingUp,
   RefreshCw,
   Users,
-  X
+  X,
+  Loader2
 } from 'lucide-react';
 import { JarvisScanHUD } from '@/components/ui/JarvisScanHUD';
 import { TypewriterReveal } from '@/components/ui/TypewriterReveal';
@@ -112,6 +113,7 @@ export function ProjectDetailClient({ project, userId, isOwner, initialApplicati
   // Applicants state (owner only)
   const [applicants, setApplicants] = useState<ApplicantDetail[]>([]);
   const [isLoadingApplicants, setIsLoadingApplicants] = useState(false);
+  const [reviewingApplicantId, setReviewingApplicantId] = useState<number | null>(null);
 
   const loadApplicants = async () => {
     if (!isOwner) return;
@@ -138,6 +140,7 @@ export function ProjectDetailClient({ project, userId, isOwner, initialApplicati
 
     if (!window.confirm(confirmMsg)) return;
 
+    setReviewingApplicantId(Number(applicant.id));
     try {
       const res = await fetch('/api/projects/applications/review', {
         method: 'POST',
@@ -156,6 +159,8 @@ export function ProjectDetailClient({ project, userId, isOwner, initialApplicati
       );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Gagal memproses lamaran.');
+    } finally {
+      setReviewingApplicantId(null);
     }
   };
 
@@ -170,6 +175,7 @@ export function ProjectDetailClient({ project, userId, isOwner, initialApplicati
 
   // Owner dashboard state updates
   const [isPublic, setIsPublic] = useState(project.is_public);
+  const [togglingVisibility, setTogglingVisibility] = useState(false);
   const [planText, setPlanText] = useState(project.plan || '');
   const [isEditingPlan, setIsEditingPlan] = useState(false);
   const [savingPlan, setSavingPlan] = useState(false);
@@ -219,6 +225,7 @@ export function ProjectDetailClient({ project, userId, isOwner, initialApplicati
     playClickSound();
     const nextPublic = !isPublic;
     setIsPublic(nextPublic);
+    setTogglingVisibility(true);
     try {
       const res = await fetch('/api/projects/update-visibility', {
         method: 'POST',
@@ -232,6 +239,8 @@ export function ProjectDetailClient({ project, userId, isOwner, initialApplicati
     } catch (err: any) {
       setIsPublic(!nextPublic);
       toast.error('Gagal memperbarui visibilitas', { description: err.message });
+    } finally {
+      setTogglingVisibility(false);
     }
   };
 
@@ -634,10 +643,12 @@ Berikan analisis dalam format rapi:
                         value={newMilestoneTitle}
                         onChange={(e) => setNewMilestoneTitle(e.target.value)}
                         placeholder="Judul milestone baru..."
-                        onKeyDown={(e) => e.key === 'Enter' && addMilestone()}
+                        onKeyDown={(e) => e.key === 'Enter' && !savingMilestones && addMilestone()}
+                        disabled={savingMilestones}
                         className="h-9 bg-slate-50 dark:bg-slate-900 text-xs border-slate-200 dark:border-slate-800"
                       />
-                      <Button onClick={addMilestone} className="bg-primary hover:bg-primary/95 text-white text-xs font-bold h-9 px-4 rounded-md">
+                      <Button onClick={addMilestone} disabled={savingMilestones || !newMilestoneTitle.trim()} className="bg-primary hover:bg-primary/95 text-white text-xs font-bold h-9 px-4 rounded-md gap-1.5">
+                        {savingMilestones && <Loader2 className="h-3 w-3 animate-spin" />}
                         Tambah
                       </Button>
                     </div>
@@ -658,7 +669,7 @@ Berikan analisis dalam format rapi:
                             type="checkbox"
                             checked={m.done}
                             onChange={() => toggleMilestone(idx)}
-                            disabled={!isOwner}
+                            disabled={!isOwner || savingMilestones}
                             className="h-4 w-4 rounded border-slate-300 dark:border-slate-800 text-emerald-600 focus:ring-emerald-500 cursor-pointer disabled:cursor-default"
                           />
                           <span className={`text-xs font-bold ${m.done ? 'line-through opacity-80' : ''}`}>
@@ -666,7 +677,7 @@ Berikan analisis dalam format rapi:
                           </span>
                         </div>
                         {isOwner && (
-                          <Button onClick={() => removeMilestone(idx)} variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-500 hover:text-red-700">
+                          <Button onClick={() => removeMilestone(idx)} disabled={savingMilestones} variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-500 hover:text-red-700">
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         )}
@@ -736,18 +747,20 @@ Berikan analisis dalam format rapi:
                               <div className="flex gap-1.5">
                                 <Button
                                   size="sm"
+                                  disabled={reviewingApplicantId === Number(applicant.id)}
                                   onClick={() => handleReviewApplicant(applicant, 'accept')}
                                   className="h-7 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold rounded-md px-3 gap-1"
                                 >
-                                  <CheckCircle className="h-3 w-3" /> Terima
+                                  {reviewingApplicantId === Number(applicant.id) ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3" />} Terima
                                 </Button>
                                 <Button
                                   size="sm"
                                   variant="outline"
+                                  disabled={reviewingApplicantId === Number(applicant.id)}
                                   onClick={() => handleReviewApplicant(applicant, 'reject')}
                                   className="h-7 border-rose-300 text-rose-600 hover:bg-rose-50 dark:border-rose-500/30 dark:text-rose-400 dark:hover:bg-rose-500/10 text-[10px] font-bold rounded-md px-3 gap-1"
                                 >
-                                  <X className="h-3 w-3" /> Tolak
+                                  {reviewingApplicantId === Number(applicant.id) ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3" />} Tolak
                                 </Button>
                               </div>
                             )}
@@ -892,13 +905,15 @@ Berikan analisis dalam format rapi:
                   </div>
                   <Button
                     onClick={toggleVisibility}
+                    disabled={togglingVisibility}
                     variant={isPublic ? 'default' : 'outline'}
                     size="sm"
-                    className={`h-8 text-xs font-bold rounded-md ${isPublic
+                    className={`h-8 text-xs font-bold rounded-md gap-1.5 ${isPublic
                       ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
                       : 'border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
                       }`}
                   >
+                    {togglingVisibility && <Loader2 className="h-3 w-3 animate-spin" />}
                     {isPublic ? 'Publik' : 'Privat'}
                   </Button>
                 </div>

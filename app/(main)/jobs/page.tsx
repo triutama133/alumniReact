@@ -429,7 +429,8 @@ export default function JobsPage() {
                   ))}
                 </SelectContent>
               </Select>
-              <Button onClick={handleSearch} className="h-10 bg-primary hover:bg-primary/95 text-white font-bold text-sm px-6">
+              <Button onClick={handleSearch} disabled={loadingJobs} className="h-10 bg-primary hover:bg-primary/95 text-white font-bold text-sm px-6 gap-1.5">
+                {loadingJobs && <RefreshCw className="h-3.5 w-3.5 animate-spin" />}
                 Cari
               </Button>
               {currentUserId && (

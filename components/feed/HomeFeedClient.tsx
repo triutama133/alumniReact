@@ -24,7 +24,8 @@ import {
   Shield,
   PlusCircle,
   Clock,
-  Briefcase
+  Briefcase,
+  Loader2
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -377,6 +378,7 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
   // Persistent like toggle via API
   const [likedPosts, setLikedPosts] = useState<Record<string | number, boolean>>({});
   const [isLikingPost, setIsLikingPost] = useState<Record<string | number, boolean>>({});
+  const [isPostingComment, setIsPostingComment] = useState<Record<string | number, boolean>>({});
 
   useEffect(() => {
     const initialLiked: Record<string | number, boolean> = {};
@@ -453,8 +455,9 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
 
   const handleAddComment = async (postId: string | number) => {
     const content = (commentInputs[postId] || '').trim();
-    if (!content) return;
+    if (!content || isPostingComment[postId]) return;
 
+    setIsPostingComment((prev) => ({ ...prev, [postId]: true }));
     try {
       const res = await fetch(`/api/posts/${postId}/comments`, {
         method: 'POST',
@@ -483,6 +486,8 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
       );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Gagal menambahkan komentar.');
+    } finally {
+      setIsPostingComment((prev) => ({ ...prev, [postId]: false }));
     }
   };
 
@@ -961,9 +966,10 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
                   <CardFooter className="border-t border-slate-200 dark:border-white/5 py-2 flex items-center gap-4 text-slate-500 dark:text-slate-450 text-xs">
                     <button
                       onClick={() => handleLike(post.id)}
-                      className={`flex items-center gap-1 hover:text-primary dark:hover:text-primary transition-colors py-1 px-2 rounded-md hover:bg-slate-100 dark:hover:bg-white/5 ${hasLiked ? 'text-primary font-bold' : ''}`}
+                      disabled={Boolean(isLikingPost[post.id])}
+                      className={`flex items-center gap-1 hover:text-primary dark:hover:text-primary transition-colors py-1 px-2 rounded-md hover:bg-slate-100 dark:hover:bg-white/5 disabled:opacity-50 disabled:pointer-events-none ${hasLiked ? 'text-primary font-bold' : ''}`}
                     >
-                      <ThumbsUp className="h-4 w-4" />
+                      {isLikingPost[post.id] ? <Loader2 className="h-4 w-4 animate-spin" /> : <ThumbsUp className="h-4 w-4" />}
                       <span>{post.likes_count}</span>
                     </button>
 
@@ -1025,10 +1031,10 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
                             <Button
                               size="sm"
                               onClick={() => handleAddComment(post.id)}
-                              disabled={!(commentInputs[post.id] || '').trim()}
+                              disabled={!(commentInputs[post.id] || '').trim() || Boolean(isPostingComment[post.id])}
                               className="h-8 bg-primary hover:bg-primary/95 text-white text-[10px] font-bold rounded-full px-3 flex-shrink-0 gap-1 border border-transparent"
                             >
-                              <Send className="h-3 w-3" />
+                              {isPostingComment[post.id] ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
                             </Button>
                           </div>
                         </>
