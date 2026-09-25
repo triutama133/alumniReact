@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { Shield, Users, Settings, UserMinus, UserCheck, Plus, AlertCircle, RefreshCw, Clock, Trash2 } from 'lucide-react';
+import { Shield, Users, Settings, UserMinus, UserCheck, Plus, AlertCircle, RefreshCw, Clock, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -270,11 +270,12 @@ export default function CohortAdminPage() {
                     rows={4}
                   />
                 </div>
-                <Button 
-                  type="submit" 
-                  disabled={isUpdatingDetails || !cohortName.trim()} 
-                  className="w-full h-9 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg"
+                <Button
+                  type="submit"
+                  disabled={isUpdatingDetails || !cohortName.trim()}
+                  className="w-full h-9 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg gap-1.5"
                 >
+                  {isUpdatingDetails && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                   {isUpdatingDetails ? 'Menyimpan...' : 'Simpan Perubahan'}
                 </Button>
               </form>
@@ -300,14 +301,14 @@ export default function CohortAdminPage() {
                   className="h-8 bg-slate-50 border-slate-200 text-xs dark:bg-slate-900/40 dark:border-white/5 dark:text-white rounded-md w-full sm:w-48 placeholder:text-slate-400"
                   required
                 />
-                <Button 
-                  type="submit" 
-                  disabled={isInviting || !inviteInput.trim()} 
+                <Button
+                  type="submit"
+                  disabled={isInviting || !inviteInput.trim()}
                   size="sm"
                   className="h-8 bg-indigo-650 hover:bg-indigo-600 text-white text-xs rounded-md flex gap-1.5"
                 >
-                  <Plus className="h-3.5 w-3.5" />
-                  <span>Undang</span>
+                  {isInviting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+                  <span>{isInviting ? 'Mengundang...' : 'Undang'}</span>
                 </Button>
               </form>
             </CardHeader>
@@ -343,7 +344,7 @@ export default function CohortAdminPage() {
                                 className="h-7 text-[10px] text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 p-2"
                                 title="Jadikan Anggota Biasa"
                               >
-                                <UserMinus className="h-3.5 w-3.5" />
+                                {actionLoading === actionKey('update_member_role') ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserMinus className="h-3.5 w-3.5" />}
                               </Button>
                             ) : (
                               <Button
@@ -354,7 +355,7 @@ export default function CohortAdminPage() {
                                 className="h-7 text-[10px] text-amber-500 hover:text-amber-600 p-2"
                                 title="Jadikan Admin"
                               >
-                                <UserCheck className="h-3.5 w-3.5" />
+                                {actionLoading === actionKey('update_member_role') ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserCheck className="h-3.5 w-3.5" />}
                               </Button>
                             )}
 
@@ -370,7 +371,7 @@ export default function CohortAdminPage() {
                               className="h-7 text-[10px] text-rose-500 hover:text-rose-600 p-2"
                               title="Keluarkan Anggota"
                             >
-                              <Trash2 className="h-3.5 w-3.5" />
+                              {actionLoading === actionKey('remove_member') ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
                             </Button>
                           </div>
                         </div>

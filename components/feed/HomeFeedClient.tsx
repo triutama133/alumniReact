@@ -895,8 +895,8 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
                 disabled={isPosting || !content.trim()}
                 className="bg-primary hover:bg-primary/95 disabled:bg-slate-700/40 text-white text-xs h-8 px-4 rounded-full shadow-sm gap-1.5 transition-all border border-transparent"
               >
-                <span>Bagikan</span>
-                <Send className="h-3.5 w-3.5" />
+                <span>{isPosting ? 'Membagikan...' : 'Bagikan'}</span>
+                {isPosting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
               </Button>
             </div>
           </form>

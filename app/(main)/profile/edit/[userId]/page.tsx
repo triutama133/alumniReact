@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { Loader2, Search } from 'lucide-react'
+import { LoadingOverlay } from '@/components/ui/loading-overlay'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -1421,11 +1422,11 @@ export default function EditProfilePage() {
       </Card>
 
       {loading && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-white/70 dark:bg-slate-950/70 backdrop-blur-sm">
-          <Loader2 className="h-10 w-10 animate-spin text-indigo-600" />
-          <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Menyimpan perubahan profil...</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Mohon tunggu, jangan tutup atau muat ulang halaman ini.</p>
-        </div>
+        <LoadingOverlay
+          variant="fixed"
+          message="Menyimpan perubahan profil..."
+          subMessage="Mohon tunggu, jangan tutup atau muat ulang halaman ini."
+        />
       )}
     </div>
   )

@@ -869,8 +869,9 @@ Berikan analisis dalam format rapi:
                 <Button
                   onClick={handleApply}
                   disabled={isApplying}
-                  className="bg-primary hover:bg-primary/95 text-white font-bold text-xs px-6 py-2 rounded-md shadow-sm transition-all"
+                  className="bg-primary hover:bg-primary/95 text-white font-bold text-xs px-6 py-2 rounded-md shadow-sm transition-all gap-1.5"
                 >
+                  {isApplying && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                   {isApplying ? 'Mengajukan Lamaran...' : 'Ajukan Diri sebagai Kolaborator'}
                 </Button>
               )}

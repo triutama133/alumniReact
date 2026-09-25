@@ -55,13 +55,7 @@ export async function GET(
     // 2. Ambil daftar anggota cohort
     const { data: members, error } = await supabaseAdmin
       .from('cohort_members')
-      .select(`
-        id,
-        role,
-        joined_at,
-        user_id,
-        alumni:alumni_db (nama_lengkap, nama_panggilan, email, angkatan)
-      `)
+      .select('id, role, joined_at, user_id')
       .eq('cohort_id', cohortId);
 
     if (error) {
@@ -69,16 +63,31 @@ export async function GET(
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    const formattedMembers = (members || []).map((m: any) => ({
-      id: Number(m.id),
-      user_id: Number(m.user_id),
-      role: m.role,
-      joined_at: m.joined_at,
-      nama_lengkap: m.alumni?.nama_lengkap || 'Anonim',
-      nama_panggilan: m.alumni?.nama_panggilan || '',
-      email: m.alumni?.email || '',
-      angkatan: m.alumni?.angkatan || null,
-    }));
+    // cohort_members.user_id references "user", not alumni_db, so PostgREST can't
+    // auto-embed alumni_db here — fetch profiles separately and merge them in.
+    const memberUserIds = (members || []).map((m) => m.user_id);
+    let alumniById = new Map<number, { nama_lengkap: string | null; nama_panggilan: string | null; email: string | null; angkatan: string | null }>();
+    if (memberUserIds.length > 0) {
+      const { data: alumniRows } = await supabaseAdmin
+        .from('alumni_db')
+        .select('id, nama_lengkap, nama_panggilan, email, angkatan')
+        .in('id', memberUserIds);
+      alumniById = new Map((alumniRows || []).map((a) => [a.id, a]));
+    }
+
+    const formattedMembers = (members || []).map((m) => {
+      const alumni = alumniById.get(m.user_id);
+      return {
+        id: Number(m.id),
+        user_id: Number(m.user_id),
+        role: m.role,
+        joined_at: m.joined_at,
+        nama_lengkap: alumni?.nama_lengkap || 'Anonim',
+        nama_panggilan: alumni?.nama_panggilan || '',
+        email: alumni?.email || '',
+        angkatan: alumni?.angkatan || null,
+      };
+    });
 
     return NextResponse.json(formattedMembers, { status: 200 });
   } catch (error: unknown) {

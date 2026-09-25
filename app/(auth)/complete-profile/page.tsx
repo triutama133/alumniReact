@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
+import { LoadingOverlay } from '@/components/ui/loading-overlay'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -946,6 +947,14 @@ export default function CompleteProfilePage() {
           </Form>
         </CardContent>
       </Card>
+
+      {(loading || isRedirecting) && (
+        <LoadingOverlay
+          variant="fixed"
+          message={isRedirecting ? 'Mengalihkan ke beranda...' : 'Menyimpan profil Anda...'}
+          subMessage="Mohon tunggu, jangan tutup atau muat ulang halaman ini."
+        />
+      )}
     </div>
   )
 }

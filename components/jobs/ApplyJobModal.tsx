@@ -2,8 +2,10 @@
 
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { LoadingOverlay } from '@/components/ui/loading-overlay'
 import {
   Dialog,
   DialogContent,
@@ -55,7 +57,8 @@ export default function ApplyJobModal({ open, onOpenChange, jobId, jobTitle, onA
 
   return (
     <Dialog open={open} onOpenChange={(next) => (next ? onOpenChange(true) : resetAndClose())}>
-      <DialogContent className="sm:max-w-md bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white">
+      <DialogContent className="relative sm:max-w-md bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white">
+        {isSubmitting && <LoadingOverlay message="Mengirim lamaran..." />}
         <DialogHeader>
           <DialogTitle className="text-lg font-bold">Ajukan Diri</DialogTitle>
           <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
@@ -74,7 +77,8 @@ export default function ApplyJobModal({ open, onOpenChange, jobId, jobTitle, onA
           </div>
           <DialogFooter className="pt-2">
             <Button type="button" variant="ghost" size="sm" onClick={resetAndClose} className="rounded-md text-xs">Batal</Button>
-            <Button type="submit" size="sm" disabled={isSubmitting} className="bg-primary hover:bg-primary/95 text-white font-semibold text-xs rounded-md px-5 shadow-sm">
+            <Button type="submit" size="sm" disabled={isSubmitting} className="bg-primary hover:bg-primary/95 text-white font-semibold text-xs rounded-md px-5 shadow-sm gap-1.5">
+              {isSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               {isSubmitting ? 'Mengirim...' : 'Kirim Lamaran'}
             </Button>
           </DialogFooter>

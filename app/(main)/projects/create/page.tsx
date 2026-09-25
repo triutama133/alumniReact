@@ -6,12 +6,14 @@ import * as z from "zod"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
+import { Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { LoadingOverlay } from "@/components/ui/loading-overlay"
 
 const formSchema = z.object({
   title: z.string().min(10, "Judul harus lebih dari 10 karakter."),
@@ -84,13 +86,22 @@ export default function CreateProjectPage() {
               <FormField control={form.control} name="title" render={({ field }) => ( <FormItem><FormLabel>Judul Proyek</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
               <FormField control={form.control} name="description" render={({ field }) => ( <FormItem><FormLabel>Deskripsi Lengkap Proyek</FormLabel><FormControl><Textarea rows={8} {...field} /></FormControl><FormMessage /></FormItem> )} />
               <FormField control={form.control} name="required_skills" render={({ field }) => ( <FormItem><FormLabel>Skill yang Dibutuhkan</FormLabel><FormControl><Input {...field} /></FormControl><FormDescription>Pisahkan setiap skill dengan koma ( , ).</FormDescription><FormMessage /></FormItem> )} />
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className="w-full gap-1.5" disabled={loading}>
+                {loading && <Loader2 className="h-4 w-4 animate-spin" />}
                 {loading ? "Menyimpan..." : "Publikasikan Proyek"}
               </Button>
             </form>
           </Form>
         </CardContent>
       </Card>
+
+      {loading && (
+        <LoadingOverlay
+          variant="fixed"
+          message="Membuat proyek..."
+          subMessage="Mohon tunggu, jangan tutup atau muat ulang halaman ini."
+        />
+      )}
     </div>
   )
 }
