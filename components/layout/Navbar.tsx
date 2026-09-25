@@ -222,14 +222,14 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
   return (
     <>
       <nav className="sticky top-0 z-50 w-full px-6 py-4">
-        <div className="mx-auto flex max-w-7xl items-center justify-between rounded-full border border-slate-200/80 dark:border-white/10 bg-white/85 dark:bg-slate-950/70 px-6 py-3 backdrop-blur-md shadow-md dark:shadow-[0_0_20px_rgba(0,0,0,0.4)] transition-all duration-300">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 rounded-full border border-slate-200/80 dark:border-white/10 bg-white/85 dark:bg-slate-950/70 px-6 py-3 backdrop-blur-md shadow-md dark:shadow-[0_0_20px_rgba(0,0,0,0.4)] transition-all duration-300">
 
           {/* Brand Logo & Portal Selector */}
           <div className="flex items-center gap-3">
             {/* Mobile Menu Toggle Button */}
             <button
               onClick={() => { playClickSound(); setIsMobileOpen(!isMobileOpen); }}
-              className="p-1.5 -ml-1 rounded-full md:hidden hover:bg-slate-100 dark:hover:bg-white/5 text-slate-600 dark:text-slate-350 transition-colors"
+              className="p-1.5 -ml-1 rounded-full lg:hidden hover:bg-slate-100 dark:hover:bg-white/5 text-slate-600 dark:text-slate-350 transition-colors"
               aria-label="Toggle Menu"
             >
               <Menu className="h-5 w-5" />
@@ -246,10 +246,10 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
             </Link>
 
             {userId && (
-              <div className="hidden sm:flex items-center gap-1.5 w-40 sm:w-48 ml-1">
+              <div className="hidden sm:flex items-center gap-1.5 min-w-0 flex-shrink w-40 md:w-48 lg:w-56 ml-1">
                 <Select value={activeCohortId} onValueChange={handlePortalChange}>
-                  <SelectTrigger className="h-8 bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-white/5 text-[11px] font-semibold text-slate-700 dark:text-slate-200 rounded-full px-3">
-                    <SelectValue placeholder="Pilih Portal" />
+                  <SelectTrigger className="h-8 min-w-0 bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-white/5 text-[11px] font-semibold text-slate-700 dark:text-slate-200 rounded-full px-3">
+                    <SelectValue className="truncate" placeholder="Pilih Portal" />
                   </SelectTrigger>
                   <SelectContent className="bg-white dark:bg-slate-950 border-slate-200 dark:border-white/10">
                     <SelectItem value="global" className="text-xs">🌐 Portal Global</SelectItem>
@@ -279,7 +279,7 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
           </div>
 
           {/* Navigation Links */}
-          <div className="hidden items-center gap-1 md:flex">
+          <div className="hidden items-center gap-1 lg:flex">
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
@@ -386,20 +386,6 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
                   )}
                 </div>
 
-                {/* Community Admin Route Shortcut */}
-                {activeCohortId !== 'global' && activeCohortRole === 'admin' && (
-                  <Link
-                    href="/cohort-admin"
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-bold border transition-all duration-300 ${pathname === '/cohort-admin'
-                      ? 'bg-slate-100 text-slate-900 border-slate-200 dark:bg-white/10 dark:text-white dark:border-white/10'
-                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-white/5 dark:hover:text-white border-transparent'
-                      }`}
-                  >
-                    <Shield className="h-3 w-3" />
-                    <span>Kelola Komunitas</span>
-                  </Link>
-                )}
-
                 {/* User Dropdown */}
                 <div className="relative">
                   <button
@@ -425,6 +411,16 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
                           >
                             <User className="h-3.5 w-3.5 text-slate-450" />
                             Profil Saya
+                          </Link>
+                        )}
+                        {activeCohortId !== 'global' && activeCohortRole === 'admin' && (
+                          <Link
+                            href="/cohort-admin"
+                            onClick={() => setShowUserDropdown(false)}
+                            className="flex items-center gap-2 w-full px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-white/5 rounded-lg transition-colors"
+                          >
+                            <Shield className="h-3.5 w-3.5 text-slate-450" />
+                            Kelola Komunitas
                           </Link>
                         )}
                         <Link
@@ -474,13 +470,13 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
       {/* Mobile Drawer Backdrop */}
       {isMobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/45 backdrop-blur-xs md:hidden"
+          className="fixed inset-0 z-40 bg-black/45 backdrop-blur-xs lg:hidden"
           onClick={() => setIsMobileOpen(false)}
         />
       )}
 
       {/* Mobile Drawer Content */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-850 shadow-2xl p-6 transition-all duration-300 md:hidden flex flex-col justify-between ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-850 shadow-2xl p-6 transition-all duration-300 lg:hidden flex flex-col justify-between ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}>
         <div className="space-y-6">
           {/* Header & Close Button */}
