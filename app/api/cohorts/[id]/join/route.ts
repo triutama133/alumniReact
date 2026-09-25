@@ -1,10 +1,12 @@
 // app/api/cohorts/[id]/join/route.ts
 // GET: Preview a cohort before joining (used by both the public discovery page and the
 //      private /communities/join/[id]?key=... invite-link landing page). For a private
-//      cohort, a missing/wrong key gets the exact same 404 as a nonexistent id — the
-//      point of "private" is that the cohort's name isn't discoverable without the key.
-// POST: Actually join. Grants instant membership if the cohort's join_mode is 'auto',
-//       otherwise files a pending row in cohort_join_requests for an admin to review.
+//      cohort, a missing/wrong find_key gets the exact same 404 as a nonexistent id — the
+//      point of "private" is that the cohort's name isn't discoverable without it.
+// POST: Actually join. find_key only unlocked the preview — this is gated independently
+//       by join_key, a separate secret the user must provide even if they already have a
+//       working invite link. Grants instant membership if join_mode is 'auto', otherwise
+//       files a pending row in cohort_join_requests for an admin to review.
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { getAdminClient } from '@/lib/adminClient';
@@ -13,12 +15,12 @@ export const dynamic = 'force-dynamic';
 
 const NOT_FOUND = NextResponse.json({ error: 'Komunitas tidak ditemukan.' }, { status: 404 });
 
-async function resolveViewableCohort(cohortId: number, userId: number, key: string | null) {
+async function resolvePreviewableCohort(cohortId: number, userId: number, findKey: string | null) {
   const supabase = getAdminClient();
 
   const { data: cohort } = await supabase
     .from('cohorts')
-    .select('id, name, description, visibility, join_mode, join_key')
+    .select('id, name, description, visibility, join_mode')
     .eq('id', cohortId)
     .maybeSingle();
 
@@ -33,9 +35,13 @@ async function resolveViewableCohort(cohortId: number, userId: number, key: stri
 
   // Members (and the cohort's own admins) can always see it regardless of key/visibility.
   if (!membership && cohort.visibility === 'private') {
-    if (!key || key !== cohort.join_key) {
-      return { error: NOT_FOUND } as const;
-    }
+    const { data: keyMatch } = await supabase
+      .from('cohorts')
+      .select('id')
+      .eq('id', cohortId)
+      .eq('find_key', findKey || '__no_key__')
+      .maybeSingle();
+    if (!keyMatch) return { error: NOT_FOUND } as const;
   }
 
   return { cohort, isMember: Boolean(membership), supabase } as const;
@@ -56,8 +62,8 @@ export async function GET(
     const userId = Number(userIdString);
     if (Number.isNaN(userId)) return NextResponse.json({ error: 'User ID tidak valid.' }, { status: 400 });
 
-    const key = new URL(req.url).searchParams.get('key');
-    const resolved = await resolveViewableCohort(cohortId, userId, key);
+    const findKey = new URL(req.url).searchParams.get('key');
+    const resolved = await resolvePreviewableCohort(cohortId, userId, findKey);
     if ('error' in resolved) return resolved.error;
 
     const { cohort, isMember, supabase } = resolved;
@@ -83,6 +89,7 @@ export async function GET(
       id: Number(cohort.id),
       name: cohort.name,
       description: cohort.description,
+      visibility: cohort.visibility,
       join_mode: cohort.join_mode,
       member_count: memberCount ?? 0,
       viewer_status: viewerStatus,
@@ -109,15 +116,32 @@ export async function POST(
     if (Number.isNaN(userId)) return NextResponse.json({ error: 'User ID tidak valid.' }, { status: 400 });
 
     const body = await req.json().catch(() => ({}));
-    const key = typeof body.key === 'string' ? body.key : null;
+    const joinKey = typeof body.joinKey === 'string' ? body.joinKey.trim() : '';
 
-    const resolved = await resolveViewableCohort(cohortId, userId, key);
-    if ('error' in resolved) return resolved.error;
+    const supabase = getAdminClient();
+    const { data: cohort } = await supabase
+      .from('cohorts')
+      .select('id, name, visibility, join_mode, join_key')
+      .eq('id', cohortId)
+      .maybeSingle();
 
-    const { cohort, isMember, supabase } = resolved;
+    if (!cohort) return NOT_FOUND;
 
-    if (isMember) {
+    const { data: membership } = await supabase
+      .from('cohort_members')
+      .select('id')
+      .eq('cohort_id', cohortId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (membership) {
       return NextResponse.json({ error: 'Anda sudah menjadi anggota komunitas ini.' }, { status: 400 });
+    }
+
+    // join_key is the actual access gate, independent of find_key — required for every
+    // private cohort regardless of how the user got here (search-by-code or direct link).
+    if (cohort.visibility === 'private' && joinKey !== cohort.join_key) {
+      return NextResponse.json({ error: 'Kode gabung tidak valid.' }, { status: 403 });
     }
 
     const { data: existingPending } = await supabase

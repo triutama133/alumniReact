@@ -19,38 +19,22 @@ interface DiscoverableCohort {
   viewer_status: 'member' | 'pending' | null;
 }
 
-function JoinStatusOrButton({
-  cohort,
-  isBusy,
-  onJoin,
-}: {
-  cohort: DiscoverableCohort;
-  isBusy: boolean;
-  onJoin: () => void;
-}) {
-  if (cohort.viewer_status === 'member') {
+interface CodeSearchResult extends DiscoverableCohort {
+  visibility: 'public' | 'private';
+}
+
+function ViewerStatusBadge({ status }: { status: 'member' | 'pending' }) {
+  if (status === 'member') {
     return (
       <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold px-3 py-1.5 gap-1.5">
         <CheckCircle className="h-3.5 w-3.5" /> Anda Sudah Bergabung
       </Badge>
     );
   }
-  if (cohort.viewer_status === 'pending') {
-    return (
-      <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-xs font-bold px-3 py-1.5 gap-1.5">
-        <Clock className="h-3.5 w-3.5" /> Menunggu Persetujuan
-      </Badge>
-    );
-  }
   return (
-    <Button
-      size="sm"
-      disabled={isBusy}
-      onClick={onJoin}
-      className="w-full h-8 bg-primary hover:bg-primary/95 text-white text-xs font-bold rounded-md"
-    >
-      {cohort.join_mode === 'auto' ? 'Gabung Sekarang' : 'Ajukan Bergabung'}
-    </Button>
+    <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-xs font-bold px-3 py-1.5 gap-1.5">
+      <Clock className="h-3.5 w-3.5" /> Menunggu Persetujuan
+    </Badge>
   );
 }
 
@@ -60,11 +44,14 @@ export default function DiscoverCommunitiesPage() {
   const [loading, setLoading] = useState(true);
   const [joiningId, setJoiningId] = useState<number | null>(null);
 
-  // "Punya kode undangan?" — look up a private cohort by its join key alone
-  const [codeInput, setCodeInput] = useState('');
+  // "Punya kode undangan?" — two independent secrets: find_key locates the cohort and
+  // reveals its preview; join_key (entered separately, only once the preview is shown)
+  // is the actual gate required to become a member.
+  const [findCodeInput, setFindCodeInput] = useState('');
   const [isSearchingCode, setIsSearchingCode] = useState(false);
   const [codeError, setCodeError] = useState<string | null>(null);
-  const [codeResult, setCodeResult] = useState<(DiscoverableCohort & { key: string }) | null>(null);
+  const [codeResult, setCodeResult] = useState<CodeSearchResult | null>(null);
+  const [joinCodeInput, setJoinCodeInput] = useState('');
 
   const fetchCohorts = useCallback(async (q: string) => {
     setLoading(true);
@@ -90,22 +77,18 @@ export default function DiscoverCommunitiesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
 
-  const handleJoin = async (cohortId: number, key?: string) => {
+  // Joining a public cohort from the grid needs no code at all.
+  const handleJoinPublic = async (cohortId: number) => {
     playClickSound();
     setJoiningId(cohortId);
     try {
-      const res = await fetch(`/api/cohorts/${cohortId}/join`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(key ? { key } : {}),
-      });
+      const res = await fetch(`/api/cohorts/${cohortId}/join`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Gagal bergabung ke komunitas.');
 
       toast.success(data.message);
       const newStatus = data.status === 'joined' ? 'member' : 'pending';
       setCohorts((prev) => prev.map((c) => (c.id === cohortId ? { ...c, viewer_status: newStatus } : c)));
-      setCodeResult((prev) => (prev && prev.id === cohortId ? { ...prev, viewer_status: newStatus } : prev));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Gagal bergabung ke komunitas.');
     } finally {
@@ -113,23 +96,48 @@ export default function DiscoverCommunitiesPage() {
     }
   };
 
-  const handleSearchByCode = async (e: React.FormEvent) => {
+  const handleSearchByFindCode = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!codeInput.trim()) return;
+    if (!findCodeInput.trim()) return;
 
     playClickSound();
     setIsSearchingCode(true);
     setCodeError(null);
     setCodeResult(null);
+    setJoinCodeInput('');
     try {
-      const res = await fetch(`/api/cohorts/resolve-key?key=${encodeURIComponent(codeInput.trim())}`);
+      const res = await fetch(`/api/cohorts/resolve-key?findKey=${encodeURIComponent(findCodeInput.trim())}`);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Kode undangan tidak ditemukan.');
+      if (!res.ok) throw new Error(data.error || 'Kode pencarian tidak ditemukan.');
       setCodeResult(data);
     } catch (err) {
-      setCodeError(err instanceof Error ? err.message : 'Kode undangan tidak ditemukan.');
+      setCodeError(err instanceof Error ? err.message : 'Kode pencarian tidak ditemukan.');
     } finally {
       setIsSearchingCode(false);
+    }
+  };
+
+  const handleJoinWithCode = async () => {
+    if (!codeResult) return;
+    if (codeResult.visibility === 'private' && !joinCodeInput.trim()) return;
+
+    playClickSound();
+    setJoiningId(codeResult.id);
+    try {
+      const res = await fetch(`/api/cohorts/${codeResult.id}/join`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(codeResult.visibility === 'private' ? { joinKey: joinCodeInput.trim() } : {}),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Gagal bergabung ke komunitas.');
+
+      toast.success(data.message);
+      setCodeResult({ ...codeResult, viewer_status: data.status === 'joined' ? 'member' : 'pending' });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Gagal bergabung ke komunitas.');
+    } finally {
+      setJoiningId(null);
     }
   };
 
@@ -155,28 +163,29 @@ export default function DiscoverCommunitiesPage() {
         />
       </div>
 
-      {/* Private cohort lookup by invite code — this is the only way to reach a private
-          cohort someone was only told the code for (not sent a full invite link). */}
+      {/* Private cohort lookup by find code — this is the only way to locate a private
+          cohort someone was only told the code for. Finding it only shows the preview;
+          a separate join code is still required to actually become a member. */}
       <Card className="premium-light-card liquid-glass-border">
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
             <Lock className="h-4 w-4 text-slate-500" />
             <CardTitle className="text-sm font-bold">Punya Kode Undangan?</CardTitle>
           </div>
-          <CardDescription className="text-xs">Komunitas privat tidak muncul di daftar di atas. Masukkan kode undangannya di sini untuk bergabung.</CardDescription>
+          <CardDescription className="text-xs">Komunitas privat tidak muncul di daftar di atas. Masukkan kode pencarian untuk melihat pratinjaunya.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSearchByCode} className="flex gap-2">
+          <form onSubmit={handleSearchByFindCode} className="flex gap-2">
             <div className="relative flex-grow">
               <KeyRound className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
               <Input
-                placeholder="Masukkan kode undangan..."
-                value={codeInput}
-                onChange={(e) => { setCodeInput(e.target.value); setCodeError(null); }}
+                placeholder="Masukkan kode pencarian..."
+                value={findCodeInput}
+                onChange={(e) => { setFindCodeInput(e.target.value); setCodeError(null); }}
                 className="pl-8 h-9 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-sm font-mono"
               />
             </div>
-            <Button type="submit" disabled={isSearchingCode || !codeInput.trim()} size="sm" className="h-9 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-200 dark:text-slate-950 text-white text-xs font-bold rounded-md px-4 gap-1.5">
+            <Button type="submit" disabled={isSearchingCode || !findCodeInput.trim()} size="sm" className="h-9 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-200 dark:text-slate-950 text-white text-xs font-bold rounded-md px-4 gap-1.5">
               {isSearchingCode && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               Cari
             </Button>
@@ -198,11 +207,39 @@ export default function DiscoverCommunitiesPage() {
                     {codeResult.join_mode === 'auto' ? 'Gabung Otomatis' : 'Perlu Persetujuan'}
                   </Badge>
                 </div>
-                <JoinStatusOrButton
-                  cohort={codeResult}
-                  isBusy={joiningId === codeResult.id}
-                  onJoin={() => handleJoin(codeResult.id, codeResult.key)}
-                />
+
+                {codeResult.viewer_status === 'member' || codeResult.viewer_status === 'pending' ? (
+                  <ViewerStatusBadge status={codeResult.viewer_status} />
+                ) : codeResult.visibility === 'private' ? (
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <KeyRound className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                      <Input
+                        placeholder="Masukkan kode gabung..."
+                        value={joinCodeInput}
+                        onChange={(e) => setJoinCodeInput(e.target.value)}
+                        className="pl-8 h-9 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-sm font-mono"
+                      />
+                    </div>
+                    <Button
+                      size="sm"
+                      disabled={joiningId === codeResult.id || !joinCodeInput.trim()}
+                      onClick={handleJoinWithCode}
+                      className="w-full h-8 bg-primary hover:bg-primary/95 text-white text-xs font-bold rounded-md"
+                    >
+                      {codeResult.join_mode === 'auto' ? 'Gabung Sekarang' : 'Ajukan Bergabung'}
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    size="sm"
+                    disabled={joiningId === codeResult.id}
+                    onClick={handleJoinWithCode}
+                    className="w-full h-8 bg-primary hover:bg-primary/95 text-white text-xs font-bold rounded-md"
+                  >
+                    {codeResult.join_mode === 'auto' ? 'Gabung Sekarang' : 'Ajukan Bergabung'}
+                  </Button>
+                )}
               </CardContent>
             </Card>
           )}
@@ -230,11 +267,18 @@ export default function DiscoverCommunitiesPage() {
                     {cohort.join_mode === 'auto' ? 'Gabung Otomatis' : 'Perlu Persetujuan'}
                   </Badge>
                 </div>
-                <JoinStatusOrButton
-                  cohort={cohort}
-                  isBusy={joiningId === cohort.id}
-                  onJoin={() => handleJoin(cohort.id)}
-                />
+                {cohort.viewer_status === 'member' || cohort.viewer_status === 'pending' ? (
+                  <ViewerStatusBadge status={cohort.viewer_status} />
+                ) : (
+                  <Button
+                    size="sm"
+                    disabled={joiningId === cohort.id}
+                    onClick={() => handleJoinPublic(cohort.id)}
+                    className="w-full h-8 bg-primary hover:bg-primary/95 text-white text-xs font-bold rounded-md"
+                  >
+                    {cohort.join_mode === 'auto' ? 'Gabung Sekarang' : 'Ajukan Bergabung'}
+                  </Button>
+                )}
               </CardContent>
             </Card>
           ))}

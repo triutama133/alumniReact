@@ -1,9 +1,11 @@
 // app/api/cohorts/resolve-key/route.ts
-// GET: Look up a cohort by its join_key alone (no id needed), for the "Punya kode
+// GET: Look up a cohort by its find_key alone (no id needed), for the "Punya kode
 // undangan?" search box on the discovery page — someone who was only given a code
-// verbally/in chat, not a full /community/join/[id]?key=... link, can still find and
-// join a private cohort this way. A wrong code gets the same generic error as any
-// other lookup failure, so codes can't be brute-forced by distinguishing error types.
+// verbally/in chat, not a full /community/join/[id]?key=... link, can still locate a
+// private cohort this way. find_key only unlocks the preview (name/description/member
+// count) — it is NOT sufficient to join; the separate join_key is required for that, so
+// this response never includes join_key. A wrong code gets the same generic error as
+// any other lookup failure, so codes can't be brute-forced by distinguishing error types.
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { getAdminClient } from '@/lib/adminClient';
@@ -18,20 +20,20 @@ export async function GET(req: NextRequest) {
     const userId = Number(userIdString);
     if (Number.isNaN(userId)) return NextResponse.json({ error: 'User ID tidak valid.' }, { status: 400 });
 
-    const key = (new URL(req.url).searchParams.get('key') || '').trim();
-    if (!key) {
-      return NextResponse.json({ error: 'Masukkan kode undangan.' }, { status: 400 });
+    const findKey = (new URL(req.url).searchParams.get('findKey') || '').trim();
+    if (!findKey) {
+      return NextResponse.json({ error: 'Masukkan kode pencarian.' }, { status: 400 });
     }
 
     const supabase = getAdminClient();
     const { data: cohort } = await supabase
       .from('cohorts')
-      .select('id, name, description, join_mode')
-      .eq('join_key', key)
+      .select('id, name, description, visibility, join_mode')
+      .eq('find_key', findKey)
       .maybeSingle();
 
     if (!cohort) {
-      return NextResponse.json({ error: 'Kode undangan tidak ditemukan. Periksa kembali kode Anda.' }, { status: 404 });
+      return NextResponse.json({ error: 'Kode pencarian tidak ditemukan. Periksa kembali kode Anda.' }, { status: 404 });
     }
 
     const { data: membership } = await supabase
@@ -62,10 +64,10 @@ export async function GET(req: NextRequest) {
       id: Number(cohort.id),
       name: cohort.name,
       description: cohort.description,
+      visibility: cohort.visibility,
       join_mode: cohort.join_mode,
       member_count: memberCount ?? 0,
       viewer_status: viewerStatus,
-      key,
     }, { status: 200 });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);

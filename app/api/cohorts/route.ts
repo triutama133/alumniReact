@@ -104,8 +104,10 @@ export async function POST(req: NextRequest) {
     // role that nothing can ever assign would make the feature permanently unreachable.
 
     // 1. Insert new cohort (mocking 30 days subscription)
-    // join_key is generated for every cohort up front (not just private ones) so an
-    // admin can flip visibility to 'private' later without a separate "generate key" step.
+    // find_key and join_key are generated for every cohort up front (not just private
+    // ones) so an admin can flip visibility to 'private' later without a separate
+    // "generate keys" step. find_key unlocks the preview; join_key is the separate,
+    // independent gate required to actually become a member.
     const { data: newCohort, error: cohortError } = await supabaseAdmin
       .from('cohorts')
       .insert({
@@ -115,6 +117,7 @@ export async function POST(req: NextRequest) {
         subscription_plan: 'premium',
         subscription_status: 'active',
         expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        find_key: randomBytes(6).toString('hex'),
         join_key: randomBytes(6).toString('hex'),
       })
       .select('*')

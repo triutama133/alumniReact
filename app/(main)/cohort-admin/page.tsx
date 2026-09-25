@@ -28,10 +28,12 @@ export default function CohortAdminPage() {
   const [visibility, setVisibility] = useState<'public' | 'private'>('private');
   const [joinMode, setJoinMode] = useState<'auto' | 'approval'>('approval');
   const [isSavingJoinSettings, setIsSavingJoinSettings] = useState(false);
-  const [isRegeneratingKey, setIsRegeneratingKey] = useState(false);
+  const [isRegeneratingFindKey, setIsRegeneratingFindKey] = useState(false);
+  const [isRegeneratingJoinKey, setIsRegeneratingJoinKey] = useState(false);
   const [copiedInviteLink, setCopiedInviteLink] = useState(false);
-  const [copiedCode, setCopiedCode] = useState(false);
-  const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false);
+  const [copiedFindCode, setCopiedFindCode] = useState(false);
+  const [copiedJoinCode, setCopiedJoinCode] = useState(false);
+  const [regenerateTarget, setRegenerateTarget] = useState<'find' | 'join' | null>(null);
   const [memberToRemove, setMemberToRemove] = useState<{ userId: number; name: string } | null>(null);
 
   // Join requests (pending approval) state
@@ -223,9 +225,31 @@ export default function CohortAdminPage() {
     }
   };
 
-  const handleRegenerateKey = async () => {
+  const handleRegenerateFindKey = async () => {
     playClickSound();
-    setIsRegeneratingKey(true);
+    setIsRegeneratingFindKey(true);
+    try {
+      const res = await fetch(`/api/cohorts/${activeCohortId}/admin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'regenerate_find_key' }),
+      });
+      const resData = await res.json();
+      if (!res.ok) throw new Error(resData.error || 'Gagal membuat ulang kode pencarian.');
+
+      toast.success('Kode pencarian baru berhasil dibuat!');
+      setRegenerateTarget(null);
+      await fetchData();
+    } catch (err: any) {
+      toast.error('Error', { description: err.message });
+    } finally {
+      setIsRegeneratingFindKey(false);
+    }
+  };
+
+  const handleRegenerateJoinKey = async () => {
+    playClickSound();
+    setIsRegeneratingJoinKey(true);
     try {
       const res = await fetch(`/api/cohorts/${activeCohortId}/admin`, {
         method: 'POST',
@@ -233,33 +257,45 @@ export default function CohortAdminPage() {
         body: JSON.stringify({ action: 'regenerate_join_key' }),
       });
       const resData = await res.json();
-      if (!res.ok) throw new Error(resData.error || 'Gagal membuat ulang kode undangan.');
+      if (!res.ok) throw new Error(resData.error || 'Gagal membuat ulang kode gabung.');
 
-      toast.success('Kode undangan baru berhasil dibuat!');
-      setShowRegenerateConfirm(false);
+      toast.success('Kode gabung baru berhasil dibuat!');
+      setRegenerateTarget(null);
       await fetchData();
     } catch (err: any) {
       toast.error('Error', { description: err.message });
     } finally {
-      setIsRegeneratingKey(false);
+      setIsRegeneratingJoinKey(false);
     }
   };
 
-  const handleCopyCode = async () => {
+  const handleCopyFindCode = async () => {
+    if (!activeCohort?.find_key) return;
+    try {
+      await navigator.clipboard.writeText(activeCohort.find_key);
+      setCopiedFindCode(true);
+      toast.success('Kode pencarian disalin!');
+      setTimeout(() => setCopiedFindCode(false), 2000);
+    } catch {
+      toast.error('Gagal menyalin kode. Salin secara manual.');
+    }
+  };
+
+  const handleCopyJoinCode = async () => {
     if (!activeCohort?.join_key) return;
     try {
       await navigator.clipboard.writeText(activeCohort.join_key);
-      setCopiedCode(true);
-      toast.success('Kode undangan disalin!');
-      setTimeout(() => setCopiedCode(false), 2000);
+      setCopiedJoinCode(true);
+      toast.success('Kode gabung disalin!');
+      setTimeout(() => setCopiedJoinCode(false), 2000);
     } catch {
       toast.error('Gagal menyalin kode. Salin secara manual.');
     }
   };
 
   const handleCopyInviteLink = async () => {
-    if (!activeCohort?.join_key) return;
-    const link = `${window.location.origin}/community/join/${activeCohortId}?key=${activeCohort.join_key}`;
+    if (!activeCohort?.find_key) return;
+    const link = `${window.location.origin}/community/join/${activeCohortId}?key=${activeCohort.find_key}`;
     try {
       await navigator.clipboard.writeText(link);
       setCopiedInviteLink(true);
@@ -525,38 +561,70 @@ export default function CohortAdminPage() {
                 {isSavingJoinSettings ? 'Menyimpan...' : 'Simpan Pengaturan'}
               </Button>
 
-              {activeCohort?.join_key && (
+              {activeCohort?.find_key && (
                 <div className="space-y-3 pt-2 border-t border-slate-200 dark:border-white/5">
+                  <p className="text-[10px] text-slate-400 leading-relaxed">
+                    Dua kode terpisah: <strong className="text-slate-500 dark:text-slate-300">kode pencarian</strong> hanya untuk menemukan &amp; melihat pratinjau komunitas ini, <strong className="text-slate-500 dark:text-slate-300">kode gabung</strong> adalah kunci sebenarnya untuk menjadi anggota. Bagikan keduanya secara terpisah untuk keamanan ekstra.
+                  </p>
+
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1"><KeyRound className="h-3 w-3" /> Kode Undangan</label>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1"><KeyRound className="h-3 w-3" /> Kode Pencarian</label>
                     <div className="flex gap-1.5">
                       <Button
                         type="button"
-                        onClick={handleCopyCode}
+                        onClick={handleCopyFindCode}
                         variant="outline"
                         size="sm"
                         className="flex-1 h-8 text-xs font-mono font-bold tracking-wider justify-start px-2.5"
                       >
-                        {copiedCode ? <Check className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" /> : <Copy className="h-3.5 w-3.5 flex-shrink-0" />}
+                        {copiedFindCode ? <Check className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" /> : <Copy className="h-3.5 w-3.5 flex-shrink-0" />}
+                        <span>{activeCohort.find_key}</span>
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={() => setRegenerateTarget('find')}
+                        disabled={isRegeneratingFindKey}
+                        variant="outline"
+                        size="sm"
+                        className="h-8 px-2.5 flex-shrink-0"
+                        title="Buat ulang kode pencarian"
+                      >
+                        {isRegeneratingFindKey ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                      </Button>
+                    </div>
+                    <p className="text-[10px] text-slate-400">Digunakan di &quot;Jelajahi Komunitas&quot; &rarr; &quot;Punya Kode Undangan?&quot;, atau tertanam di tautan langsung di bawah.</p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1"><KeyRound className="h-3 w-3" /> Kode Gabung</label>
+                    <div className="flex gap-1.5">
+                      <Button
+                        type="button"
+                        onClick={handleCopyJoinCode}
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 h-8 text-xs font-mono font-bold tracking-wider justify-start px-2.5"
+                      >
+                        {copiedJoinCode ? <Check className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" /> : <Copy className="h-3.5 w-3.5 flex-shrink-0" />}
                         <span>{activeCohort.join_key}</span>
                       </Button>
                       <Button
                         type="button"
-                        onClick={() => setShowRegenerateConfirm(true)}
-                        disabled={isRegeneratingKey}
+                        onClick={() => setRegenerateTarget('join')}
+                        disabled={isRegeneratingJoinKey}
                         variant="outline"
                         size="sm"
                         className="h-8 px-2.5 flex-shrink-0"
-                        title="Buat ulang kode undangan"
+                        title="Buat ulang kode gabung"
                       >
-                        {isRegeneratingKey ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                        {isRegeneratingJoinKey ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
                       </Button>
                     </div>
-                    <p className="text-[10px] text-slate-400">Bagikan kode ini agar seseorang bisa mencarinya di halaman &quot;Jelajahi Komunitas&quot; &rarr; &quot;Punya Kode Undangan?&quot;.</p>
+                    <p className="text-[10px] text-slate-400">Kunci sebenarnya untuk bergabung — selalu wajib diisi, bahkan lewat tautan langsung.</p>
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase">Atau Tautan Langsung</label>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase">Tautan Pratinjau Langsung</label>
                     <Button
                       type="button"
                       onClick={handleCopyInviteLink}
@@ -565,7 +633,7 @@ export default function CohortAdminPage() {
                       className="w-full h-8 text-[10px] font-mono truncate justify-start px-2.5"
                     >
                       {copiedInviteLink ? <Check className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" /> : <Copy className="h-3.5 w-3.5 flex-shrink-0" />}
-                      <span className="truncate">{`/community/join/${activeCohortId}?key=${activeCohort.join_key}`}</span>
+                      <span className="truncate">{`/community/join/${activeCohortId}?key=${activeCohort.find_key}`}</span>
                     </Button>
                   </div>
                 </div>
@@ -757,13 +825,23 @@ export default function CohortAdminPage() {
       </div>
 
       <ConfirmDialog
-        open={showRegenerateConfirm}
-        onOpenChange={setShowRegenerateConfirm}
-        title="Buat ulang kode undangan?"
-        description="Kode dan tautan undangan lama yang sudah dibagikan tidak akan berfungsi lagi setelah ini."
+        open={regenerateTarget === 'find'}
+        onOpenChange={(open) => { if (!open) setRegenerateTarget(null); }}
+        title="Buat ulang kode pencarian?"
+        description="Kode pencarian lama, dan tautan langsung yang memuatnya, tidak akan berfungsi lagi setelah ini. Kode gabung tidak terpengaruh."
         confirmLabel="Buat Ulang"
-        isLoading={isRegeneratingKey}
-        onConfirm={handleRegenerateKey}
+        isLoading={isRegeneratingFindKey}
+        onConfirm={handleRegenerateFindKey}
+      />
+
+      <ConfirmDialog
+        open={regenerateTarget === 'join'}
+        onOpenChange={(open) => { if (!open) setRegenerateTarget(null); }}
+        title="Buat ulang kode gabung?"
+        description="Kode gabung lama yang sudah dibagikan tidak akan berfungsi lagi setelah ini. Kode pencarian dan tautan langsung tidak terpengaruh."
+        confirmLabel="Buat Ulang"
+        isLoading={isRegeneratingJoinKey}
+        onConfirm={handleRegenerateJoinKey}
       />
 
       <ConfirmDialog

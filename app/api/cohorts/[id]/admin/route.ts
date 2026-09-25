@@ -132,6 +132,20 @@ export async function POST(
       return NextResponse.json({ message: 'Pengaturan visibilitas & bergabung berhasil diperbarui.' });
     }
 
+    if (action === 'regenerate_find_key') {
+      const newKey = randomBytes(6).toString('hex');
+      const { error: updateErr } = await supabaseAdmin
+        .from('cohorts')
+        .update({ find_key: newKey })
+        .eq('id', cohortId);
+
+      if (updateErr) {
+        return NextResponse.json({ error: 'Gagal membuat ulang kode pencarian.' }, { status: 500 });
+      }
+
+      return NextResponse.json({ message: 'Kode pencarian baru berhasil dibuat.', find_key: newKey });
+    }
+
     if (action === 'regenerate_join_key') {
       const newKey = randomBytes(6).toString('hex');
       const { error: updateErr } = await supabaseAdmin
@@ -140,10 +154,10 @@ export async function POST(
         .eq('id', cohortId);
 
       if (updateErr) {
-        return NextResponse.json({ error: 'Gagal membuat ulang kode undangan.' }, { status: 500 });
+        return NextResponse.json({ error: 'Gagal membuat ulang kode gabung.' }, { status: 500 });
       }
 
-      return NextResponse.json({ message: 'Kode undangan baru berhasil dibuat.', join_key: newKey });
+      return NextResponse.json({ message: 'Kode gabung baru berhasil dibuat.', join_key: newKey });
     }
 
     return NextResponse.json({ error: 'Aksi tidak dikenal.' }, { status: 400 });
