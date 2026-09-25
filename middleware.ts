@@ -75,6 +75,7 @@ const publicPaths = [
   '/api/security/turnstile',
   '/api/test-db',
   '/api/ai',
+  '/api/jobs',
   '/favicon.ico',
   '/landing',
   '/preview',

@@ -22,6 +22,7 @@ import {
   FileText
 } from 'lucide-react';
 import { CVCreatorTab } from '@/components/jobs/CVCreatorTab';
+import PostJobModal, { PostedJob } from '@/components/jobs/PostJobModal';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -71,6 +72,8 @@ interface Job {
   is_active: boolean;
   status_reason: string;
   category: string;
+  owner_id: number | null;
+  source: 'database' | 'user';
 }
 
 export default function JobsPage() {
@@ -86,6 +89,9 @@ export default function JobsPage() {
   const [totalJobs, setTotalJobs] = useState(0);
   const [loadingJobs, setLoadingJobs] = useState(true);
   const [expandedJobId, setExpandedJobId] = useState<number | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [showPostJobModal, setShowPostJobModal] = useState(false);
+  const [togglingJobId, setTogglingJobId] = useState<number | null>(null);
 
   // --- LEARNING PATH TAB STATE ---
   const [selectedRole, setSelectedRole] = useState<string>('');
@@ -94,6 +100,22 @@ export default function JobsPage() {
   const [loadingMessage, setLoadingMessage] = useState('');
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [checkedTasks, setCheckedTasks] = useState<Record<string, boolean>>({});
+
+  // Fetch current user id (used to gate the active/inactive toggle on own job postings)
+  useEffect(() => {
+    const fetchMe = async () => {
+      try {
+        const res = await fetch('/api/me');
+        if (res.ok) {
+          const data = await res.json();
+          setCurrentUserId(data.userId ? Number(data.userId) : null);
+        }
+      } catch {
+        // Not critical — the toggle simply won't render if this fails.
+      }
+    };
+    fetchMe();
+  }, []);
 
   // Loading messages rotation for AI analysis
   useEffect(() => {
@@ -264,6 +286,38 @@ export default function JobsPage() {
     fetchJobs();
   };
 
+  const handleJobPosted = (job: PostedJob) => {
+    // Show the newly posted job immediately without waiting for a refetch.
+    setJobs((prev) => [job as unknown as Job, ...prev]);
+    setTotalJobs((prev) => prev + 1);
+  };
+
+  const handleToggleActive = async (job: Job) => {
+    const nextActive = !job.is_active;
+    setTogglingJobId(job.id);
+    // Optimistic update
+    setJobs((prev) => prev.map((j) => (j.id === job.id ? { ...j, is_active: nextActive } : j)));
+
+    try {
+      const res = await fetch(`/api/jobs/${job.id}/toggle-active`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: nextActive }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Gagal mengubah status lowongan.');
+      }
+      toast.success(nextActive ? 'Lowongan diaktifkan kembali.' : 'Lowongan dinonaktifkan.');
+    } catch (err) {
+      // Revert on failure
+      setJobs((prev) => prev.map((j) => (j.id === job.id ? { ...j, is_active: !nextActive } : j)));
+      toast.error(err instanceof Error ? err.message : 'Gagal mengubah status lowongan.');
+    } finally {
+      setTogglingJobId(null);
+    }
+  };
+
   // Calculate LP completeness percentage
   const totalChecklistCount = analysisResult?.checklist.length || 0;
   const completedChecklistCount = analysisResult?.checklist.filter(t => checkedTasks[t]).length || 0;
@@ -353,6 +407,15 @@ export default function JobsPage() {
               <Button onClick={handleSearch} className="h-10 bg-primary hover:bg-primary/95 text-white font-bold text-sm px-6">
                 Cari
               </Button>
+              {currentUserId && (
+                <Button
+                  onClick={() => { playClickSound(); setShowPostJobModal(true); }}
+                  variant="outline"
+                  className="h-10 border-primary/30 text-primary hover:bg-primary/5 font-bold text-sm px-6"
+                >
+                  Pasang Lowongan
+                </Button>
+              )}
             </div>
           </Card>
 
@@ -379,13 +442,23 @@ export default function JobsPage() {
                           <Badge className="bg-primary/5 text-primary text-[8px] font-bold border border-primary/10 uppercase tracking-wider">
                             {job.category}
                           </Badge>
+                          {job.source === 'user' && (
+                            <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[8px] font-bold border border-emerald-500/20 uppercase tracking-wider">
+                              Dipasang Komunitas
+                            </Badge>
+                          )}
+                          {job.owner_id === currentUserId && !job.is_active && (
+                            <Badge className="bg-slate-300/40 dark:bg-slate-700/40 text-slate-600 dark:text-slate-300 text-[8px] font-bold border border-slate-300 dark:border-slate-600 uppercase tracking-wider">
+                              Nonaktif
+                            </Badge>
+                          )}
                         </div>
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => { playClickSound(); setExpandedJobId(isExpanded ? null : job.id); }}
                           className="h-8 text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                         >
@@ -395,11 +468,24 @@ export default function JobsPage() {
                             <>Detail <ChevronDown className="ml-1 h-3.5 w-3.5" /></>
                           )}
                         </Button>
-                        <Button asChild size="sm" className="h-8 bg-primary hover:bg-primary/95 text-white font-bold text-xs gap-1">
-                          <a href={job.job_url} target="_blank" rel="noopener noreferrer">
-                            Lamar <ExternalLink className="h-3 w-3" />
-                          </a>
-                        </Button>
+                        {job.job_url && (
+                          <Button asChild size="sm" className="h-8 bg-primary hover:bg-primary/95 text-white font-bold text-xs gap-1">
+                            <a href={job.job_url} target="_blank" rel="noopener noreferrer">
+                              Lamar <ExternalLink className="h-3 w-3" />
+                            </a>
+                          </Button>
+                        )}
+                        {job.owner_id === currentUserId && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={togglingJobId === job.id}
+                            onClick={() => handleToggleActive(job)}
+                            className="h-8 text-xs font-bold border-slate-200 dark:border-slate-800"
+                          >
+                            {job.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+                          </Button>
+                        )}
                       </div>
                     </CardHeader>
 
@@ -761,6 +847,7 @@ export default function JobsPage() {
         </div>
       )}
 
+      <PostJobModal open={showPostJobModal} onOpenChange={setShowPostJobModal} onCreated={handleJobPosted} />
     </div>
   );
 }

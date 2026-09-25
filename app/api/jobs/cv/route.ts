@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { headers } from 'next/headers';
+import { formatDateRange } from '@/lib/formatDateRange';
 
 export async function GET(req: NextRequest) {
   try {
@@ -104,7 +105,7 @@ export async function GET(req: NextRequest) {
           <div style="margin-bottom: 10px; font-family: Georgia, serif; color: #000;">
             <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; margin-bottom: 2px;">
               <span>${job.posisi || 'Jabatan'} &mdash; ${job.nama_instansi || 'Nama Instansi'}</span>
-              <span style="font-style: italic; font-weight: normal; font-size: 10px;">${job.status_keaktifan || 'Aktif'}</span>
+              <span style="font-style: italic; font-weight: normal; font-size: 10px;">${formatDateRange(job) || 'Aktif'}</span>
             </div>
             <ul style="margin: 0 0 0 16px; padding: 0; font-size: 11px; line-height: 1.4; color: #222; text-align: justify;">
               <li>${job.pengalaman_proyek || 'Menjalankan tugas profesional secara konsisten untuk memastikan keberhasilan operasional dan koordinasi instansi.'}</li>
@@ -120,7 +121,7 @@ export async function GET(req: NextRequest) {
           <div style="margin-bottom: 10px; font-family: Georgia, serif; color: #000;">
             <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; margin-bottom: 2px;">
               <span>Founder / Owner &mdash; ${biz.nama_usaha || 'Bisnis Usaha'}</span>
-              <span style="font-style: italic; font-weight: normal; font-size: 10px;">${biz.status_keaktifan || 'Aktif'}</span>
+              <span style="font-style: italic; font-weight: normal; font-size: 10px;">${formatDateRange(biz) || 'Aktif'}</span>
             </div>
             <ul style="margin: 0 0 0 16px; padding: 0; font-size: 11px; line-height: 1.4; color: #222; text-align: justify;">
               <li>Mengelola operasional bisnis skala ${biz.skala_usaha || 'Lokal'}, mengembangkan produk dan layanan utama, serta menargetkan pasar yang tepat.</li>

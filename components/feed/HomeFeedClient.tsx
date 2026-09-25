@@ -22,10 +22,7 @@ import {
   Lock,
   Globe,
   Shield,
-  CreditCard,
-  X,
   PlusCircle,
-  Info,
   Clock,
   Briefcase
 } from 'lucide-react';
@@ -41,6 +38,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import CreateCohortModal, { CreatedCohort } from '@/components/community/CreateCohortModal';
 
 interface Post {
   id: string | number;
@@ -128,10 +126,6 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
 
   // Cohorts UI State
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newCohortName, setNewCohortName] = useState('');
-  const [newCohortDesc, setNewCohortDesc] = useState('');
-  const [selectedPlan, setSelectedPlan] = useState<'free' | 'premium' | 'enterprise'>('premium');
-  const [isCreatingCohort, setIsCreatingCohort] = useState(false);
 
   // Cohort Members State
   const [members, setMembers] = useState<CohortMember[]>([]);
@@ -143,6 +137,15 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
   const [aiRecommendation, setAiRecommendation] = useState<string | null>(null);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+
+  // State for the "Lowongan Kerja Terpilih" sidebar widget (real, latest active jobs)
+  const [recommendedJobs, setRecommendedJobs] = useState<Array<{
+    id: number;
+    job_title: string;
+    company: string;
+    platform: string;
+    job_url: string | null;
+  }>>([]);
 
   // Calculate profile completeness
   const computeCompleteness = () => {
@@ -198,6 +201,22 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
       }
     };
     fetchCohorts();
+  }, []);
+
+  // Load a couple of real active job listings for the "Lowongan Kerja Terpilih" widget
+  useEffect(() => {
+    const fetchRecommendedJobs = async () => {
+      try {
+        const res = await fetch('/api/jobs?limit=2');
+        if (res.ok) {
+          const data = await res.json();
+          setRecommendedJobs(data.jobs || []);
+        }
+      } catch (err) {
+        console.error('Error fetching recommended jobs:', err);
+      }
+    };
+    fetchRecommendedJobs();
   }, []);
 
   // Fetch feed and members when activeCohort changes
@@ -273,43 +292,11 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
   }, [activeCohort, userProfile.id]);
 
   // Handle cohort creation
-  const handleCreateCohort = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newCohortName.trim()) return;
-
-    setIsCreatingCohort(true);
-    try {
-      const res = await fetch('/api/cohorts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: newCohortName,
-          description: newCohortDesc || null,
-          plan: selectedPlan,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Gagal membuat kelompok.');
-      }
-
-      const createdCohort = {
-        ...data.cohort,
-        role: 'admin'
-      };
-
-      setCohorts([...cohorts, createdCohort]);
-      setActiveCohort(createdCohort);
-      setShowCreateModal(false);
-      setNewCohortName('');
-      setNewCohortDesc('');
-      toast.success('Kelompok eksklusif berhasil dibuat & langganan aktif!');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Gagal membuat kelompok.');
-    } finally {
-      setIsCreatingCohort(false);
-    }
+  const handleCohortCreated = (cohort: CreatedCohort) => {
+    const createdCohort: Cohort = { ...(cohort as unknown as Cohort), role: 'admin' };
+    setCohorts([...cohorts, createdCohort]);
+    setActiveCohort(createdCohort);
+    window.location.href = `/community/${cohort.id}`;
   };
 
   // Handle adding new member to cohort
@@ -1102,31 +1089,21 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
                 <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Ringkasan evaluasi dan rekomendasi karirmu</p>
               </div>
 
-              {/* Widget Skor CV */}
+              {/* Widget Kelengkapan Profil (real, computed from actual profile fields — same value as the completeness card above) */}
               <div className="space-y-2 p-3 rounded-lg bg-slate-50 dark:bg-slate-950/45 border border-slate-200 dark:border-slate-800/85">
                 <div className="flex justify-between items-center text-xs">
-                  <span className="font-extrabold text-slate-900 dark:text-white">Skor Kesiapan CV</span>
-                  <span className="font-black text-primary">82/100</span>
+                  <span className="font-extrabold text-slate-900 dark:text-white">Kelengkapan Profil</span>
+                  <span className="font-black text-primary">{completeness}/100</span>
                 </div>
                 <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                  Struktur CV kamu sudah kuat. Tambahkan satu proyek kolaborasi aktif di HubTalent untuk meningkatkan daya tarik di mata perekrut.
+                  {completeness >= 100
+                    ? 'Profilmu sudah lengkap. Perbarui CV di CV Creator agar makin menarik di mata perekrut.'
+                    : 'Lengkapi profilmu agar rekomendasi AI dan tampilan ke perekrut makin akurat.'}
                 </p>
                 <Button asChild size="sm" className="w-full h-7 bg-slate-900 hover:bg-slate-800 text-white font-bold text-[10px] rounded-md dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900">
-                  <Link href="/jobs?tab=cv-creator">Optimalkan CV</Link>
-                </Button>
-              </div>
-
-              {/* Widget Simulasi Wawancara */}
-              <div className="space-y-2 p-3 rounded-lg bg-slate-50 dark:bg-slate-950/45 border border-slate-200 dark:border-slate-800/85">
-                <div className="text-xs">
-                  <span className="font-bold text-slate-500 dark:text-slate-400">Tantangan Hari Ini:</span>
-                  <p className="font-extrabold text-slate-900 dark:text-white mt-0.5">Data Engineer / Analyst</p>
-                </div>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                  Luangkan 5 menit untuk menjawab 3 pertanyaan simulasi berbasis AI hari ini.
-                </p>
-                <Button asChild size="sm" variant="outline" className="w-full h-7 border-slate-200 text-slate-900 font-bold text-[10px] rounded-md dark:border-slate-800 dark:text-white">
-                  <Link href="/jobs">Mulai Simulasi</Link>
+                  <Link href={completeness >= 100 ? '/jobs?tab=cv-creator' : '/profile/edit/' + userProfile.id}>
+                    {completeness >= 100 ? 'Optimalkan CV' : 'Lengkapi Profil'}
+                  </Link>
                 </Button>
               </div>
             </Card>
@@ -1139,29 +1116,31 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
                   Lowongan Kerja Terpilih
                 </h4>
                 <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-normal">
-                  Kurasi otomatis berdasarkan keahlian Python, SQL pada profilmu.
+                  Lowongan aktif terbaru yang tersedia di portal Jobs.
                 </p>
               </div>
 
-              <div className="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20 space-y-2">
-                <div className="flex justify-between items-start gap-1">
-                  <div>
-                    <h5 className="font-bold text-xs text-slate-900 dark:text-white">Junior Data Engineer</h5>
-                    <p className="text-[9px] text-slate-450 mt-0.5">Full-time • Remote • 2 hari lalu</p>
+              {recommendedJobs.length > 0 ? (
+                recommendedJobs.map((job) => (
+                  <div key={job.id} className="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20 space-y-2">
+                    <div className="flex justify-between items-start gap-1">
+                      <div>
+                        <h5 className="font-bold text-xs text-slate-900 dark:text-white line-clamp-1">{job.job_title}</h5>
+                        <p className="text-[9px] text-slate-450 mt-0.5">{job.company} • {job.platform}</p>
+                      </div>
+                    </div>
+                    <Button asChild size="sm" className="w-full h-7 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] rounded-md">
+                      {job.job_url ? (
+                        <a href={job.job_url} target="_blank" rel="noopener noreferrer">Lamar Sekarang</a>
+                      ) : (
+                        <Link href="/jobs">Lihat Detail</Link>
+                      )}
+                    </Button>
                   </div>
-                  <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[8px] font-bold border border-emerald-500/20">
-                    95% Match
-                  </Badge>
-                </div>
-                <div className="flex gap-2">
-                  <Button asChild size="sm" className="flex-1 h-7 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] rounded-md">
-                    <Link href="/jobs">Lamar Sekarang</Link>
-                  </Button>
-                  <Button size="sm" variant="outline" className="h-7 border-slate-205 dark:border-slate-800 text-slate-900 dark:text-white font-bold text-[10px] rounded-md">
-                    Simpan
-                  </Button>
-                </div>
-              </div>
+                ))
+              ) : (
+                <p className="text-[10px] text-slate-500 text-center py-2">Belum ada lowongan aktif saat ini.</p>
+              )}
             </Card>
 
             {/* 6. Community & Engagement Footer Widget */}
@@ -1178,123 +1157,8 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
         )}
       </div>
 
-      {/* COHORT CREATION MODAL (Glassmorphic Custom UI) */}
-      {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="relative w-full max-w-lg p-6 liquid-glass liquid-glass-border border-primary/20 shadow-xl rounded-2xl text-slate-200">
-            <button
-              onClick={() => setShowCreateModal(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-white/5 text-slate-400 hover:text-white transition-colors"
-            >
-              <X className="h-4 w-4" />
-            </button>
-
-            <div className="flex items-center gap-2 mb-4">
-              <Lock className="h-5 w-5 text-primary" />
-              <h2 className="text-xl font-extrabold text-white">Buat Ruang Kelompok Cerdas</h2>
-            </div>
-
-            <form onSubmit={handleCreateCohort} className="space-y-4">
-              <div className="space-y-1">
-                <label className="text-xs text-slate-400 font-semibold">Nama Kelompok / Himpunan</label>
-                <Input
-                  required
-                  value={newCohortName}
-                  onChange={(e) => setNewCohortName(e.target.value)}
-                  placeholder="Misal: Ikatan Alumni Paramadina Bogor"
-                  className="bg-slate-950/40 border-slate-800 focus:border-primary text-sm text-slate-100"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs text-slate-400 font-semibold">Deskripsi Kelompok</label>
-                <Textarea
-                  value={newCohortDesc}
-                  onChange={(e) => setNewCohortDesc(e.target.value)}
-                  placeholder="Penjelasan singkat tujuan komunitas eksklusif ini..."
-                  className="bg-slate-950/40 border-slate-800 focus:border-primary text-sm text-slate-100 min-h-[70px] resize-none"
-                />
-              </div>
-
-              {/* Subscription Plan Chooser */}
-              <div className="space-y-2">
-                <label className="text-xs text-slate-400 font-semibold flex items-center gap-1.5">
-                  <CreditCard className="h-3.5 w-3.5 text-primary" />
-                  Pilih Paket Langganan (SaaS Billing Mockup)
-                </label>
-                <div className="grid grid-cols-3 gap-3">
-                  {/* Premium plan option */}
-                  <button
-                    type="button"
-                    onClick={() => setSelectedPlan('premium')}
-                    className={`flex flex-col items-center p-3 rounded-xl border text-center transition-all ${selectedPlan === 'premium'
-                      ? 'border-primary bg-primary/10 text-primary font-bold shadow-md'
-                      : 'border-white/5 bg-slate-900/30 text-slate-400 hover:border-slate-800'
-                      }`}
-                  >
-                    <span className="text-xs">Premium</span>
-                    <span className="text-[14px] text-white font-extrabold mt-1">Rp 150k</span>
-                    <span className="text-[9px] text-slate-400 mt-0.5">/ bulan</span>
-                  </button>
-
-                  {/* Enterprise plan option */}
-                  <button
-                    type="button"
-                    onClick={() => setSelectedPlan('enterprise')}
-                    className={`flex flex-col items-center p-3 rounded-xl border text-center transition-all ${selectedPlan === 'enterprise'
-                      ? 'border-primary bg-primary/10 text-primary font-bold shadow-md'
-                      : 'border-white/5 bg-slate-900/30 text-slate-400 hover:border-slate-800'
-                      }`}
-                  >
-                    <span className="text-xs">Enterprise</span>
-                    <span className="text-[14px] text-white font-extrabold mt-1">Rp 500k</span>
-                    <span className="text-[9px] text-slate-400 mt-0.5">/ bulan</span>
-                  </button>
-
-                  {/* Free option */}
-                  <button
-                    type="button"
-                    onClick={() => setSelectedPlan('free')}
-                    className={`flex flex-col items-center p-3 rounded-xl border text-center transition-all ${selectedPlan === 'free'
-                      ? 'border-primary bg-primary/10 text-primary font-bold shadow-md'
-                      : 'border-white/5 bg-slate-900/30 text-slate-400 hover:border-slate-800'
-                      }`}
-                  >
-                    <span className="text-xs">Free trial</span>
-                    <span className="text-[14px] text-white font-extrabold mt-1">Gratis</span>
-                    <span className="text-[9px] text-slate-400 mt-0.5">7 hari trial</span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex gap-1.5 p-3 rounded-lg bg-primary/5 border border-primary/10 text-[10px] text-slate-700 dark:text-slate-350 leading-normal items-start">
-                <Info className="h-4 w-4 mt-0.5 flex-shrink-0 text-primary" />
-                <p>
-                  Mekanisme cohort membatasi visibilitas postingan, pencarian AI, serta manajemen proyek agar terkelompok eksklusif dan aman bagi tim internal Anda. Pembayaran mockup akan langsung menyetujui transaksi Anda secara otomatis.
-                </p>
-              </div>
-
-              <div className="flex justify-end gap-2 border-t border-white/5 pt-4">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => setShowCreateModal(false)}
-                  className="text-slate-400 hover:text-white"
-                >
-                  Batal
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={isCreatingCohort || !newCohortName.trim()}
-                  className="bg-primary hover:bg-primary/95 text-white font-semibold shadow-sm px-6 rounded-full border border-transparent"
-                >
-                  {isCreatingCohort ? 'Memproses Langganan...' : 'Bayar & Buat Kelompok'}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* COHORT CREATION MODAL */}
+      <CreateCohortModal open={showCreateModal} onOpenChange={setShowCreateModal} onCreated={handleCohortCreated} />
     </div>
   );
 }

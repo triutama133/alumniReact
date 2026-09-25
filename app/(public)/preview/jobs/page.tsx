@@ -27,9 +27,10 @@ export default function PreviewJobsPage() {
             try {
                 const res = await fetch('/api/jobs');
                 if (res.ok) {
-                    const data: Job[] = await res.json();
-                    // Hanya yang is_active = true
-                    setJobs(data.filter(j => (j as any).is_active !== false));
+                    // /api/jobs returns { jobs, total, page, limit, categories }, not a bare array.
+                    // It already filters to is_active=true server-side.
+                    const data: { jobs?: Job[] } = await res.json();
+                    setJobs(data.jobs || []);
                 }
             } catch (err) {
                 console.error('Error loading jobs:', err);

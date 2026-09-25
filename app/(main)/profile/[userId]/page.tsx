@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import CollaborationRecommendationButton from '@/components/profile/CollaborationRecommendationButton';
 import CareerRecommendationButton from '@/components/profile/CareerRecommendationButton';
 import { CustomUserForProjectCard } from '@/lib/types';
+import { formatDateRange } from '@/lib/formatDateRange';
 import { 
   Briefcase, 
   Store, 
@@ -68,7 +69,11 @@ interface ExtendedAlumniProfile {
   bidang_kontribusi_minat: string | string[] | null;
 
   alumni_pekerja?: Array<{
-    status_keaktifan?: string;
+    start_month?: number | null;
+    start_year?: number | null;
+    is_current?: boolean | null;
+    end_month?: number | null;
+    end_year?: number | null;
     keahlian_pekerja: string;
     nama_instansi: string;
     posisi: string;
@@ -77,7 +82,11 @@ interface ExtendedAlumniProfile {
     pengalaman_bermitra: boolean;
   }>;
   alumni_bisnis?: Array<{
-    status_keaktifan?: string;
+    start_month?: number | null;
+    start_year?: number | null;
+    is_current?: boolean | null;
+    end_month?: number | null;
+    end_year?: number | null;
     keahlian_wirausahaan: string;
     produk_layanan_utama: string;
     nama_usaha: string;
@@ -88,7 +97,11 @@ interface ExtendedAlumniProfile {
     keahlian_dibagikan?: string;
   }>;
   alumni_sosial?: Array<{
-    status_keaktifan?: string;
+    start_month?: number | null;
+    start_year?: number | null;
+    is_current?: boolean | null;
+    end_month?: number | null;
+    end_year?: number | null;
     keahlian_sosial: string;
     pengalaman_proyek_sosial: string;
     isu_fokus: string;
@@ -96,7 +109,11 @@ interface ExtendedAlumniProfile {
     pengalaman_bermitra_sosial: boolean;
   }>;
   alumni_kreatif?: Array<{
-    status_keaktifan?: string;
+    start_month?: number | null;
+    start_year?: number | null;
+    is_current?: boolean | null;
+    end_month?: number | null;
+    end_year?: number | null;
     keahlian_kreatif: string;
     platform_digital_utama: string;
     jenis_konten: string;
@@ -105,14 +122,22 @@ interface ExtendedAlumniProfile {
     demografi_followers: string;
   }>;
   alumni_rumah_tangga?: Array<{
-    status_keaktifan?: string;
+    start_month?: number | null;
+    start_year?: number | null;
+    is_current?: boolean | null;
+    end_month?: number | null;
+    end_year?: number | null;
     keahlian_irt: string;
     kegiatan_organisasi_irt: string;
     pengalaman_tim_irt: boolean;
     mencari_pekerjaan_kolaborasi_irt: boolean;
   }>;
   alumni_mahasiswa?: Array<{
-    status_keaktifan?: string;
+    start_month?: number | null;
+    start_year?: number | null;
+    is_current?: boolean | null;
+    end_month?: number | null;
+    end_year?: number | null;
     keahlian_mahasiswa: string;
     kegiatan_organisasi_mahasiswa: string;
     pengalaman_tim_mahasiswa: boolean;
@@ -120,13 +145,21 @@ interface ExtendedAlumniProfile {
     pengalaman_magang: string;
   }>;
   alumni_informal?: Array<{
-    status_keaktifan?: string;
+    start_month?: number | null;
+    start_year?: number | null;
+    is_current?: boolean | null;
+    end_month?: number | null;
+    end_year?: number | null;
     keahlian_informal: string;
     pengalaman_tim_informal: boolean;
     pernah_rekrut_memimpin: boolean;
   }>;
   alumni_agri?: Array<{
-    status_keaktifan?: string;
+    start_month?: number | null;
+    start_year?: number | null;
+    is_current?: boolean | null;
+    end_month?: number | null;
+    end_year?: number | null;
     keahlian_agri: string;
     komoditas_utama: string;
     tergabung_kelompok: boolean;
@@ -135,7 +168,11 @@ interface ExtendedAlumniProfile {
     kendala_dihadapi_agri: string;
   }>;
   alumni_pendidik?: Array<{
-    status_keaktifan?: string;
+    start_month?: number | null;
+    start_year?: number | null;
+    is_current?: boolean | null;
+    end_month?: number | null;
+    end_year?: number | null;
     keahlian_pendidik: string;
     jenjang_pendidikan: string;
     mata_pelajaran: string;
@@ -257,11 +294,6 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
       .slice(0, 2)
       .join('')
       .toUpperCase() || 'TT';
-  };
-
-  const renderStatusLabel = (status?: string) => {
-    if (!status || status === 'Aktif saat ini') return 'Aktif';
-    return status;
   };
 
   return (
@@ -483,7 +515,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
                             Pekerja / Profesional
                           </span>
                           <span className="text-[10px] text-slate-800 dark:text-slate-200 font-bold px-2 py-0.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md">
-                            {renderStatusLabel(data.status_keaktifan)}
+                            {formatDateRange(data) || 'Tanggal belum diisi'}
                           </span>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
@@ -532,7 +564,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
                             Wirausaha / Entrepreneur
                           </span>
                           <span className="text-[10px] text-slate-800 dark:text-slate-200 font-bold px-2 py-0.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md">
-                            {renderStatusLabel(data.status_keaktifan)}
+                            {formatDateRange(data) || 'Tanggal belum diisi'}
                           </span>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
@@ -591,7 +623,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
                             Aktivis Sosial / Pemberdayaan
                           </span>
                           <span className="text-[10px] text-slate-800 dark:text-slate-200 font-bold px-2 py-0.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md">
-                            {renderStatusLabel(data.status_keaktifan)}
+                            {formatDateRange(data) || 'Tanggal belum diisi'}
                           </span>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
@@ -635,7 +667,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
                             Kreator Konten / Freelancer Kreatif
                           </span>
                           <span className="text-[10px] text-slate-800 dark:text-slate-200 font-bold px-2 py-0.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md">
-                            {renderStatusLabel(data.status_keaktifan)}
+                            {formatDateRange(data) || 'Tanggal belum diisi'}
                           </span>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
@@ -676,7 +708,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
                             Ibu Rumah Tangga / Domestik
                           </span>
                           <span className="text-[10px] text-slate-800 dark:text-slate-200 font-bold px-2 py-0.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md">
-                            {renderStatusLabel(data.status_keaktifan)}
+                            {formatDateRange(data) || 'Tanggal belum diisi'}
                           </span>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
@@ -713,7 +745,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
                             Mahasiswa Aktif / Studi Lanjutan
                           </span>
                           <span className="text-[10px] text-slate-800 dark:text-slate-200 font-bold px-2 py-0.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md">
-                            {renderStatusLabel(data.status_keaktifan)}
+                            {formatDateRange(data) || 'Tanggal belum diisi'}
                           </span>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
@@ -754,7 +786,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
                             Pekerja Sektor Informal
                           </span>
                           <span className="text-[10px] text-slate-800 dark:text-slate-200 font-bold px-2 py-0.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md">
-                            {renderStatusLabel(data.status_keaktifan)}
+                            {formatDateRange(data) || 'Tanggal belum diisi'}
                           </span>
                         </div>
                         <div className="grid grid-cols-1 gap-2 text-xs">
@@ -787,7 +819,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
                             Agribisnis / Pertanian / Peternakan
                           </span>
                           <span className="text-[10px] text-slate-800 dark:text-slate-200 font-bold px-2 py-0.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md">
-                            {renderStatusLabel(data.status_keaktifan)}
+                            {formatDateRange(data) || 'Tanggal belum diisi'}
                           </span>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
@@ -835,7 +867,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
                             Pendidik / Dosen / Guru
                           </span>
                           <span className="text-[10px] text-slate-800 dark:text-slate-200 font-bold px-2 py-0.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md">
-                            {renderStatusLabel(data.status_keaktifan)}
+                            {formatDateRange(data) || 'Tanggal belum diisi'}
                           </span>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">

@@ -4,13 +4,23 @@ import { createClient } from '@supabase/supabase-js';
 import * as z from 'zod'; // Import zod untuk validasi di server
 import { headers } from 'next/headers'; // Untuk mendapatkan userId dari header
 import { AUTH_COOKIE_NAME, AUTH_TOKEN_TTL_SECONDS, signAuthToken } from '@/lib/auth';
+import { isOlderThanFiveYears } from '@/lib/formatDateRange';
 
 // Import tipe tidak diperlukan di route ini
 
 // Delay creating Supabase admin client until runtime inside the handler so
 // the build process does not fail when environment variables are not set.
 
-const activityStatusEnum = z.enum(['Aktif saat ini', '<1 tahun lalu', '1-3 tahun lalu', '3-5 tahun lalu', '>5 tahun']);
+const schemaCurrentYear = new Date().getFullYear();
+
+/** Shared start/end month-year fields for every activity detail entry (LinkedIn-style date range). */
+const activityDateRangeFields = {
+  start_month: z.number().int().min(1).max(12).optional(),
+  start_year: z.number().int().min(1950).max(schemaCurrentYear).optional(),
+  is_current: z.boolean().optional().default(true),
+  end_month: z.number().int().min(1).max(12).nullable().optional(),
+  end_year: z.number().int().min(1950).max(schemaCurrentYear).nullable().optional(),
+};
 
 // --- Zod Schema untuk Validasi Data Masuk (Harus cocok dengan schema form di klien) ---
 const serverFormSchema = z.object({
@@ -54,7 +64,7 @@ const serverFormSchema = z.object({
 
   // Conditional Schemas (perhatikan ini adalah array, tapi mungkin hanya ada satu entri)
   alumni_pekerja: z.array(z.object({
-    status_keaktifan: activityStatusEnum.optional(),
+    ...activityDateRangeFields,
     keahlian_pekerja: z.string().optional().default(''),
     nama_instansi: z.string().optional().default(''),
     posisi: z.string().optional().default(''),
@@ -63,7 +73,7 @@ const serverFormSchema = z.object({
     pengalaman_bermitra: z.boolean().optional().default(false),
   })).optional(),
   alumni_bisnis: z.array(z.object({
-    status_keaktifan: activityStatusEnum.optional(),
+    ...activityDateRangeFields,
     keahlian_wirausahaan: z.string().optional().default(''),
     produk_layanan_utama: z.string().optional().default(''),
     nama_usaha: z.string().optional().default(''),
@@ -74,7 +84,7 @@ const serverFormSchema = z.object({
     keahlian_dibagikan: z.string().optional().default(''),
   })).optional(),
   alumni_sosial: z.array(z.object({
-    status_keaktifan: activityStatusEnum.optional(),
+    ...activityDateRangeFields,
     keahlian_sosial: z.string().optional().default(''),
     pengalaman_proyek_sosial: z.string().optional().default(''),
     isu_fokus: z.string().optional().default(''),
@@ -82,7 +92,7 @@ const serverFormSchema = z.object({
     pengalaman_bermitra_sosial: z.boolean().optional().default(false),
   })).optional(),
   alumni_kreatif: z.array(z.object({
-    status_keaktifan: activityStatusEnum.optional(),
+    ...activityDateRangeFields,
     keahlian_kreatif: z.string().optional().default(''),
     platform_digital_utama: z.string().optional().default(''),
     jenis_konten: z.string().optional().default(''),
@@ -91,14 +101,14 @@ const serverFormSchema = z.object({
     demografi_followers: z.string().optional().default(''),
   })).optional(),
   alumni_rumah_tangga: z.array(z.object({
-    status_keaktifan: activityStatusEnum.optional(),
+    ...activityDateRangeFields,
     keahlian_irt: z.string().optional().default(''),
     kegiatan_organisasi_irt: z.string().optional().default(''),
     pengalaman_tim_irt: z.boolean().optional().default(false),
     mencari_pekerjaan_kolaborasi_irt: z.boolean().optional().default(false),
   })).optional(),
   alumni_mahasiswa: z.array(z.object({
-    status_keaktifan: activityStatusEnum.optional(),
+    ...activityDateRangeFields,
     keahlian_mahasiswa: z.string().optional().default(''),
     kegiatan_organisasi_mahasiswa: z.string().optional().default(''),
     pengalaman_tim_mahasiswa: z.boolean().optional().default(false),
@@ -106,13 +116,13 @@ const serverFormSchema = z.object({
     pengalaman_magang: z.string().optional().default(''),
   })).optional(),
   alumni_informal: z.array(z.object({
-    status_keaktifan: activityStatusEnum.optional(),
+    ...activityDateRangeFields,
     keahlian_informal: z.string().optional().default(''),
     pengalaman_tim_informal: z.boolean().optional().default(false),
     pernah_rekrut_memimpin: z.boolean().optional().default(false),
   })).optional(),
   alumni_agri: z.array(z.object({
-    status_keaktifan: activityStatusEnum.optional(),
+    ...activityDateRangeFields,
     keahlian_agri: z.string().optional().default(''),
     komoditas_utama: z.string().optional().default(''),
     tergabung_kelompok: z.boolean().optional().default(false),
@@ -121,7 +131,7 @@ const serverFormSchema = z.object({
     kendala_dihadapi_agri: z.string().optional().default(''),
   })).optional(),
   alumni_pendidik: z.array(z.object({
-    status_keaktifan: activityStatusEnum.optional(),
+    ...activityDateRangeFields,
     keahlian_pendidik: z.string().optional().default(''),
     jenjang_pendidikan: z.string().optional().default(''),
     mata_pelajaran: z.string().optional().default(''),
@@ -140,8 +150,19 @@ const serverFormSchema = z.object({
     if (!Array.isArray(rows)) return;
 
     rows.forEach((row, index) => {
-      const status = row && typeof row === 'object' ? (row as Record<string, unknown>).status_keaktifan : undefined;
-      if (status === '>5 tahun') return;
+      const detail = row && typeof row === 'object' ? (row as Record<string, unknown>) : {};
+
+      if (!detail.start_year) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: [key, index, 'start_year'], message: 'Tanggal mulai wajib diisi.' });
+      }
+      if (!detail.start_month) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: [key, index, 'start_month'], message: 'Bulan mulai wajib diisi.' });
+      }
+      if (!detail.is_current && !detail.end_year) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: [key, index, 'end_year'], message: 'Tanggal berakhir wajib diisi, atau tandai masih berlangsung.' });
+      }
+
+      if (isOlderThanFiveYears(detail)) return;
 
       requiredFields.forEach((field) => {
         const fieldValue = row && typeof row === 'object' ? (row as Record<string, unknown>)[field] : undefined;

@@ -1,4 +1,5 @@
 import * as z from 'zod'
+import { computeActivityStatusLabel, isOlderThanFiveYears, type ActivityDateRange } from './formatDateRange'
 
 export const genderOptions = ['Laki-laki', 'Perempuan'] as const
 
@@ -40,6 +41,8 @@ const currentYear = new Date().getFullYear()
 const optionalUrlSchema = z.union([z.string().url('Masukkan URL yang valid.'), z.literal('')])
 
 export const educationLevels = ['SMA/SMK', 'D1', 'D2', 'D3', 'D4', 'S1', 'S2', 'S3'] as const
+
+/** @deprecated Replaced by real start/end month-year date fields. Kept only for reading legacy data. */
 export const activityStatusOptions = ['Aktif saat ini', '<1 tahun lalu', '1-3 tahun lalu', '3-5 tahun lalu', '>5 tahun'] as const
 
 export type IndonesiaCityOption = {
@@ -47,6 +50,19 @@ export type IndonesiaCityOption = {
   city: string
   province: string
   label: string
+}
+
+/**
+ * Shared start/end month-year fields for every activity detail entry (LinkedIn-style date range).
+ * start_month/start_year are optional in the TYPE (so a blank new entry type-checks) but required
+ * in practice via the superRefine check below.
+ */
+const activityDateRangeSchema = {
+  start_month: z.coerce.number().int().min(1, 'Bulan tidak valid.').max(12, 'Bulan tidak valid.').optional(),
+  start_year: z.coerce.number().int().min(1950, 'Tahun mulai tidak valid.').max(currentYear, 'Tahun mulai tidak valid.').optional(),
+  is_current: z.boolean().default(true),
+  end_month: z.coerce.number().int().min(1).max(12).nullable().optional(),
+  end_year: z.coerce.number().int().min(1950).max(currentYear).nullable().optional(),
 }
 
 export const formSchema = z.object({
@@ -74,7 +90,7 @@ export const formSchema = z.object({
     is_current: z.boolean().default(false),
   })).min(1, 'Minimal satu riwayat pendidikan wajib diisi.'),
   pekerja_details: z.array(z.object({
-    status_keaktifan: z.enum(activityStatusOptions),
+    ...activityDateRangeSchema,
     keahlian_pekerja: z.string().optional(),
     nama_instansi: z.string().optional(),
     posisi: z.string().optional(),
@@ -83,7 +99,7 @@ export const formSchema = z.object({
     pengalaman_bermitra: z.boolean().default(false),
   })).default([]),
   bisnis_details: z.array(z.object({
-    status_keaktifan: z.enum(activityStatusOptions),
+    ...activityDateRangeSchema,
     keahlian_wirausahaan: z.string().optional(),
     produk_layanan_utama: z.string().optional(),
     nama_usaha: z.string().optional(),
@@ -94,7 +110,7 @@ export const formSchema = z.object({
     keahlian_dibagikan: z.string().optional(),
   })).default([]),
   sosial_details: z.array(z.object({
-    status_keaktifan: z.enum(activityStatusOptions),
+    ...activityDateRangeSchema,
     keahlian_sosial: z.string().optional(),
     pengalaman_proyek_sosial: z.string().optional(),
     isu_fokus: z.string().optional(),
@@ -102,7 +118,7 @@ export const formSchema = z.object({
     pengalaman_bermitra_sosial: z.boolean().default(false),
   })).default([]),
   kreatif_details: z.array(z.object({
-    status_keaktifan: z.enum(activityStatusOptions),
+    ...activityDateRangeSchema,
     keahlian_kreatif: z.string().optional(),
     platform_digital_utama: z.string().optional(),
     jenis_konten: z.string().optional(),
@@ -111,18 +127,18 @@ export const formSchema = z.object({
     demografi_followers: z.string().optional(),
   })).default([]),
   aktivitas: z.array(z.string()).min(1, 'Pilih minimal satu aktivitas.'),
-  aktivitas_status_durasi: z.record(z.string()).default({}),
+  aktivitas_status_durasi: z.record(z.any()).default({}),
   jenis_dukungan_dibutuhkan: z.array(z.string()).min(1, 'Pilih minimal satu jenis dukungan.'),
   bidang_kontribusi_minat: z.array(z.string()).min(1, 'Pilih minimal satu bidang kontribusi.'),
   irt_details: z.array(z.object({
-    status_keaktifan: z.enum(activityStatusOptions),
+    ...activityDateRangeSchema,
     keahlian_irt: z.string().optional(),
     kegiatan_organisasi_irt: z.string().optional(),
     pengalaman_tim_irt: z.boolean().default(false),
     mencari_pekerjaan_kolaborasi_irt: z.boolean().default(false),
   })).default([]),
   mahasiswa_details: z.array(z.object({
-    status_keaktifan: z.enum(activityStatusOptions),
+    ...activityDateRangeSchema,
     keahlian_mahasiswa: z.string().optional(),
     kegiatan_organisasi_mahasiswa: z.string().optional(),
     pengalaman_tim_mahasiswa: z.boolean().default(false),
@@ -130,13 +146,13 @@ export const formSchema = z.object({
     pengalaman_magang: z.string().optional(),
   })).default([]),
   informal_details: z.array(z.object({
-    status_keaktifan: z.enum(activityStatusOptions),
+    ...activityDateRangeSchema,
     keahlian_informal: z.string().optional(),
     pengalaman_tim_informal: z.boolean().default(false),
     pernah_rekrut_memimpin: z.boolean().default(false),
   })).default([]),
   agri_details: z.array(z.object({
-    status_keaktifan: z.enum(activityStatusOptions),
+    ...activityDateRangeSchema,
     keahlian_agri: z.string().optional(),
     komoditas_utama: z.string().optional(),
     tergabung_kelompok: z.boolean().default(false),
@@ -145,7 +161,7 @@ export const formSchema = z.object({
     kendala_dihadapi_agri: z.string().optional(),
   })).default([]),
   pendidik_details: z.array(z.object({
-    status_keaktifan: z.enum(activityStatusOptions),
+    ...activityDateRangeSchema,
     keahlian_pendidik: z.string().optional(),
     jenjang_pendidikan: z.string().optional(),
     mata_pelajaran: z.string().optional(),
@@ -178,7 +194,19 @@ export const formSchema = z.object({
       return
     }
     details.forEach((detail, index) => {
-      if (detail.status_keaktifan === '>5 tahun') return
+      // Start date is always required.
+      if (!detail.start_year) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: [key, index, 'start_year'], message: 'Tanggal mulai wajib diisi.' })
+      }
+      if (!detail.start_month) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: [key, index, 'start_month'], message: 'Bulan mulai wajib diisi.' })
+      }
+      // "is_current" (still ongoing) requires no end date; otherwise an end date is required.
+      if (!detail.is_current && !detail.end_year) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: [key, index, 'end_year'], message: 'Tanggal berakhir wajib diisi, atau tandai masih berlangsung.' })
+      }
+      // An activity that ended more than 5 years ago auto-skips its detail questions (Blueprint requirement).
+      if (isOlderThanFiveYears(detail as ActivityDateRange)) return
       rules.forEach((rule) => {
         const value = detail[rule.field]
         if (typeof value === 'string' && !value.trim()) {
@@ -315,30 +343,29 @@ function pickLatestEducation(values: FormValues) {
   return histories[0]
 }
 
-function normalizeStatus(value: unknown): (typeof activityStatusOptions)[number] {
-  const allowed = new Set(activityStatusOptions)
-  if (typeof value === 'string' && allowed.has(value as (typeof activityStatusOptions)[number])) {
-    return value as (typeof activityStatusOptions)[number]
-  }
-  return 'Aktif saat ini'
+/** Reads the new date-range fields off an incoming DB row, defaulting to "just started, ongoing" for brand-new entries. */
+function normalizeDateRange(item: Record<string, unknown>) {
+  const start_month = Number(item.start_month) || undefined
+  const start_year = Number(item.start_year) || undefined
+  const end_month = item.end_month != null ? Number(item.end_month) : null
+  const end_year = item.end_year != null ? Number(item.end_year) : null
+  const is_current = item.is_current === undefined || item.is_current === null ? true : Boolean(item.is_current)
+
+  return { start_month, start_year, is_current, end_month, end_year }
+}
+
+function emptyDateRange() {
+  return { start_month: undefined, start_year: undefined, is_current: true, end_month: null, end_year: null }
 }
 
 function normalizeTargetPasar(value: unknown): TargetPasar | undefined {
   return value === 'B2C' || value === 'B2B' || value === 'B2C dan B2B' ? value : undefined
 }
 
-function statusList(profile: ProfileResponse, key: string) {
-  const raw = profile.aktivitas_status_durasi && typeof profile.aktivitas_status_durasi === 'object'
-    ? (profile.aktivitas_status_durasi as Record<string, unknown>)[key]
-    : undefined
-  return Array.isArray(raw) ? raw : [typeof raw === 'string' ? raw : 'Aktif saat ini']
-}
-
 export function ensurePekerjaDetailsFromProfile(profile: ProfileResponse) {
-  const statuses = statusList(profile, 'Pekerja')
   if (profile.alumni_pekerja && profile.alumni_pekerja.length > 0) {
-    return profile.alumni_pekerja.map((item, index) => ({
-      status_keaktifan: normalizeStatus(item.status_keaktifan ?? statuses[index]),
+    return profile.alumni_pekerja.map((item) => ({
+      ...normalizeDateRange(item),
       keahlian_pekerja: typeof item.keahlian_pekerja === 'string' ? item.keahlian_pekerja : '',
       nama_instansi: typeof item.nama_instansi === 'string' ? item.nama_instansi : '',
       posisi: typeof item.posisi === 'string' ? item.posisi : '',
@@ -347,14 +374,13 @@ export function ensurePekerjaDetailsFromProfile(profile: ProfileResponse) {
       pengalaman_bermitra: Boolean(item.pengalaman_bermitra),
     }))
   }
-  return [{ status_keaktifan: 'Aktif saat ini' as const, keahlian_pekerja: '', nama_instansi: '', posisi: '', pengalaman_proyek: '', akses_jejaring: false, pengalaman_bermitra: false }]
+  return [{ ...emptyDateRange(), keahlian_pekerja: '', nama_instansi: '', posisi: '', pengalaman_proyek: '', akses_jejaring: false, pengalaman_bermitra: false }]
 }
 
 export function ensureBisnisDetailsFromProfile(profile: ProfileResponse) {
-  const statuses = statusList(profile, 'Bisnis')
   if (profile.alumni_bisnis && profile.alumni_bisnis.length > 0) {
-    return profile.alumni_bisnis.map((item, index) => ({
-      status_keaktifan: normalizeStatus(item.status_keaktifan ?? statuses[index]),
+    return profile.alumni_bisnis.map((item) => ({
+      ...normalizeDateRange(item),
       keahlian_wirausahaan: typeof item.keahlian_wirausahaan === 'string' ? item.keahlian_wirausahaan : '',
       produk_layanan_utama: typeof item.produk_layanan_utama === 'string' ? item.produk_layanan_utama : '',
       nama_usaha: typeof item.nama_usaha === 'string' ? item.nama_usaha : '',
@@ -365,14 +391,13 @@ export function ensureBisnisDetailsFromProfile(profile: ProfileResponse) {
       keahlian_dibagikan: typeof item.keahlian_dibagikan === 'string' ? item.keahlian_dibagikan : '',
     }))
   }
-  return [{ status_keaktifan: 'Aktif saat ini' as const, keahlian_wirausahaan: '', produk_layanan_utama: '', nama_usaha: '', skala_usaha: '', kendala_bisnis: '', target_pasar: undefined, kolaborasi_terbuka: '', keahlian_dibagikan: '' }]
+  return [{ ...emptyDateRange(), keahlian_wirausahaan: '', produk_layanan_utama: '', nama_usaha: '', skala_usaha: '', kendala_bisnis: '', target_pasar: undefined, kolaborasi_terbuka: '', keahlian_dibagikan: '' }]
 }
 
 export function ensureSosialDetailsFromProfile(profile: ProfileResponse) {
-  const statuses = statusList(profile, 'Sosial')
   if (profile.alumni_sosial && profile.alumni_sosial.length > 0) {
-    return profile.alumni_sosial.map((item, index) => ({
-      status_keaktifan: normalizeStatus(item.status_keaktifan ?? statuses[index]),
+    return profile.alumni_sosial.map((item) => ({
+      ...normalizeDateRange(item),
       keahlian_sosial: typeof item.keahlian_sosial === 'string' ? item.keahlian_sosial : '',
       pengalaman_proyek_sosial: typeof item.pengalaman_proyek_sosial === 'string' ? item.pengalaman_proyek_sosial : '',
       isu_fokus: typeof item.isu_fokus === 'string' ? item.isu_fokus : '',
@@ -380,14 +405,13 @@ export function ensureSosialDetailsFromProfile(profile: ProfileResponse) {
       pengalaman_bermitra_sosial: Boolean(item.pengalaman_bermitra_sosial),
     }))
   }
-  return [{ status_keaktifan: 'Aktif saat ini' as const, keahlian_sosial: '', pengalaman_proyek_sosial: '', isu_fokus: '', nama_organisasi: '', pengalaman_bermitra_sosial: false }]
+  return [{ ...emptyDateRange(), keahlian_sosial: '', pengalaman_proyek_sosial: '', isu_fokus: '', nama_organisasi: '', pengalaman_bermitra_sosial: false }]
 }
 
 export function ensureKreatifDetailsFromProfile(profile: ProfileResponse) {
-  const statuses = statusList(profile, 'Kreatif')
   if (profile.alumni_kreatif && profile.alumni_kreatif.length > 0) {
-    return profile.alumni_kreatif.map((item, index) => ({
-      status_keaktifan: normalizeStatus(item.status_keaktifan ?? statuses[index]),
+    return profile.alumni_kreatif.map((item) => ({
+      ...normalizeDateRange(item),
       keahlian_kreatif: typeof item.keahlian_kreatif === 'string' ? item.keahlian_kreatif : '',
       platform_digital_utama: typeof item.platform_digital_utama === 'string' ? item.platform_digital_utama : '',
       jenis_konten: typeof item.jenis_konten === 'string' ? item.jenis_konten : '',
@@ -396,28 +420,26 @@ export function ensureKreatifDetailsFromProfile(profile: ProfileResponse) {
       demografi_followers: typeof item.demografi_followers === 'string' ? item.demografi_followers : '',
     }))
   }
-  return [{ status_keaktifan: 'Aktif saat ini' as const, keahlian_kreatif: '', platform_digital_utama: '', jenis_konten: '', total_jangkauan: '', kisaran_rate_card: '', demografi_followers: '' }]
+  return [{ ...emptyDateRange(), keahlian_kreatif: '', platform_digital_utama: '', jenis_konten: '', total_jangkauan: '', kisaran_rate_card: '', demografi_followers: '' }]
 }
 
 export function ensureIrtDetailsFromProfile(profile: ProfileResponse) {
-  const statuses = statusList(profile, 'Rumah Tangga')
   if (profile.alumni_rumah_tangga && profile.alumni_rumah_tangga.length > 0) {
-    return profile.alumni_rumah_tangga.map((item, index) => ({
-      status_keaktifan: normalizeStatus(item.status_keaktifan ?? statuses[index]),
+    return profile.alumni_rumah_tangga.map((item) => ({
+      ...normalizeDateRange(item),
       keahlian_irt: typeof item.keahlian_irt === 'string' ? item.keahlian_irt : '',
       kegiatan_organisasi_irt: typeof item.kegiatan_organisasi_irt === 'string' ? item.kegiatan_organisasi_irt : '',
       pengalaman_tim_irt: Boolean(item.pengalaman_tim_irt),
       mencari_pekerjaan_kolaborasi_irt: Boolean(item.mencari_pekerjaan_kolaborasi_irt),
     }))
   }
-  return [{ status_keaktifan: 'Aktif saat ini' as const, keahlian_irt: '', kegiatan_organisasi_irt: '', pengalaman_tim_irt: false, mencari_pekerjaan_kolaborasi_irt: false }]
+  return [{ ...emptyDateRange(), keahlian_irt: '', kegiatan_organisasi_irt: '', pengalaman_tim_irt: false, mencari_pekerjaan_kolaborasi_irt: false }]
 }
 
 export function ensureMahasiswaDetailsFromProfile(profile: ProfileResponse) {
-  const statuses = statusList(profile, 'Mahasiswa')
   if (profile.alumni_mahasiswa && profile.alumni_mahasiswa.length > 0) {
-    return profile.alumni_mahasiswa.map((item, index) => ({
-      status_keaktifan: normalizeStatus(item.status_keaktifan ?? statuses[index]),
+    return profile.alumni_mahasiswa.map((item) => ({
+      ...normalizeDateRange(item),
       keahlian_mahasiswa: typeof item.keahlian_mahasiswa === 'string' ? item.keahlian_mahasiswa : '',
       kegiatan_organisasi_mahasiswa: typeof item.kegiatan_organisasi_mahasiswa === 'string' ? item.kegiatan_organisasi_mahasiswa : '',
       pengalaman_tim_mahasiswa: Boolean(item.pengalaman_tim_mahasiswa),
@@ -425,27 +447,25 @@ export function ensureMahasiswaDetailsFromProfile(profile: ProfileResponse) {
       pengalaman_magang: typeof item.pengalaman_magang === 'string' ? item.pengalaman_magang : '',
     }))
   }
-  return [{ status_keaktifan: 'Aktif saat ini' as const, keahlian_mahasiswa: '', kegiatan_organisasi_mahasiswa: '', pengalaman_tim_mahasiswa: false, mencari_pekerjaan_kolaborasi_mahasiswa: false, pengalaman_magang: '' }]
+  return [{ ...emptyDateRange(), keahlian_mahasiswa: '', kegiatan_organisasi_mahasiswa: '', pengalaman_tim_mahasiswa: false, mencari_pekerjaan_kolaborasi_mahasiswa: false, pengalaman_magang: '' }]
 }
 
 export function ensureInformalDetailsFromProfile(profile: ProfileResponse) {
-  const statuses = statusList(profile, 'Informal')
   if (profile.alumni_informal && profile.alumni_informal.length > 0) {
-    return profile.alumni_informal.map((item, index) => ({
-      status_keaktifan: normalizeStatus(item.status_keaktifan ?? statuses[index]),
+    return profile.alumni_informal.map((item) => ({
+      ...normalizeDateRange(item),
       keahlian_informal: typeof item.keahlian_informal === 'string' ? item.keahlian_informal : '',
       pengalaman_tim_informal: Boolean(item.pengalaman_tim_informal),
       pernah_rekrut_memimpin: Boolean(item.pernah_rekrut_memimpin),
     }))
   }
-  return [{ status_keaktifan: 'Aktif saat ini' as const, keahlian_informal: '', pengalaman_tim_informal: false, pernah_rekrut_memimpin: false }]
+  return [{ ...emptyDateRange(), keahlian_informal: '', pengalaman_tim_informal: false, pernah_rekrut_memimpin: false }]
 }
 
 export function ensureAgriDetailsFromProfile(profile: ProfileResponse) {
-  const statuses = statusList(profile, 'Agri')
   if (profile.alumni_agri && profile.alumni_agri.length > 0) {
-    return profile.alumni_agri.map((item, index) => ({
-      status_keaktifan: normalizeStatus(item.status_keaktifan ?? statuses[index]),
+    return profile.alumni_agri.map((item) => ({
+      ...normalizeDateRange(item),
       keahlian_agri: typeof item.keahlian_agri === 'string' ? item.keahlian_agri : '',
       komoditas_utama: typeof item.komoditas_utama === 'string' ? item.komoditas_utama : '',
       tergabung_kelompok: Boolean(item.tergabung_kelompok),
@@ -454,14 +474,13 @@ export function ensureAgriDetailsFromProfile(profile: ProfileResponse) {
       kendala_dihadapi_agri: typeof item.kendala_dihadapi_agri === 'string' ? item.kendala_dihadapi_agri : '',
     }))
   }
-  return [{ status_keaktifan: 'Aktif saat ini' as const, keahlian_agri: '', komoditas_utama: '', tergabung_kelompok: false, skala_usaha_agri: '', nilai_tambah_diterapkan: '', kendala_dihadapi_agri: '' }]
+  return [{ ...emptyDateRange(), keahlian_agri: '', komoditas_utama: '', tergabung_kelompok: false, skala_usaha_agri: '', nilai_tambah_diterapkan: '', kendala_dihadapi_agri: '' }]
 }
 
 export function ensurePendidikDetailsFromProfile(profile: ProfileResponse) {
-  const statuses = statusList(profile, 'Pendidik')
   if (profile.alumni_pendidik && profile.alumni_pendidik.length > 0) {
-    return profile.alumni_pendidik.map((item, index) => ({
-      status_keaktifan: normalizeStatus(item.status_keaktifan ?? statuses[index]),
+    return profile.alumni_pendidik.map((item) => ({
+      ...normalizeDateRange(item),
       keahlian_pendidik: typeof item.keahlian_pendidik === 'string' ? item.keahlian_pendidik : '',
       jenjang_pendidikan: typeof item.jenjang_pendidikan === 'string' ? item.jenjang_pendidikan : '',
       mata_pelajaran: typeof item.mata_pelajaran === 'string' ? item.mata_pelajaran : '',
@@ -469,7 +488,7 @@ export function ensurePendidikDetailsFromProfile(profile: ProfileResponse) {
       mengajar_bimbel: Boolean(item.mengajar_bimbel),
     }))
   }
-  return [{ status_keaktifan: 'Aktif saat ini' as const, keahlian_pendidik: '', jenjang_pendidikan: '', mata_pelajaran: '', inovasi_pembelajaran: '', mengajar_bimbel: false }]
+  return [{ ...emptyDateRange(), keahlian_pendidik: '', jenjang_pendidikan: '', mata_pelajaran: '', inovasi_pembelajaran: '', mengajar_bimbel: false }]
 }
 
 export function buildPayload(values: FormValues) {
@@ -521,23 +540,32 @@ export function buildPayload(values: FormValues) {
     aktivitas_db: values.aktivitas.join(', '),
     jenis_dukungan_dibutuhkan_db: values.jenis_dukungan_dibutuhkan.join(', '),
     bidang_kontribusi_minat_db: values.bidang_kontribusi_minat.join(', '),
+    // Kept for backward compatibility with anything reading a human-readable status summary
+    // (e.g. AI matching context) — now derived from the real dates instead of a manual pick.
     aktivitas_status_durasi: {
-      ...values.aktivitas_status_durasi,
-      Pekerja: pekerjaDetails.map((detail) => detail.status_keaktifan),
-      Bisnis: bisnisDetails.map((detail) => detail.status_keaktifan),
-      Sosial: sosialDetails.map((detail) => detail.status_keaktifan),
-      Kreatif: kreatifDetails.map((detail) => detail.status_keaktifan),
-      'Rumah Tangga': irtDetails.map((detail) => detail.status_keaktifan),
-      Mahasiswa: mahasiswaDetails.map((detail) => detail.status_keaktifan),
-      Informal: informalDetails.map((detail) => detail.status_keaktifan),
-      Agri: agriDetails.map((detail) => detail.status_keaktifan),
-      Pendidik: pendidikDetails.map((detail) => detail.status_keaktifan),
+      Pekerja: pekerjaDetails.map((detail) => computeActivityStatusLabel(detail as ActivityDateRange)),
+      Bisnis: bisnisDetails.map((detail) => computeActivityStatusLabel(detail as ActivityDateRange)),
+      Sosial: sosialDetails.map((detail) => computeActivityStatusLabel(detail as ActivityDateRange)),
+      Kreatif: kreatifDetails.map((detail) => computeActivityStatusLabel(detail as ActivityDateRange)),
+      'Rumah Tangga': irtDetails.map((detail) => computeActivityStatusLabel(detail as ActivityDateRange)),
+      Mahasiswa: mahasiswaDetails.map((detail) => computeActivityStatusLabel(detail as ActivityDateRange)),
+      Informal: informalDetails.map((detail) => computeActivityStatusLabel(detail as ActivityDateRange)),
+      Agri: agriDetails.map((detail) => computeActivityStatusLabel(detail as ActivityDateRange)),
+      Pendidik: pendidikDetails.map((detail) => computeActivityStatusLabel(detail as ActivityDateRange)),
     },
   }
 
+  const dateFields = (detail: Record<string, unknown>) => ({
+    start_month: detail.start_month,
+    start_year: detail.start_year,
+    is_current: detail.is_current,
+    end_month: detail.is_current ? null : (detail.end_month ?? null),
+    end_year: detail.is_current ? null : (detail.end_year ?? null),
+  })
+
   if (values.aktivitas.includes('Pekerja')) {
     payload.alumni_pekerja = pekerjaDetails.map((detail) => ({
-      status_keaktifan: detail.status_keaktifan,
+      ...dateFields(detail),
       keahlian_pekerja: detail.keahlian_pekerja,
       nama_instansi: detail.nama_instansi,
       posisi: detail.posisi,
@@ -549,7 +577,7 @@ export function buildPayload(values: FormValues) {
 
   if (values.aktivitas.includes('Bisnis')) {
     payload.alumni_bisnis = bisnisDetails.map((detail) => ({
-      status_keaktifan: detail.status_keaktifan,
+      ...dateFields(detail),
       keahlian_wirausahaan: detail.keahlian_wirausahaan,
       produk_layanan_utama: detail.produk_layanan_utama,
       nama_usaha: detail.nama_usaha,
@@ -563,7 +591,7 @@ export function buildPayload(values: FormValues) {
 
   if (values.aktivitas.includes('Sosial')) {
     payload.alumni_sosial = sosialDetails.map((detail) => ({
-      status_keaktifan: detail.status_keaktifan,
+      ...dateFields(detail),
       keahlian_sosial: detail.keahlian_sosial,
       pengalaman_proyek_sosial: detail.pengalaman_proyek_sosial,
       isu_fokus: detail.isu_fokus,
@@ -574,7 +602,7 @@ export function buildPayload(values: FormValues) {
 
   if (values.aktivitas.includes('Kreatif')) {
     payload.alumni_kreatif = kreatifDetails.map((detail) => ({
-      status_keaktifan: detail.status_keaktifan,
+      ...dateFields(detail),
       keahlian_kreatif: detail.keahlian_kreatif,
       platform_digital_utama: detail.platform_digital_utama,
       jenis_konten: detail.jenis_konten,
@@ -586,7 +614,7 @@ export function buildPayload(values: FormValues) {
 
   if (values.aktivitas.includes('Rumah Tangga')) {
     payload.alumni_rumah_tangga = irtDetails.map((detail) => ({
-      status_keaktifan: detail.status_keaktifan,
+      ...dateFields(detail),
       keahlian_irt: detail.keahlian_irt,
       kegiatan_organisasi_irt: detail.kegiatan_organisasi_irt,
       pengalaman_tim_irt: detail.pengalaman_tim_irt,
@@ -596,7 +624,7 @@ export function buildPayload(values: FormValues) {
 
   if (values.aktivitas.includes('Mahasiswa')) {
     payload.alumni_mahasiswa = mahasiswaDetails.map((detail) => ({
-      status_keaktifan: detail.status_keaktifan,
+      ...dateFields(detail),
       keahlian_mahasiswa: detail.keahlian_mahasiswa,
       kegiatan_organisasi_mahasiswa: detail.kegiatan_organisasi_mahasiswa,
       pengalaman_tim_mahasiswa: detail.pengalaman_tim_mahasiswa,
@@ -607,7 +635,7 @@ export function buildPayload(values: FormValues) {
 
   if (values.aktivitas.includes('Informal')) {
     payload.alumni_informal = informalDetails.map((detail) => ({
-      status_keaktifan: detail.status_keaktifan,
+      ...dateFields(detail),
       keahlian_informal: detail.keahlian_informal,
       pengalaman_tim_informal: detail.pengalaman_tim_informal,
       pernah_rekrut_memimpin: detail.pernah_rekrut_memimpin,
@@ -616,7 +644,7 @@ export function buildPayload(values: FormValues) {
 
   if (values.aktivitas.includes('Agri')) {
     payload.alumni_agri = agriDetails.map((detail) => ({
-      status_keaktifan: detail.status_keaktifan,
+      ...dateFields(detail),
       keahlian_agri: detail.keahlian_agri,
       komoditas_utama: detail.komoditas_utama,
       tergabung_kelompok: detail.tergabung_kelompok,
@@ -628,7 +656,7 @@ export function buildPayload(values: FormValues) {
 
   if (values.aktivitas.includes('Pendidik')) {
     payload.alumni_pendidik = pendidikDetails.map((detail) => ({
-      status_keaktifan: detail.status_keaktifan,
+      ...dateFields(detail),
       keahlian_pendidik: detail.keahlian_pendidik,
       jenjang_pendidikan: detail.jenjang_pendidikan,
       mata_pelajaran: detail.mata_pelajaran,

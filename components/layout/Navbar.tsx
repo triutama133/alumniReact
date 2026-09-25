@@ -5,10 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { playClickSound } from '@/lib/audio';
 import {
   Globe,
@@ -37,14 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import CreateCohortModal, { CreatedCohort } from "@/components/community/CreateCohortModal";
 
 interface NavbarProps {
   userEmail: string | null;
@@ -58,9 +48,6 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
   const [cohorts, setCohorts] = useState<any[]>([]);
   const [activeCohortId, setActiveCohortId] = useState<string>('global');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newCohortName, setNewCohortName] = useState('');
-  const [newCohortDesc, setNewCohortDesc] = useState('');
-  const [isCreatingCohort, setIsCreatingCohort] = useState(false);
   const [activeCohortRole, setActiveCohortRole] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -210,41 +197,15 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
     return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
   };
 
-  const handleCreateCohort = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newCohortName.trim()) return;
+  const handleCohortCreated = (cohort: CreatedCohort) => {
+    const setCookie = (name: string, value: string, days = 365) => {
+      const date = new Date();
+      date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+      document.cookie = `${name}=${value};path=/;expires=${date.toUTCString()}`;
+    };
 
-    setIsCreatingCohort(true);
-    try {
-      const res = await fetch('/api/cohorts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: newCohortName,
-          description: newCohortDesc || null,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Gagal membuat komunitas.');
-      }
-
-      const setCookie = (name: string, value: string, days = 365) => {
-        const date = new Date();
-        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-        document.cookie = `${name}=${value};path=/;expires=${date.toUTCString()}`;
-      };
-
-      setCookie('active_cohort_id', String(data.cohort.id));
-      toast.success('Komunitas eksklusif berhasil dibuat!');
-      window.location.reload();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Gagal membuat komunitas.');
-    } finally {
-      setIsCreatingCohort(false);
-      setShowCreateModal(false);
-    }
+    setCookie('active_cohort_id', String(cohort.id));
+    window.location.href = `/community/${cohort.id}`;
   };
 
   const menuItems = [
@@ -283,7 +244,7 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
             </Link>
 
             {userId && (
-              <div className="hidden sm:block w-40 sm:w-48 ml-1">
+              <div className="hidden sm:flex items-center gap-1.5 w-40 sm:w-48 ml-1">
                 <Select value={activeCohortId} onValueChange={handlePortalChange}>
                   <SelectTrigger className="h-8 bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-white/5 text-[11px] font-semibold text-slate-700 dark:text-slate-200 rounded-full px-3">
                     <SelectValue placeholder="Pilih Portal" />
@@ -302,6 +263,15 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
                     <SelectItem value="create_new" className="text-xs text-primary font-semibold focus:text-primary">➕ Buat Komunitas baru</SelectItem>
                   </SelectContent>
                 </Select>
+                {activeCohortId !== 'global' && activeCohortId !== 'create_new' && (
+                  <Link
+                    href={`/community/${activeCohortId}`}
+                    title="Lihat Komunitas"
+                    className="flex-shrink-0 p-1.5 rounded-full bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-white/5 text-slate-600 dark:text-slate-300 hover:text-primary transition-colors"
+                  >
+                    <Users className="h-3.5 w-3.5" />
+                  </Link>
+                )}
               </div>
             )}
           </div>
@@ -497,44 +467,7 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
       </nav>
 
       {/* Cohort Creation Modal */}
-      <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-        <DialogContent className="sm:max-w-md bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold">Buat Komunitas Eksklusif</DialogTitle>
-            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
-              Buat portal komunitas Anda sendiri. Undang anggota, buat proyek tim, dan bagikan ide secara eksklusif.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleCreateCohort} className="space-y-4">
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-500 dark:text-slate-400">Nama Komunitas</label>
-              <Input
-                value={newCohortName}
-                onChange={(e) => setNewCohortName(e.target.value)}
-                placeholder="Contoh: Indo Tech Innovators"
-                className="h-9 bg-slate-50 border-slate-200 text-sm dark:bg-slate-900 dark:border-slate-800 text-slate-900 dark:text-white rounded-md focus:border-primary"
-                required
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-500 dark:text-slate-400">Deskripsi Singkat</label>
-              <Textarea
-                value={newCohortDesc}
-                onChange={(e) => setNewCohortDesc(e.target.value)}
-                placeholder="Jelaskan visi dan misi dari komunitas Anda..."
-                className="bg-slate-50 border-slate-200 text-sm dark:bg-slate-900 dark:border-slate-800 text-slate-900 dark:text-white rounded-md resize-none focus:border-primary"
-                rows={3}
-              />
-            </div>
-            <DialogFooter className="pt-2">
-              <Button type="button" variant="ghost" size="sm" onClick={() => setShowCreateModal(false)} className="rounded-md text-xs">Batal</Button>
-              <Button type="submit" size="sm" disabled={isCreatingCohort || !newCohortName.trim()} className="bg-primary hover:bg-primary/95 text-white font-semibold text-xs rounded-md px-5 shadow-sm">
-                {isCreatingCohort ? 'Membuat...' : 'Buat Komunitas'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <CreateCohortModal open={showCreateModal} onOpenChange={setShowCreateModal} onCreated={handleCohortCreated} />
 
       {/* Mobile Drawer Backdrop */}
       {isMobileOpen && (

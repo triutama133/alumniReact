@@ -23,9 +23,10 @@ import {
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { MonthYearRangeField } from '@/components/profile/MonthYearRangeField'
+import { isOlderThanFiveYears } from '@/lib/formatDateRange'
 import {
   aktivitasOptions,
-  activityStatusOptions,
   buildPayload,
   dukunganOptions,
   educationLevels,
@@ -233,7 +234,11 @@ export default function EditProfilePage() {
       ],
       pekerja_details: [
         {
-          status_keaktifan: 'Aktif saat ini',
+          start_month: undefined,
+        start_year: undefined,
+        is_current: true,
+        end_month: null,
+        end_year: null,
           keahlian_pekerja: '',
           nama_instansi: '',
           posisi: '',
@@ -244,7 +249,11 @@ export default function EditProfilePage() {
       ],
       bisnis_details: [
         {
-          status_keaktifan: 'Aktif saat ini',
+          start_month: undefined,
+        start_year: undefined,
+        is_current: true,
+        end_month: null,
+        end_year: null,
           keahlian_wirausahaan: '',
           produk_layanan_utama: '',
           nama_usaha: '',
@@ -255,7 +264,11 @@ export default function EditProfilePage() {
       ],
       sosial_details: [
         {
-          status_keaktifan: 'Aktif saat ini',
+          start_month: undefined,
+        start_year: undefined,
+        is_current: true,
+        end_month: null,
+        end_year: null,
           keahlian_sosial: '',
           pengalaman_proyek_sosial: '',
           isu_fokus: '',
@@ -265,7 +278,11 @@ export default function EditProfilePage() {
       ],
       kreatif_details: [
         {
-          status_keaktifan: 'Aktif saat ini',
+          start_month: undefined,
+        start_year: undefined,
+        is_current: true,
+        end_month: null,
+        end_year: null,
           keahlian_kreatif: '',
           platform_digital_utama: '',
           jenis_konten: '',
@@ -280,7 +297,11 @@ export default function EditProfilePage() {
       bidang_kontribusi_minat: [],
       irt_details: [
         {
-          status_keaktifan: 'Aktif saat ini',
+          start_month: undefined,
+        start_year: undefined,
+        is_current: true,
+        end_month: null,
+        end_year: null,
           keahlian_irt: '',
           kegiatan_organisasi_irt: '',
           pengalaman_tim_irt: false,
@@ -289,7 +310,11 @@ export default function EditProfilePage() {
       ],
       mahasiswa_details: [
         {
-          status_keaktifan: 'Aktif saat ini',
+          start_month: undefined,
+        start_year: undefined,
+        is_current: true,
+        end_month: null,
+        end_year: null,
           keahlian_mahasiswa: '',
           kegiatan_organisasi_mahasiswa: '',
           pengalaman_tim_mahasiswa: false,
@@ -299,7 +324,11 @@ export default function EditProfilePage() {
       ],
       informal_details: [
         {
-          status_keaktifan: 'Aktif saat ini',
+          start_month: undefined,
+        start_year: undefined,
+        is_current: true,
+        end_month: null,
+        end_year: null,
           keahlian_informal: '',
           pengalaman_tim_informal: false,
           pernah_rekrut_memimpin: false,
@@ -307,7 +336,11 @@ export default function EditProfilePage() {
       ],
       agri_details: [
         {
-          status_keaktifan: 'Aktif saat ini',
+          start_month: undefined,
+        start_year: undefined,
+        is_current: true,
+        end_month: null,
+        end_year: null,
           keahlian_agri: '',
           komoditas_utama: '',
           tergabung_kelompok: false,
@@ -318,7 +351,11 @@ export default function EditProfilePage() {
       ],
       pendidik_details: [
         {
-          status_keaktifan: 'Aktif saat ini',
+          start_month: undefined,
+        start_year: undefined,
+        is_current: true,
+        end_month: null,
+        end_year: null,
           keahlian_pendidik: '',
           jenjang_pendidikan: '',
           mata_pelajaran: '',
@@ -387,7 +424,11 @@ export default function EditProfilePage() {
     form.setValue('pekerja_details', [
       ...current,
       {
-        status_keaktifan: 'Aktif saat ini',
+        start_month: undefined,
+        start_year: undefined,
+        is_current: true,
+        end_month: null,
+        end_year: null,
         keahlian_pekerja: '',
         nama_instansi: '',
         posisi: '',
@@ -414,7 +455,11 @@ export default function EditProfilePage() {
     form.setValue('bisnis_details', [
       ...current,
       {
-        status_keaktifan: 'Aktif saat ini',
+        start_month: undefined,
+        start_year: undefined,
+        is_current: true,
+        end_month: null,
+        end_year: null,
         keahlian_wirausahaan: '',
         produk_layanan_utama: '',
         nama_usaha: '',
@@ -438,7 +483,11 @@ export default function EditProfilePage() {
     form.setValue('sosial_details', [
       ...current,
       {
-        status_keaktifan: 'Aktif saat ini',
+        start_month: undefined,
+        start_year: undefined,
+        is_current: true,
+        end_month: null,
+        end_year: null,
         keahlian_sosial: '',
         pengalaman_proyek_sosial: '',
         isu_fokus: '',
@@ -461,7 +510,11 @@ export default function EditProfilePage() {
     form.setValue('kreatif_details', [
       ...current,
       {
-        status_keaktifan: 'Aktif saat ini',
+        start_month: undefined,
+        start_year: undefined,
+        is_current: true,
+        end_month: null,
+        end_year: null,
         keahlian_kreatif: '',
         platform_digital_utama: '',
         jenis_konten: '',
@@ -485,7 +538,11 @@ export default function EditProfilePage() {
     form.setValue('irt_details', [
       ...current,
       {
-        status_keaktifan: 'Aktif saat ini',
+        start_month: undefined,
+        start_year: undefined,
+        is_current: true,
+        end_month: null,
+        end_year: null,
         keahlian_irt: '',
         kegiatan_organisasi_irt: '',
         pengalaman_tim_irt: false,
@@ -505,7 +562,11 @@ export default function EditProfilePage() {
     form.setValue('mahasiswa_details', [
       ...current,
       {
-        status_keaktifan: 'Aktif saat ini',
+        start_month: undefined,
+        start_year: undefined,
+        is_current: true,
+        end_month: null,
+        end_year: null,
         keahlian_mahasiswa: '',
         kegiatan_organisasi_mahasiswa: '',
         pengalaman_tim_mahasiswa: false,
@@ -526,7 +587,11 @@ export default function EditProfilePage() {
     form.setValue('informal_details', [
       ...current,
       {
-        status_keaktifan: 'Aktif saat ini',
+        start_month: undefined,
+        start_year: undefined,
+        is_current: true,
+        end_month: null,
+        end_year: null,
         keahlian_informal: '',
         pengalaman_tim_informal: false,
         pernah_rekrut_memimpin: false,
@@ -545,7 +610,11 @@ export default function EditProfilePage() {
     form.setValue('agri_details', [
       ...current,
       {
-        status_keaktifan: 'Aktif saat ini',
+        start_month: undefined,
+        start_year: undefined,
+        is_current: true,
+        end_month: null,
+        end_year: null,
         keahlian_agri: '',
         komoditas_utama: '',
         tergabung_kelompok: false,
@@ -567,7 +636,11 @@ export default function EditProfilePage() {
     form.setValue('pendidik_details', [
       ...current,
       {
-        status_keaktifan: 'Aktif saat ini',
+        start_month: undefined,
+        start_year: undefined,
+        is_current: true,
+        end_month: null,
+        end_year: null,
         keahlian_pendidik: '',
         jenjang_pendidikan: '',
         mata_pelajaran: '',
@@ -1009,8 +1082,7 @@ export default function EditProfilePage() {
                   </div>
 
                   {(form.watch('pekerja_details') || []).map((_, index) => {
-                    const statusValue = form.watch(`pekerja_details.${index}.status_keaktifan` as const)
-                    const skipDetail = statusValue === '>5 tahun'
+                    const skipDetail = isOlderThanFiveYears(form.watch(`pekerja_details.${index}` as const))
 
                     return (
                       <div key={`pekerja-${index}`} className="rounded-lg border border-border p-4 space-y-4">
@@ -1026,22 +1098,7 @@ export default function EditProfilePage() {
                           </Button>
                         </div>
 
-                        <FormField
-                          control={form.control}
-                          name={`pekerja_details.${index}.status_keaktifan` as const}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-foreground">Status Keaktifan</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl><SelectTrigger className="w-full"><SelectValue placeholder="Pilih status" /></SelectTrigger></FormControl>
-                                <SelectContent className="bg-popover text-popover-foreground">
-                                  {activityStatusOptions.map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                        <MonthYearRangeField control={form.control} namePrefix={`pekerja_details.${index}`} />
 
                         {!skipDetail && (
                           <>
@@ -1082,26 +1139,14 @@ export default function EditProfilePage() {
                     <Button type="button" variant="outline" onClick={addBisnisDetail}>Tambah Detail</Button>
                   </div>
                   {(form.watch('bisnis_details') || []).map((_, index) => {
-                    const statusValue = form.watch(`bisnis_details.${index}.status_keaktifan` as const)
-                    const skipDetail = statusValue === '>5 tahun'
+                    const skipDetail = isOlderThanFiveYears(form.watch(`bisnis_details.${index}` as const))
                     return (
                       <div key={`bisnis-${index}`} className="rounded-lg border border-border p-4 space-y-4">
                         <div className="flex items-center justify-between gap-2">
                           <h4 className="font-medium text-foreground">Bisnis {index + 1}</h4>
                           <Button type="button" variant="ghost" onClick={() => removeBisnisDetail(index)} disabled={(form.watch('bisnis_details') || []).length <= 1}>Hapus</Button>
                         </div>
-                        <FormField control={form.control} name={`bisnis_details.${index}.status_keaktifan` as const} render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-foreground">Status Keaktifan</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl><SelectTrigger className="w-full"><SelectValue placeholder="Pilih status" /></SelectTrigger></FormControl>
-                              <SelectContent className="bg-popover text-popover-foreground">
-                                {activityStatusOptions.map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )} />
+                        <MonthYearRangeField control={form.control} namePrefix={`bisnis_details.${index}`} />
                         {!skipDetail && (
                           <div className="grid gap-4 md:grid-cols-2">
                             <FormField control={form.control} name={`bisnis_details.${index}.nama_usaha` as const} render={({ field }) => (<FormItem><FormLabel className="text-foreground">Nama Usaha</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
@@ -1140,26 +1185,14 @@ export default function EditProfilePage() {
                     <Button type="button" variant="outline" onClick={addSosialDetail}>Tambah Detail</Button>
                   </div>
                   {(form.watch('sosial_details') || []).map((_, index) => {
-                    const statusValue = form.watch(`sosial_details.${index}.status_keaktifan` as const)
-                    const skipDetail = statusValue === '>5 tahun'
+                    const skipDetail = isOlderThanFiveYears(form.watch(`sosial_details.${index}` as const))
                     return (
                       <div key={`sosial-${index}`} className="rounded-lg border border-border p-4 space-y-4">
                         <div className="flex items-center justify-between gap-2">
                           <h4 className="font-medium text-foreground">Sosial {index + 1}</h4>
                           <Button type="button" variant="ghost" onClick={() => removeSosialDetail(index)} disabled={(form.watch('sosial_details') || []).length <= 1}>Hapus</Button>
                         </div>
-                        <FormField control={form.control} name={`sosial_details.${index}.status_keaktifan` as const} render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-foreground">Status Keaktifan</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl><SelectTrigger className="w-full"><SelectValue placeholder="Pilih status" /></SelectTrigger></FormControl>
-                              <SelectContent className="bg-popover text-popover-foreground">
-                                {activityStatusOptions.map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )} />
+                        <MonthYearRangeField control={form.control} namePrefix={`sosial_details.${index}`} />
                         {!skipDetail && (
                           <>
                             <div className="grid gap-4 md:grid-cols-2">
@@ -1184,26 +1217,14 @@ export default function EditProfilePage() {
                     <Button type="button" variant="outline" onClick={addKreatifDetail}>Tambah Detail</Button>
                   </div>
                   {(form.watch('kreatif_details') || []).map((_, index) => {
-                    const statusValue = form.watch(`kreatif_details.${index}.status_keaktifan` as const)
-                    const skipDetail = statusValue === '>5 tahun'
+                    const skipDetail = isOlderThanFiveYears(form.watch(`kreatif_details.${index}` as const))
                     return (
                       <div key={`kreatif-${index}`} className="rounded-lg border border-border p-4 space-y-4">
                         <div className="flex items-center justify-between gap-2">
                           <h4 className="font-medium text-foreground">Kreatif {index + 1}</h4>
                           <Button type="button" variant="ghost" onClick={() => removeKreatifDetail(index)} disabled={(form.watch('kreatif_details') || []).length <= 1}>Hapus</Button>
                         </div>
-                        <FormField control={form.control} name={`kreatif_details.${index}.status_keaktifan` as const} render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-foreground">Status Keaktifan</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl><SelectTrigger className="w-full"><SelectValue placeholder="Pilih status" /></SelectTrigger></FormControl>
-                              <SelectContent className="bg-popover text-popover-foreground">
-                                {activityStatusOptions.map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )} />
+                        <MonthYearRangeField control={form.control} namePrefix={`kreatif_details.${index}`} />
                         {!skipDetail && (
                           <div className="grid gap-4 md:grid-cols-2">
                             <FormField control={form.control} name={`kreatif_details.${index}.keahlian_kreatif` as const} render={({ field }) => (<FormItem><FormLabel className="text-foreground">Keahlian Kreatif</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
@@ -1227,26 +1248,14 @@ export default function EditProfilePage() {
                     <Button type="button" variant="outline" onClick={addIrtDetail}>Tambah Detail</Button>
                   </div>
                   {(form.watch('irt_details') || []).map((_, index) => {
-                    const statusValue = form.watch(`irt_details.${index}.status_keaktifan` as const)
-                    const skipDetail = statusValue === '>5 tahun'
+                    const skipDetail = isOlderThanFiveYears(form.watch(`irt_details.${index}` as const))
                     return (
                       <div key={`irt-${index}`} className="rounded-lg border border-border p-4 space-y-4">
                         <div className="flex items-center justify-between gap-2">
                           <h4 className="font-medium text-foreground">Detail IRT {index + 1}</h4>
                           <Button type="button" variant="ghost" onClick={() => removeIrtDetail(index)} disabled={(form.watch('irt_details') || []).length <= 1}>Hapus</Button>
                         </div>
-                        <FormField control={form.control} name={`irt_details.${index}.status_keaktifan` as const} render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-foreground">Status Keaktifan</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl><SelectTrigger className="w-full"><SelectValue placeholder="Pilih status" /></SelectTrigger></FormControl>
-                              <SelectContent className="bg-popover text-popover-foreground">
-                                {activityStatusOptions.map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )} />
+                        <MonthYearRangeField control={form.control} namePrefix={`irt_details.${index}`} />
                         {!skipDetail && (
                           <>
                             <div className="grid gap-4 md:grid-cols-2">
@@ -1272,26 +1281,14 @@ export default function EditProfilePage() {
                     <Button type="button" variant="outline" onClick={addMahasiswaDetail}>Tambah Detail</Button>
                   </div>
                   {(form.watch('mahasiswa_details') || []).map((_, index) => {
-                    const statusValue = form.watch(`mahasiswa_details.${index}.status_keaktifan` as const)
-                    const skipDetail = statusValue === '>5 tahun'
+                    const skipDetail = isOlderThanFiveYears(form.watch(`mahasiswa_details.${index}` as const))
                     return (
                       <div key={`mahasiswa-${index}`} className="rounded-lg border border-border p-4 space-y-4">
                         <div className="flex items-center justify-between gap-2">
                           <h4 className="font-medium text-foreground">Detail Mahasiswa {index + 1}</h4>
                           <Button type="button" variant="ghost" onClick={() => removeMahasiswaDetail(index)} disabled={(form.watch('mahasiswa_details') || []).length <= 1}>Hapus</Button>
                         </div>
-                        <FormField control={form.control} name={`mahasiswa_details.${index}.status_keaktifan` as const} render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-foreground">Status Keaktifan</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl><SelectTrigger className="w-full"><SelectValue placeholder="Pilih status" /></SelectTrigger></FormControl>
-                              <SelectContent className="bg-popover text-popover-foreground">
-                                {activityStatusOptions.map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )} />
+                        <MonthYearRangeField control={form.control} namePrefix={`mahasiswa_details.${index}`} />
                         {!skipDetail && (
                           <>
                             <div className="grid gap-4 md:grid-cols-2">
@@ -1318,26 +1315,14 @@ export default function EditProfilePage() {
                     <Button type="button" variant="outline" onClick={addInformalDetail}>Tambah Detail</Button>
                   </div>
                   {(form.watch('informal_details') || []).map((_, index) => {
-                    const statusValue = form.watch(`informal_details.${index}.status_keaktifan` as const)
-                    const skipDetail = statusValue === '>5 tahun'
+                    const skipDetail = isOlderThanFiveYears(form.watch(`informal_details.${index}` as const))
                     return (
                       <div key={`informal-${index}`} className="rounded-lg border border-border p-4 space-y-4">
                         <div className="flex items-center justify-between gap-2">
                           <h4 className="font-medium text-foreground">Detail Informal {index + 1}</h4>
                           <Button type="button" variant="ghost" onClick={() => removeInformalDetail(index)} disabled={(form.watch('informal_details') || []).length <= 1}>Hapus</Button>
                         </div>
-                        <FormField control={form.control} name={`informal_details.${index}.status_keaktifan` as const} render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-foreground">Status Keaktifan</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl><SelectTrigger className="w-full"><SelectValue placeholder="Pilih status" /></SelectTrigger></FormControl>
-                              <SelectContent className="bg-popover text-popover-foreground">
-                                {activityStatusOptions.map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )} />
+                        <MonthYearRangeField control={form.control} namePrefix={`informal_details.${index}`} />
                         {!skipDetail && (
                           <>
                             <div className="grid gap-4 md:grid-cols-2">
@@ -1362,26 +1347,14 @@ export default function EditProfilePage() {
                     <Button type="button" variant="outline" onClick={addAgriDetail}>Tambah Detail</Button>
                   </div>
                   {(form.watch('agri_details') || []).map((_, index) => {
-                    const statusValue = form.watch(`agri_details.${index}.status_keaktifan` as const)
-                    const skipDetail = statusValue === '>5 tahun'
+                    const skipDetail = isOlderThanFiveYears(form.watch(`agri_details.${index}` as const))
                     return (
                       <div key={`agri-${index}`} className="rounded-lg border border-border p-4 space-y-4">
                         <div className="flex items-center justify-between gap-2">
                           <h4 className="font-medium text-foreground">Detail Agri {index + 1}</h4>
                           <Button type="button" variant="ghost" onClick={() => removeAgriDetail(index)} disabled={(form.watch('agri_details') || []).length <= 1}>Hapus</Button>
                         </div>
-                        <FormField control={form.control} name={`agri_details.${index}.status_keaktifan` as const} render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-foreground">Status Keaktifan</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl><SelectTrigger className="w-full"><SelectValue placeholder="Pilih status" /></SelectTrigger></FormControl>
-                              <SelectContent className="bg-popover text-popover-foreground">
-                                {activityStatusOptions.map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )} />
+                        <MonthYearRangeField control={form.control} namePrefix={`agri_details.${index}`} />
                         {!skipDetail && (
                           <>
                             <div className="grid gap-4 md:grid-cols-2">
@@ -1407,26 +1380,14 @@ export default function EditProfilePage() {
                     <Button type="button" variant="outline" onClick={addPendidikDetail}>Tambah Detail</Button>
                   </div>
                   {(form.watch('pendidik_details') || []).map((_, index) => {
-                    const statusValue = form.watch(`pendidik_details.${index}.status_keaktifan` as const)
-                    const skipDetail = statusValue === '>5 tahun'
+                    const skipDetail = isOlderThanFiveYears(form.watch(`pendidik_details.${index}` as const))
                     return (
                       <div key={`pendidik-${index}`} className="rounded-lg border border-border p-4 space-y-4">
                         <div className="flex items-center justify-between gap-2">
                           <h4 className="font-medium text-foreground">Detail Pendidik {index + 1}</h4>
                           <Button type="button" variant="ghost" onClick={() => removePendidikDetail(index)} disabled={(form.watch('pendidik_details') || []).length <= 1}>Hapus</Button>
                         </div>
-                        <FormField control={form.control} name={`pendidik_details.${index}.status_keaktifan` as const} render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-foreground">Status Keaktifan</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl><SelectTrigger className="w-full"><SelectValue placeholder="Pilih status" /></SelectTrigger></FormControl>
-                              <SelectContent className="bg-popover text-popover-foreground">
-                                {activityStatusOptions.map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )} />
+                        <MonthYearRangeField control={form.control} namePrefix={`pendidik_details.${index}`} />
                         {!skipDetail && (
                           <>
                             <div className="grid gap-4 md:grid-cols-2">
