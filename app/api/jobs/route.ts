@@ -20,6 +20,8 @@ export async function GET(req: NextRequest) {
     const search = searchParams.get('search') || '';
     const category = searchParams.get('category') || 'All';
     const source = searchParams.get('source') || 'all'; // 'all' | 'database' | 'user'
+    const ownerIdParam = searchParams.get('ownerId');
+    const ownerId = ownerIdParam ? Number(ownerIdParam) : null;
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '10', 10);
 
@@ -42,8 +44,13 @@ export async function GET(req: NextRequest) {
       .from('jobs')
       .select('*', { count: 'exact' });
 
-    // Filter active jobs by default
-    query = query.eq('is_active', true);
+    // Filter active jobs by default — but NOT when a user is looking at their own
+    // postings ("My Jobs Post"), since they need to see (and re-toggle) inactive ones too.
+    if (!ownerId || Number.isNaN(ownerId)) {
+      query = query.eq('is_active', true);
+    } else {
+      query = query.eq('owner_id', ownerId);
+    }
 
     // Filter by category
     if (category && category !== 'All') {

@@ -84,6 +84,7 @@ export default function JobsPage() {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
   const [sourceFilter, setSourceFilter] = useState<'all' | 'database' | 'user'>('all');
+  const [mineOnly, setMineOnly] = useState(false);
   const [categories, setCategories] = useState<string[]>(['All']);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -258,7 +259,8 @@ export default function JobsPage() {
   const fetchJobs = useCallback(async () => {
     setLoadingJobs(true);
     try {
-      const url = `/api/jobs?search=${encodeURIComponent(search)}&category=${encodeURIComponent(category)}&source=${sourceFilter}&page=${page}&limit=5`;
+      const ownerParam = mineOnly && currentUserId ? `&ownerId=${currentUserId}` : '';
+      const url = `/api/jobs?search=${encodeURIComponent(search)}&category=${encodeURIComponent(category)}&source=${sourceFilter}${ownerParam}&page=${page}&limit=5`;
       const res = await fetch(url);
       if (!res.ok) throw new Error('Gagal mengambil lowongan kerja.');
       const data = await res.json();
@@ -273,17 +275,24 @@ export default function JobsPage() {
     } finally {
       setLoadingJobs(false);
     }
-  }, [search, category, sourceFilter, page]);
+  }, [search, category, sourceFilter, mineOnly, currentUserId, page]);
 
   useEffect(() => {
     if (activeTab === 'jobs') {
       fetchJobs();
     }
-  }, [activeTab, page, category, sourceFilter, fetchJobs]);
+  }, [activeTab, page, category, sourceFilter, mineOnly, fetchJobs]);
 
   const handleSourceFilterChange = (value: 'all' | 'database' | 'user') => {
     playClickSound();
     setSourceFilter(value);
+    if (value !== 'user') setMineOnly(false);
+    setPage(1);
+  };
+
+  const handleToggleMineOnly = () => {
+    playClickSound();
+    setMineOnly((prev) => !prev);
     setPage(1);
   };
 
@@ -461,6 +470,19 @@ export default function JobsPage() {
                 Dipasang Komunitas
               </button>
             </div>
+
+            {sourceFilter === 'user' && currentUserId && (
+              <button
+                onClick={handleToggleMineOnly}
+                className={`px-3 py-1.5 rounded-md text-xs font-bold border transition-all ${
+                  mineOnly
+                    ? 'bg-primary text-white border-primary shadow-sm'
+                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+              >
+                Lowongan Saya
+              </button>
+            )}
           </div>
 
           {/* Jobs List Grid */}
