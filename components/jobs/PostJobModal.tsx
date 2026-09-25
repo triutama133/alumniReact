@@ -24,6 +24,7 @@ export interface PostedJob {
   job_desk: string[]
   requirements: string[]
   job_url: string | null
+  salary: string | null
   owner_id: number
   source: string
   is_active: boolean
@@ -45,6 +46,7 @@ export default function PostJobModal({ open, onOpenChange, onCreated }: PostJobM
   const [jobDesk, setJobDesk] = useState('')
   const [requirements, setRequirements] = useState('')
   const [jobUrl, setJobUrl] = useState('')
+  const [salary, setSalary] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const resetAndClose = () => {
@@ -55,6 +57,7 @@ export default function PostJobModal({ open, onOpenChange, onCreated }: PostJobM
     setJobDesk('')
     setRequirements('')
     setJobUrl('')
+    setSalary('')
     onOpenChange(false)
   }
 
@@ -75,6 +78,7 @@ export default function PostJobModal({ open, onOpenChange, onCreated }: PostJobM
           job_desk: linesToArray(jobDesk),
           requirements: linesToArray(requirements),
           job_url: jobUrl || null,
+          salary: salary || null,
         }),
       })
 
@@ -129,9 +133,15 @@ export default function PostJobModal({ open, onOpenChange, onCreated }: PostJobM
             <label className="text-xs font-semibold text-slate-500 dark:text-slate-400">Persyaratan / Keahlian</label>
             <Textarea value={requirements} onChange={(e) => setRequirements(e.target.value)} placeholder={'Satu poin per baris, contoh:\nMenguasai React\nPengalaman minimal 1 tahun'} rows={3} />
           </div>
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-500 dark:text-slate-400">Link Lamar (opsional)</label>
-            <Input value={jobUrl} onChange={(e) => setJobUrl(e.target.value)} placeholder="https://... (kosongkan jika pelamar cukup menghubungi Anda langsung)" />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-slate-500 dark:text-slate-400">Gaji / Rentang Gaji (opsional)</label>
+              <Input value={salary} onChange={(e) => setSalary(e.target.value)} placeholder="Contoh: Rp 8.000.000 - 12.000.000" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-slate-500 dark:text-slate-400">Link Lamar (opsional)</label>
+              <Input value={jobUrl} onChange={(e) => setJobUrl(e.target.value)} placeholder="https://... (kosongkan jika cukup hubungi langsung)" />
+            </div>
           </div>
           <DialogFooter className="pt-2">
             <Button type="button" variant="ghost" size="sm" onClick={resetAndClose} className="rounded-md text-xs">Batal</Button>

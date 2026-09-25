@@ -303,7 +303,7 @@ export default function CompleteProfilePage() {
           tahun_lahir: profile.tahun_lahir ? String(profile.tahun_lahir) : '',
           jenis_kelamin: profile.jenis_kelamin === 'Perempuan' ? 'Perempuan' : 'Laki-laki',
           kota_domisili: profile.kota_domisili || '',
-          nomor_handphone: profile.nomor_handphone || '',
+          nomor_handphone: profile.nomor_handphone ? String(profile.nomor_handphone) : '',
           skill_gabungan: profile.skill_gabungan || '',
           bahasa_dikuasai: profile.bahasa_dikuasai || '',
           sertifikasi: profile.sertifikasi || '',

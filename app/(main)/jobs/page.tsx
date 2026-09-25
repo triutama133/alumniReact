@@ -19,7 +19,8 @@ import {
   ChevronDown,
   ChevronUp,
   ExternalLink,
-  FileText
+  FileText,
+  Wallet
 } from 'lucide-react';
 import { CVCreatorTab } from '@/components/jobs/CVCreatorTab';
 import PostJobModal, { PostedJob } from '@/components/jobs/PostJobModal';
@@ -74,6 +75,7 @@ interface Job {
   is_active: boolean;
   status_reason: string;
   category: string;
+  salary: string | null;
   owner_id: number | null;
   source: 'database' | 'user';
   applied_status: 'pending' | 'accepted' | 'rejected' | null;
@@ -90,6 +92,7 @@ export default function JobsPage() {
   const [mineOnly, setMineOnly] = useState(false);
   const [categories, setCategories] = useState<string[]>(['All']);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalJobs, setTotalJobs] = useState(0);
   const [loadingJobs, setLoadingJobs] = useState(true);
@@ -265,13 +268,13 @@ export default function JobsPage() {
     setLoadingJobs(true);
     try {
       const ownerParam = mineOnly && currentUserId ? `&ownerId=${currentUserId}` : '';
-      const url = `/api/jobs?search=${encodeURIComponent(search)}&category=${encodeURIComponent(category)}&source=${sourceFilter}${ownerParam}&page=${page}&limit=5`;
+      const url = `/api/jobs?search=${encodeURIComponent(search)}&category=${encodeURIComponent(category)}&source=${sourceFilter}${ownerParam}&page=${page}&limit=${pageSize}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error('Gagal mengambil lowongan kerja.');
       const data = await res.json();
       setJobs(data.jobs || []);
       setTotalJobs(data.total || 0);
-      setTotalPages(Math.ceil((data.total || 0) / 5));
+      setTotalPages(Math.ceil((data.total || 0) / pageSize));
       if (data.categories) {
         setCategories(data.categories);
       }
@@ -280,13 +283,19 @@ export default function JobsPage() {
     } finally {
       setLoadingJobs(false);
     }
-  }, [search, category, sourceFilter, mineOnly, currentUserId, page]);
+  }, [search, category, sourceFilter, mineOnly, currentUserId, page, pageSize]);
 
   useEffect(() => {
     if (activeTab === 'jobs') {
       fetchJobs();
     }
-  }, [activeTab, page, category, sourceFilter, mineOnly, fetchJobs]);
+  }, [activeTab, page, pageSize, category, sourceFilter, mineOnly, fetchJobs]);
+
+  const handlePageSizeChange = (value: string) => {
+    playClickSound();
+    setPageSize(Number(value));
+    setPage(1);
+  };
 
   const handleSourceFilterChange = (value: 'all' | 'database' | 'user') => {
     playClickSound();
@@ -511,6 +520,11 @@ export default function JobsPage() {
                       <div className="space-y-1">
                         <h3 className="text-base font-bold text-slate-900 dark:text-white leading-snug">{job.job_title}</h3>
                         <p className="text-xs font-semibold text-slate-550 dark:text-slate-400">{job.company}</p>
+                        {job.salary && (
+                          <p className="flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                            <Wallet className="h-3.5 w-3.5" /> {job.salary}
+                          </p>
+                        )}
                         <div className="flex flex-wrap gap-1.5 pt-1">
                           <Badge className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[8px] font-bold border border-slate-250 dark:border-slate-750 uppercase tracking-wider">
                             {job.platform}
@@ -638,26 +652,41 @@ export default function JobsPage() {
               })}
 
               {/* Pagination Controls */}
-              <div className="flex justify-between items-center pt-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page === 1}
-                  onClick={() => { playClickSound(); setPage(page - 1); }}
-                  className="text-xs font-bold rounded-md border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350"
-                >
-                  Sebelumnya
-                </Button>
-                <span className="text-xs text-slate-500 font-medium">Halaman {page} dari {totalPages} ({totalJobs} Lowongan)</span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page === totalPages || totalPages === 0}
-                  onClick={() => { playClickSound(); setPage(page + 1); }}
-                  className="text-xs font-bold rounded-md border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350"
-                >
-                  Berikutnya
-                </Button>
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-3 pt-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Tampilkan:</span>
+                  <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
+                    <SelectTrigger className="w-20 h-8 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white dark:bg-slate-950 border-slate-200 dark:border-white/10">
+                      {[5, 10, 25, 100].map((size) => (
+                        <SelectItem key={size} value={String(size)} className="text-xs">{size}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page === 1}
+                    onClick={() => { playClickSound(); setPage(page - 1); }}
+                    className="text-xs font-bold rounded-md border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350"
+                  >
+                    Sebelumnya
+                  </Button>
+                  <span className="text-xs text-slate-500 font-medium">Halaman {page} dari {totalPages} ({totalJobs} Lowongan)</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page === totalPages || totalPages === 0}
+                    onClick={() => { playClickSound(); setPage(page + 1); }}
+                    className="text-xs font-bold rounded-md border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350"
+                  >
+                    Berikutnya
+                  </Button>
+                </div>
               </div>
             </div>
           ) : (

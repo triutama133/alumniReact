@@ -6,7 +6,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
-import { Search } from 'lucide-react'
+import { Loader2, Search } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -677,7 +677,7 @@ export default function EditProfilePage() {
           tahun_lahir: profile.tahun_lahir ? String(profile.tahun_lahir) : '',
           jenis_kelamin: profile.jenis_kelamin === 'Perempuan' ? 'Perempuan' : 'Laki-laki',
           kota_domisili: profile.kota_domisili || '',
-          nomor_handphone: profile.nomor_handphone || '',
+          nomor_handphone: profile.nomor_handphone ? String(profile.nomor_handphone) : '',
           skill_gabungan: profile.skill_gabungan || '',
           bahasa_dikuasai: profile.bahasa_dikuasai || '',
           sertifikasi: profile.sertifikasi || '',
@@ -1411,13 +1411,22 @@ export default function EditProfilePage() {
                 </section>
               )}
 
-              <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-[0_0_15px_rgba(99,102,241,0.3)]" disabled={loading}>
+              <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-[0_0_15px_rgba(99,102,241,0.3)] gap-2" disabled={loading}>
+                {loading && <Loader2 className="h-4 w-4 animate-spin" />}
                 {loading ? 'Menyimpan Perubahan...' : 'Simpan Perubahan & Selesai'}
               </Button>
             </form>
           </Form>
         </CardContent>
       </Card>
+
+      {loading && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-white/70 dark:bg-slate-950/70 backdrop-blur-sm">
+          <Loader2 className="h-10 w-10 animate-spin text-indigo-600" />
+          <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Menyimpan perubahan profil...</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Mohon tunggu, jangan tutup atau muat ulang halaman ini.</p>
+        </div>
+      )}
     </div>
   )
 }

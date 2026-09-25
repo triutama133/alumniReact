@@ -17,6 +17,7 @@ const createJobSchema = z.object({
   requirements: z.array(z.string()).optional().default([]),
   category: z.string().optional().default('Others / General'),
   job_url: z.string().url().or(z.literal('')).optional().nullable(),
+  salary: z.string().optional().nullable(),
 });
 
 export async function GET(req: NextRequest) {
@@ -28,7 +29,8 @@ export async function GET(req: NextRequest) {
     const ownerIdParam = searchParams.get('ownerId');
     const ownerId = ownerIdParam ? Number(ownerIdParam) : null;
     const page = parseInt(searchParams.get('page') || '1', 10);
-    const limit = parseInt(searchParams.get('limit') || '10', 10);
+    const requestedLimit = parseInt(searchParams.get('limit') || '10', 10);
+    const limit = Math.min(Math.max(Number.isNaN(requestedLimit) ? 10 : requestedLimit, 1), 100);
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -182,6 +184,7 @@ export async function POST(req: NextRequest) {
         // jobs.job_url is NOT NULL in the database (existing scraped rows always have one),
         // so a user-submitted posting with no external link gets an empty string, not null.
         job_url: validationResult.data.job_url || '',
+        salary: validationResult.data.salary || null,
         platform: 'Komunitas',
         owner_id: userId,
         source: 'user',
