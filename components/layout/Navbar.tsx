@@ -276,6 +276,15 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
                     <Users className="h-3.5 w-3.5" />
                   </Link>
                 )}
+                {activeCohortId !== 'global' && activeCohortId !== 'create_new' && activeCohortRole === 'admin' && (
+                  <Link
+                    href="/cohort-admin"
+                    title="Kelola Komunitas"
+                    className="flex-shrink-0 p-1.5 rounded-full bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-white/5 text-slate-600 dark:text-slate-300 hover:text-primary transition-colors"
+                  >
+                    <Shield className="h-3.5 w-3.5" />
+                  </Link>
+                )}
               </div>
             )}
           </div>
@@ -415,16 +424,6 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
                             Profil Saya
                           </Link>
                         )}
-                        {activeCohortId !== 'global' && activeCohortRole === 'admin' && (
-                          <Link
-                            href="/cohort-admin"
-                            onClick={() => setShowUserDropdown(false)}
-                            className="flex items-center gap-2 w-full px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-white/5 rounded-lg transition-colors"
-                          >
-                            <Shield className="h-3.5 w-3.5 text-slate-450" />
-                            Kelola Komunitas
-                          </Link>
-                        )}
                         <Link
                           href="/settings"
                           onClick={() => setShowUserDropdown(false)}
@@ -522,6 +521,16 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
                   <SelectItem value="create_new" className="text-xs text-primary font-semibold focus:text-primary">➕ Buat Komunitas baru</SelectItem>
                 </SelectContent>
               </Select>
+              {activeCohortId !== 'global' && activeCohortId !== 'create_new' && activeCohortRole === 'admin' && (
+                <Link
+                  href="/cohort-admin"
+                  onClick={() => setIsMobileOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-md text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5"
+                >
+                  <Shield className="h-4 w-4" />
+                  <span>Kelola Komunitas</span>
+                </Link>
+              )}
             </div>
           )}
 

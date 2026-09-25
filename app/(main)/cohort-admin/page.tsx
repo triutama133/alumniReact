@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { playClickSound } from '@/lib/audio';
 
 export default function CohortAdminPage() {
@@ -29,6 +30,9 @@ export default function CohortAdminPage() {
   const [isSavingJoinSettings, setIsSavingJoinSettings] = useState(false);
   const [isRegeneratingKey, setIsRegeneratingKey] = useState(false);
   const [copiedInviteLink, setCopiedInviteLink] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
+  const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState<{ userId: number; name: string } | null>(null);
 
   // Join requests (pending approval) state
   const [joinRequests, setJoinRequests] = useState<any[]>([]);
@@ -220,7 +224,6 @@ export default function CohortAdminPage() {
   };
 
   const handleRegenerateKey = async () => {
-    if (!confirm('Buat ulang kode undangan? Tautan undangan lama yang sudah dibagikan tidak akan berfungsi lagi.')) return;
     playClickSound();
     setIsRegeneratingKey(true);
     try {
@@ -233,11 +236,24 @@ export default function CohortAdminPage() {
       if (!res.ok) throw new Error(resData.error || 'Gagal membuat ulang kode undangan.');
 
       toast.success('Kode undangan baru berhasil dibuat!');
+      setShowRegenerateConfirm(false);
       await fetchData();
     } catch (err: any) {
       toast.error('Error', { description: err.message });
     } finally {
       setIsRegeneratingKey(false);
+    }
+  };
+
+  const handleCopyCode = async () => {
+    if (!activeCohort?.join_key) return;
+    try {
+      await navigator.clipboard.writeText(activeCohort.join_key);
+      setCopiedCode(true);
+      toast.success('Kode undangan disalin!');
+      setTimeout(() => setCopiedCode(false), 2000);
+    } catch {
+      toast.error('Gagal menyalin kode. Salin secara manual.');
     }
   };
 
@@ -510,32 +526,48 @@ export default function CohortAdminPage() {
               </Button>
 
               {activeCohort?.join_key && (
-                <div className="space-y-1.5 pt-2 border-t border-slate-200 dark:border-white/5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1"><KeyRound className="h-3 w-3" /> Tautan Undangan</label>
-                  <div className="flex gap-1.5">
+                <div className="space-y-3 pt-2 border-t border-slate-200 dark:border-white/5">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1"><KeyRound className="h-3 w-3" /> Kode Undangan</label>
+                    <div className="flex gap-1.5">
+                      <Button
+                        type="button"
+                        onClick={handleCopyCode}
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 h-8 text-xs font-mono font-bold tracking-wider justify-start px-2.5"
+                      >
+                        {copiedCode ? <Check className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" /> : <Copy className="h-3.5 w-3.5 flex-shrink-0" />}
+                        <span>{activeCohort.join_key}</span>
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={() => setShowRegenerateConfirm(true)}
+                        disabled={isRegeneratingKey}
+                        variant="outline"
+                        size="sm"
+                        className="h-8 px-2.5 flex-shrink-0"
+                        title="Buat ulang kode undangan"
+                      >
+                        {isRegeneratingKey ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                      </Button>
+                    </div>
+                    <p className="text-[10px] text-slate-400">Bagikan kode ini agar seseorang bisa mencarinya di halaman &quot;Jelajahi Komunitas&quot; &rarr; &quot;Punya Kode Undangan?&quot;.</p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase">Atau Tautan Langsung</label>
                     <Button
                       type="button"
                       onClick={handleCopyInviteLink}
                       variant="outline"
                       size="sm"
-                      className="flex-1 h-8 text-[10px] font-mono truncate justify-start px-2.5"
+                      className="w-full h-8 text-[10px] font-mono truncate justify-start px-2.5"
                     >
                       {copiedInviteLink ? <Check className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" /> : <Copy className="h-3.5 w-3.5 flex-shrink-0" />}
                       <span className="truncate">{`/community/join/${activeCohortId}?key=${activeCohort.join_key}`}</span>
                     </Button>
-                    <Button
-                      type="button"
-                      onClick={handleRegenerateKey}
-                      disabled={isRegeneratingKey}
-                      variant="outline"
-                      size="sm"
-                      className="h-8 px-2.5 flex-shrink-0"
-                      title="Buat ulang kode undangan"
-                    >
-                      {isRegeneratingKey ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-                    </Button>
                   </div>
-                  <p className="text-[10px] text-slate-400">Bagikan tautan ini untuk mengundang seseorang ke komunitas privat.</p>
                 </div>
               )}
             </CardContent>
@@ -703,11 +735,7 @@ export default function CohortAdminPage() {
                               size="sm"
                               variant="ghost"
                               disabled={actionLoading !== null}
-                              onClick={() => {
-                                if (confirm(`Keluarkan ${member.nama_lengkap} dari komunitas?`)) {
-                                  handleMemberAction('remove_member', member.user_id);
-                                }
-                              }}
+                              onClick={() => setMemberToRemove({ userId: member.user_id, name: member.nama_lengkap })}
                               className="h-7 text-[10px] text-rose-500 hover:text-rose-600 p-2"
                               title="Keluarkan Anggota"
                             >
@@ -727,6 +755,31 @@ export default function CohortAdminPage() {
         </div>
 
       </div>
+
+      <ConfirmDialog
+        open={showRegenerateConfirm}
+        onOpenChange={setShowRegenerateConfirm}
+        title="Buat ulang kode undangan?"
+        description="Kode dan tautan undangan lama yang sudah dibagikan tidak akan berfungsi lagi setelah ini."
+        confirmLabel="Buat Ulang"
+        isLoading={isRegeneratingKey}
+        onConfirm={handleRegenerateKey}
+      />
+
+      <ConfirmDialog
+        open={memberToRemove !== null}
+        onOpenChange={(open) => { if (!open) setMemberToRemove(null); }}
+        title="Keluarkan anggota?"
+        description={memberToRemove ? `${memberToRemove.name} akan dikeluarkan dari komunitas ini.` : ''}
+        confirmLabel="Keluarkan"
+        isDestructive
+        isLoading={actionLoading === `remove_member-${memberToRemove?.userId}`}
+        onConfirm={async () => {
+          if (!memberToRemove) return;
+          await handleMemberAction('remove_member', memberToRemove.userId);
+          setMemberToRemove(null);
+        }}
+      />
     </div>
   );
 }
