@@ -23,6 +23,8 @@ import {
 } from 'lucide-react';
 import { CVCreatorTab } from '@/components/jobs/CVCreatorTab';
 import PostJobModal, { PostedJob } from '@/components/jobs/PostJobModal';
+import ApplyJobModal from '@/components/jobs/ApplyJobModal';
+import JobApplicantsModal from '@/components/jobs/JobApplicantsModal';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -74,6 +76,7 @@ interface Job {
   category: string;
   owner_id: number | null;
   source: 'database' | 'user';
+  applied_status: 'pending' | 'accepted' | 'rejected' | null;
 }
 
 export default function JobsPage() {
@@ -94,6 +97,8 @@ export default function JobsPage() {
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [showPostJobModal, setShowPostJobModal] = useState(false);
   const [togglingJobId, setTogglingJobId] = useState<number | null>(null);
+  const [applyModalJob, setApplyModalJob] = useState<{ id: number; title: string } | null>(null);
+  const [applicantsModalJob, setApplicantsModalJob] = useState<{ id: number; title: string } | null>(null);
 
   // --- LEARNING PATH TAB STATE ---
   const [selectedRole, setSelectedRole] = useState<string>('');
@@ -304,8 +309,12 @@ export default function JobsPage() {
 
   const handleJobPosted = (job: PostedJob) => {
     // Show the newly posted job immediately without waiting for a refetch.
-    setJobs((prev) => [job as unknown as Job, ...prev]);
+    setJobs((prev) => [{ ...job, applied_status: null } as unknown as Job, ...prev]);
     setTotalJobs((prev) => prev + 1);
+  };
+
+  const handleJobApplied = (jobId: number) => {
+    setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, applied_status: 'pending' } : j)));
   };
 
   const handleToggleActive = async (job: Job) => {
@@ -540,6 +549,37 @@ export default function JobsPage() {
                               Lamar <ExternalLink className="h-3 w-3" />
                             </a>
                           </Button>
+                        )}
+                        {job.source === 'user' && job.owner_id === currentUserId && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setApplicantsModalJob({ id: job.id, title: job.job_title })}
+                            className="h-8 text-xs font-bold border-primary/30 text-primary hover:bg-primary/5"
+                          >
+                            Lihat Pelamar
+                          </Button>
+                        )}
+                        {job.source === 'user' && job.owner_id !== currentUserId && currentUserId && (
+                          job.applied_status ? (
+                            <Badge className={`text-[10px] font-bold px-2.5 py-1.5 rounded-md ${
+                              job.applied_status === 'accepted'
+                                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                                : job.applied_status === 'rejected'
+                                ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                                : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                            }`}>
+                              {job.applied_status === 'accepted' ? 'Lamaran Diterima' : job.applied_status === 'rejected' ? 'Lamaran Ditolak' : 'Sudah Melamar'}
+                            </Badge>
+                          ) : (
+                            <Button
+                              size="sm"
+                              onClick={() => setApplyModalJob({ id: job.id, title: job.job_title })}
+                              className="h-8 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs"
+                            >
+                              Ajukan Diri
+                            </Button>
+                          )
                         )}
                         {job.owner_id === currentUserId && (
                           <Button
@@ -914,6 +954,25 @@ export default function JobsPage() {
       )}
 
       <PostJobModal open={showPostJobModal} onOpenChange={setShowPostJobModal} onCreated={handleJobPosted} />
+
+      {applyModalJob && (
+        <ApplyJobModal
+          open={Boolean(applyModalJob)}
+          onOpenChange={(open) => { if (!open) setApplyModalJob(null); }}
+          jobId={applyModalJob.id}
+          jobTitle={applyModalJob.title}
+          onApplied={() => handleJobApplied(applyModalJob.id)}
+        />
+      )}
+
+      {applicantsModalJob && (
+        <JobApplicantsModal
+          open={Boolean(applicantsModalJob)}
+          onOpenChange={(open) => { if (!open) setApplicantsModalJob(null); }}
+          jobId={applicantsModalJob.id}
+          jobTitle={applicantsModalJob.title}
+        />
+      )}
     </div>
   );
 }

@@ -177,6 +177,8 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
       window.location.href = '/';
     } else if (notification.type === 'project_apply' || notification.type === 'project_status') {
       window.location.href = '/projects';
+    } else if (notification.type === 'job_apply' || notification.type === 'job_status') {
+      window.location.href = '/jobs';
     } else if (notification.type === 'chat') {
       window.location.href = '/messages';
     } else {

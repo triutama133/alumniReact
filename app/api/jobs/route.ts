@@ -4,6 +4,11 @@ import { createClient } from '@supabase/supabase-js';
 import { headers } from 'next/headers';
 import * as z from 'zod';
 
+interface JobRow {
+  id: number;
+  [key: string]: unknown;
+}
+
 const createJobSchema = z.object({
   job_title: z.string().min(3, 'Judul posisi minimal 3 karakter.'),
   company: z.string().min(1, 'Nama perusahaan wajib diisi.'),
@@ -82,6 +87,26 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Gagal mengambil lowongan kerja.' }, { status: 500 });
     }
 
+    // Attach the requesting user's own application status to each job (if any), so
+    // the jobs page can render "Sudah Melamar" instead of re-showing the apply button.
+    let jobsWithApplicationStatus: JobRow[] = (jobs || []) as JobRow[];
+    const headersList = await headers();
+    const requestingUserId = Number(headersList.get('x-user-id'));
+    if (!Number.isNaN(requestingUserId) && jobsWithApplicationStatus.length > 0) {
+      const jobIds = jobsWithApplicationStatus.map((j) => j.id);
+      const { data: myApplications } = await supabaseAdmin
+        .from('job_applications')
+        .select('job_id, status')
+        .eq('user_id', requestingUserId)
+        .in('job_id', jobIds);
+
+      const statusByJobId = new Map((myApplications || []).map((a) => [a.job_id, a.status]));
+      jobsWithApplicationStatus = jobsWithApplicationStatus.map((job) => ({
+        ...job,
+        applied_status: statusByJobId.get(job.id) || null,
+      }));
+    }
+
     // Get all unique categories for the filter
     const { data: catData, error: catError } = await supabaseAdmin
       .from('jobs')
@@ -94,7 +119,7 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({
-      jobs: jobs || [],
+      jobs: jobsWithApplicationStatus,
       total: count || 0,
       page,
       limit,
