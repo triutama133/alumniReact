@@ -141,7 +141,9 @@ export async function POST(req: NextRequest) {
         job_desk: validationResult.data.job_desk,
         requirements: validationResult.data.requirements,
         category: validationResult.data.category,
-        job_url: validationResult.data.job_url || null,
+        // jobs.job_url is NOT NULL in the database (existing scraped rows always have one),
+        // so a user-submitted posting with no external link gets an empty string, not null.
+        job_url: validationResult.data.job_url || '',
         platform: 'Komunitas',
         owner_id: userId,
         source: 'user',

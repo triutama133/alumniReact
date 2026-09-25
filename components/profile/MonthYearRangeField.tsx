@@ -24,13 +24,16 @@ function MonthSelect({ control, name }: { control: Control<any>; name: string })
     <Controller
       control={control}
       name={name as FieldPath<FieldValues>}
-      render={({ field }) => (
-        <Select onValueChange={(v) => field.onChange(Number(v))} value={field.value ? String(field.value) : undefined}>
-          <SelectTrigger className="w-full"><SelectValue placeholder="Bulan" /></SelectTrigger>
-          <SelectContent className="bg-popover text-popover-foreground">
-            {MONTHS.map((m, i) => <SelectItem key={m} value={String(i + 1)}>{m}</SelectItem>)}
-          </SelectContent>
-        </Select>
+      render={({ field, fieldState }) => (
+        <div className="space-y-1">
+          <Select onValueChange={(v) => field.onChange(Number(v))} value={field.value ? String(field.value) : undefined}>
+            <SelectTrigger className="w-full" aria-invalid={Boolean(fieldState.error)}><SelectValue placeholder="Bulan" /></SelectTrigger>
+            <SelectContent className="bg-popover text-popover-foreground">
+              {MONTHS.map((m, i) => <SelectItem key={m} value={String(i + 1)}>{m}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          {fieldState.error && <p className="text-xs text-destructive">{fieldState.error.message}</p>}
+        </div>
       )}
     />
   )
@@ -42,13 +45,16 @@ function YearSelect({ control, name }: { control: Control<any>; name: string }) 
     <Controller
       control={control}
       name={name as FieldPath<FieldValues>}
-      render={({ field }) => (
-        <Select onValueChange={(v) => field.onChange(Number(v))} value={field.value ? String(field.value) : undefined}>
-          <SelectTrigger className="w-full"><SelectValue placeholder="Tahun" /></SelectTrigger>
-          <SelectContent className="max-h-64 bg-popover text-popover-foreground">
-            {YEARS.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
-          </SelectContent>
-        </Select>
+      render={({ field, fieldState }) => (
+        <div className="space-y-1">
+          <Select onValueChange={(v) => field.onChange(Number(v))} value={field.value ? String(field.value) : undefined}>
+            <SelectTrigger className="w-full" aria-invalid={Boolean(fieldState.error)}><SelectValue placeholder="Tahun" /></SelectTrigger>
+            <SelectContent className="max-h-64 bg-popover text-popover-foreground">
+              {YEARS.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          {fieldState.error && <p className="text-xs text-destructive">{fieldState.error.message}</p>}
+        </div>
       )}
     />
   )

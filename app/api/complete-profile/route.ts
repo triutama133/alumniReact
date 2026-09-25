@@ -152,12 +152,7 @@ const serverFormSchema = z.object({
     rows.forEach((row, index) => {
       const detail = row && typeof row === 'object' ? (row as Record<string, unknown>) : {};
 
-      if (!detail.start_year) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: [key, index, 'start_year'], message: 'Tanggal mulai wajib diisi.' });
-      }
-      if (!detail.start_month) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: [key, index, 'start_month'], message: 'Bulan mulai wajib diisi.' });
-      }
+      // Start date is encouraged but not a hard requirement — see matching note in lib/profileForm.ts.
       if (!detail.is_current && !detail.end_year) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: [key, index, 'end_year'], message: 'Tanggal berakhir wajib diisi, atau tandai masih berlangsung.' });
       }

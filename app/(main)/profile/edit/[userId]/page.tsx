@@ -733,6 +733,12 @@ export default function EditProfilePage() {
     init()
   }, [form, router])
 
+  function onInvalid() {
+    // Defensive fallback: make sure the user always gets feedback when the form can't
+    // submit, even if the specific invalid field doesn't render its own error message.
+    toast.error('Formulir belum lengkap', { description: 'Periksa kembali bagian yang ditandai merah di atas sebelum menyimpan.' })
+  }
+
   async function onSubmit(values: FormValues) {
     setLoading(true)
 
@@ -779,7 +785,7 @@ export default function EditProfilePage() {
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-8">
               <section className="space-y-4">
                 <div>
                   <h2 className="text-lg font-semibold text-foreground">Informasi Dasar</h2>

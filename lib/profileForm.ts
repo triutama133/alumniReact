@@ -194,13 +194,9 @@ export const formSchema = z.object({
       return
     }
     details.forEach((detail, index) => {
-      // Start date is always required.
-      if (!detail.start_year) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: [key, index, 'start_year'], message: 'Tanggal mulai wajib diisi.' })
-      }
-      if (!detail.start_month) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: [key, index, 'start_month'], message: 'Bulan mulai wajib diisi.' })
-      }
+      // Start date is encouraged but NOT a hard requirement — existing profiles predate this
+      // field (migration_016 did not backfill it), so blocking save until it's filled in would
+      // silently lock every existing user out of editing their profile at all.
       // "is_current" (still ongoing) requires no end date; otherwise an end date is required.
       if (!detail.is_current && !detail.end_year) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: [key, index, 'end_year'], message: 'Tanggal berakhir wajib diisi, atau tandai masih berlangsung.' })
