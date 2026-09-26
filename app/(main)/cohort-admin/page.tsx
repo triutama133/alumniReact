@@ -41,9 +41,12 @@ export default function CohortAdminPage() {
   const [isLoadingRequests, setIsLoadingRequests] = useState(false);
   const [processingRequestId, setProcessingRequestId] = useState<number | null>(null);
 
-  // Invite member state
+  // Invite member state — supports queuing up several people before sending one
+  // invite request, instead of one admin round-trip per person.
   const [inviteInput, setInviteInput] = useState('');
+  const [selectedInvitees, setSelectedInvitees] = useState<Array<{ label: string; value: string }>>([]);
   const [isInviting, setIsInviting] = useState(false);
+  const [pendingInvitations, setPendingInvitations] = useState<any[]>([]);
   const [inviteSuggestions, setInviteSuggestions] = useState<Array<{ id: number; nama_lengkap: string; nama_panggilan: string; email: string }>>([]);
   const [showInviteSuggestions, setShowInviteSuggestions] = useState(false);
   const [isSearchingInvitees, setIsSearchingInvitees] = useState(false);
@@ -100,6 +103,8 @@ export default function CohortAdminPage() {
 
       // 3. Fetch pending join requests
       fetchJoinRequests();
+      // 4. Fetch pending invitations sent (invited, not yet accepted/declined)
+      fetchPendingInvitations();
     } catch (err: any) {
       setError(err.message || 'Terjadi kesalahan saat memuat data.');
     } finally {
@@ -119,6 +124,37 @@ export default function CohortAdminPage() {
       // Silent — the requests card simply stays empty; the admin can retry via fetchData.
     } finally {
       setIsLoadingRequests(false);
+    }
+  };
+
+  const fetchPendingInvitations = async () => {
+    if (!activeCohortId || activeCohortId === 'global') return;
+    try {
+      const res = await fetch(`/api/cohorts/${activeCohortId}/invitations`);
+      if (res.ok) {
+        setPendingInvitations(await res.json());
+      }
+    } catch {
+      // Silent — the pending-invitations list simply stays empty on failure.
+    }
+  };
+
+  const handleCancelInvitation = async (invitationId: number) => {
+    playClickSound();
+    try {
+      const res = await fetch(`/api/cohorts/${activeCohortId}/invitations`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ invitationId }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Gagal membatalkan undangan.');
+      }
+      setPendingInvitations((prev) => prev.filter((i) => i.id !== invitationId));
+      toast.success('Undangan dibatalkan.');
+    } catch (err: any) {
+      toast.error('Error', { description: err.message });
     }
   };
 
@@ -167,11 +203,20 @@ export default function CohortAdminPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleSelectInvitee = (alumni: { nama_lengkap: string; email: string }) => {
-    playClickSound();
-    setInviteInput(alumni.email);
+  const addInviteeChip = (label: string, value: string) => {
+    setSelectedInvitees((prev) => (prev.some((p) => p.value === value) ? prev : [...prev, { label, value }]));
+    setInviteInput('');
     setShowInviteSuggestions(false);
     setInviteSuggestions([]);
+  };
+
+  const handleSelectInvitee = (alumni: { nama_lengkap: string; email: string }) => {
+    playClickSound();
+    addInviteeChip(alumni.nama_lengkap, alumni.email);
+  };
+
+  const removeInviteeChip = (value: string) => {
+    setSelectedInvitees((prev) => prev.filter((p) => p.value !== value));
   };
 
   const handleUpdateDetails = async (e: React.FormEvent) => {
@@ -330,7 +375,10 @@ export default function CohortAdminPage() {
 
   const handleInviteMember = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inviteInput.trim()) return;
+    // Whatever's still typed but not yet turned into a chip counts too, so pressing
+    // "Undang" right after typing one name (without picking a suggestion) still works.
+    const identifiers = [...selectedInvitees.map((p) => p.value), ...(inviteInput.trim() ? [inviteInput.trim()] : [])];
+    if (identifiers.length === 0) return;
 
     playClickSound();
     setIsInviting(true);
@@ -339,17 +387,24 @@ export default function CohortAdminPage() {
       const res = await fetch(`/api/cohorts/${activeCohortId}/members`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ emailOrUsername: inviteInput }),
+        body: JSON.stringify({ emailsOrUsernames: identifiers }),
       });
 
       const resData = await res.json();
       if (!res.ok) throw new Error(resData.error || 'Gagal mengundang anggota.');
 
-      toast.success(`Anggota "${inviteInput}" berhasil ditambahkan!`);
+      if (resData.skipped?.length > 0) {
+        toast.success(resData.message, {
+          description: `Dilewati: ${resData.skipped.map((s: any) => `${s.input} (${s.reason})`).join(', ')}`,
+        });
+      } else {
+        toast.success(resData.message);
+      }
       setInviteInput('');
-      await fetchData(); // Reload members list
+      setSelectedInvitees([]);
+      await fetchPendingInvitations();
     } catch (err: any) {
-      toast.error('Gagal menambahkan', { description: err.message });
+      toast.error('Gagal mengundang', { description: err.message });
     } finally {
       setIsInviting(false);
     }
@@ -704,54 +759,105 @@ export default function CohortAdminPage() {
                 <CardDescription className="text-xs">Kelola wewenang role dan keanggotaan kelompok komunitas.</CardDescription>
               </div>
               
-              {/* Add member inline form */}
-              <form onSubmit={handleInviteMember} className="flex gap-2 w-full sm:w-auto">
-                <div ref={inviteBoxRef} className="relative w-full sm:w-56">
-                  <Input
-                    value={inviteInput}
-                    onChange={(e) => setInviteInput(e.target.value)}
-                    onFocus={() => { if (inviteSuggestions.length > 0) setShowInviteSuggestions(true); }}
-                    placeholder="Cari nama, atau ketik email..."
-                    className="h-8 bg-slate-50 border-slate-200 text-xs dark:bg-slate-900/40 dark:border-white/5 dark:text-white rounded-md w-full placeholder:text-slate-400"
-                    autoComplete="off"
-                    required
-                  />
-                  {showInviteSuggestions && (isSearchingInvitees || inviteSuggestions.length > 0) && (
-                    <div className="absolute top-full left-0 mt-1 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-lg shadow-lg z-20 max-h-56 overflow-y-auto">
-                      {isSearchingInvitees ? (
-                        <div className="flex items-center gap-2 px-3 py-2 text-xs text-slate-400">
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Mencari...
-                        </div>
-                      ) : (
-                        inviteSuggestions.map((alumni) => (
-                          <button
-                            key={alumni.id}
-                            type="button"
-                            onClick={() => handleSelectInvitee(alumni)}
-                            className="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
-                          >
-                            <div className="font-semibold text-slate-900 dark:text-white">
-                              {alumni.nama_lengkap}
-                              {alumni.nama_panggilan && <span className="font-normal text-slate-400"> ({alumni.nama_panggilan})</span>}
-                            </div>
-                            <div className="text-[10px] text-slate-500">{alumni.email}</div>
-                          </button>
-                        ))
-                      )}
-                    </div>
-                  )}
+              {/* Add member inline form — queue up several people, then send one batch of invites */}
+              <form onSubmit={handleInviteMember} className="flex flex-col gap-1.5 w-full sm:w-72">
+                {selectedInvitees.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedInvitees.map((invitee) => (
+                      <span
+                        key={invitee.value}
+                        className="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 text-[10px] font-semibold"
+                      >
+                        {invitee.label}
+                        <button
+                          type="button"
+                          onClick={() => removeInviteeChip(invitee.value)}
+                          className="hover:bg-indigo-100 dark:hover:bg-indigo-500/20 rounded-full p-0.5"
+                        >
+                          <X className="h-2.5 w-2.5" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <div ref={inviteBoxRef} className="relative w-full">
+                    <Input
+                      value={inviteInput}
+                      onChange={(e) => setInviteInput(e.target.value)}
+                      onFocus={() => { if (inviteSuggestions.length > 0) setShowInviteSuggestions(true); }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && inviteInput.trim() && inviteSuggestions.length === 0) {
+                          e.preventDefault();
+                          addInviteeChip(inviteInput.trim(), inviteInput.trim());
+                        }
+                      }}
+                      placeholder="Cari nama, ketik email, lalu Enter untuk tambah lagi..."
+                      className="h-8 bg-slate-50 border-slate-200 text-xs dark:bg-slate-900/40 dark:border-white/5 dark:text-white rounded-md w-full placeholder:text-slate-400"
+                      autoComplete="off"
+                    />
+                    {showInviteSuggestions && (isSearchingInvitees || inviteSuggestions.length > 0) && (
+                      <div className="absolute top-full left-0 mt-1 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-lg shadow-lg z-20 max-h-56 overflow-y-auto">
+                        {isSearchingInvitees ? (
+                          <div className="flex items-center gap-2 px-3 py-2 text-xs text-slate-400">
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" /> Mencari...
+                          </div>
+                        ) : (
+                          inviteSuggestions.map((alumni) => (
+                            <button
+                              key={alumni.id}
+                              type="button"
+                              onClick={() => handleSelectInvitee(alumni)}
+                              className="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+                            >
+                              <div className="font-semibold text-slate-900 dark:text-white">
+                                {alumni.nama_lengkap}
+                                {alumni.nama_panggilan && <span className="font-normal text-slate-400"> ({alumni.nama_panggilan})</span>}
+                              </div>
+                              <div className="text-[10px] text-slate-500">{alumni.email}</div>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <Button
+                    type="submit"
+                    disabled={isInviting || (selectedInvitees.length === 0 && !inviteInput.trim())}
+                    size="sm"
+                    className="h-8 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded-md flex gap-1.5 flex-shrink-0"
+                  >
+                    {isInviting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+                    <span>{isInviting ? 'Mengundang...' : 'Undang'}</span>
+                  </Button>
                 </div>
-                <Button
-                  type="submit"
-                  disabled={isInviting || !inviteInput.trim()}
-                  size="sm"
-                  className="h-8 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded-md flex gap-1.5 flex-shrink-0"
-                >
-                  {isInviting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
-                  <span>{isInviting ? 'Mengundang...' : 'Undang'}</span>
-                </Button>
               </form>
             </CardHeader>
+            {pendingInvitations.length > 0 && (
+              <div className="px-6 py-3 border-b border-slate-200 dark:border-white/5 bg-amber-50/50 dark:bg-amber-500/5">
+                <p className="text-[11px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide mb-2">
+                  Menunggu Respons ({pendingInvitations.length})
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {pendingInvitations.map((inv) => (
+                    <span
+                      key={inv.id}
+                      className="inline-flex items-center gap-1.5 pl-2.5 pr-1 py-1 rounded-full bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-500/20 text-[11px] font-medium text-slate-700 dark:text-slate-300"
+                    >
+                      {inv.nama_lengkap}
+                      <button
+                        type="button"
+                        onClick={() => handleCancelInvitation(inv.id)}
+                        title="Batalkan undangan"
+                        className="hover:bg-slate-100 dark:hover:bg-white/10 rounded-full p-0.5"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
             <CardContent className="p-0">
               <div className="divide-y divide-slate-100 dark:divide-white/5">
                 {members.length > 0 ? (

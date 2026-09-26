@@ -66,33 +66,59 @@ export default async function CommunityPage({ params }: { params: Promise<{ coho
     );
   }
 
-  const [{ data: cohort }, { data: members }, { data: projects }, { data: posts }] = await Promise.all([
+  // cohort_members.user_id references "user", not alumni_db, so the alumni_db(...)
+  // embed shorthand can't be used here — it silently fails the whole query, which is
+  // why this page previously always showed "0 anggota". Fetch members and their
+  // alumni_db profile info separately and merge, same fix as job_applications /
+  // project_applications elsewhere in the app.
+  const [{ data: cohort }, { data: memberRowsRaw }, { data: postCohortRows }, { data: projectCohortRows }] = await Promise.all([
     supabase.from('cohorts').select('*').eq('id', cohortId).maybeSingle(),
     supabase
       .from('cohort_members')
-      .select('id, role, joined_at, user_id, alumni:alumni_db ( nama_lengkap, nama_panggilan )')
+      .select('id, role, joined_at, user_id')
       .eq('cohort_id', cohortId)
       .order('joined_at', { ascending: true }),
-    supabase
-      .from('projects')
-      .select('id, created_at, title, description, required_skills, status, owner:alumni_db ( id, nama_lengkap )')
-      .eq('cohort_id', cohortId)
-      .order('created_at', { ascending: false })
-      .limit(6),
-    supabase
-      .from('posts')
-      .select('id, content, created_at, alumni_db ( nama_lengkap, nama_panggilan )')
-      .eq('cohort_id', cohortId)
-      .order('created_at', { ascending: false })
-      .limit(10),
+    // Posts/projects are scoped to this community via the post_cohorts/project_cohorts
+    // join tables (migration 025) — the old single cohort_id column is deprecated and
+    // no longer written to by new content.
+    supabase.from('post_cohorts').select('post_id').eq('cohort_id', cohortId),
+    supabase.from('project_cohorts').select('project_id').eq('cohort_id', cohortId),
   ]);
 
   if (!cohort) {
     return <AccessMessage title="Komunitas tidak ditemukan" description="Komunitas ini mungkin sudah dihapus." />;
   }
 
-  const memberRows = (members || []) as unknown as CohortMemberRow[];
+  const memberUserIds = (memberRowsRaw || []).map((m) => m.user_id);
+  const { data: memberAlumni } = memberUserIds.length > 0
+    ? await supabase.from('alumni_db').select('id, nama_lengkap, nama_panggilan').in('id', memberUserIds)
+    : { data: [] };
+  const alumniByUserId = new Map((memberAlumni || []).map((a) => [a.id, a]));
+  const memberRows: CohortMemberRow[] = (memberRowsRaw || []).map((m) => ({
+    ...m,
+    alumni: alumniByUserId.get(m.user_id) || null,
+  }));
+
+  const postIds = (postCohortRows || []).map((r) => r.post_id);
+  const { data: posts } = postIds.length > 0
+    ? await supabase
+        .from('posts')
+        .select('id, content, created_at, alumni_db ( nama_lengkap, nama_panggilan )')
+        .in('id', postIds)
+        .order('created_at', { ascending: false })
+        .limit(10)
+    : { data: [] };
   const postRows = (posts || []) as unknown as CommunityPostRow[];
+
+  const projectIds = (projectCohortRows || []).map((r) => r.project_id);
+  const { data: projects } = projectIds.length > 0
+    ? await supabase
+        .from('projects')
+        .select('id, created_at, title, description, required_skills, status, owner:alumni_db ( id, nama_lengkap )')
+        .in('id', projectIds)
+        .order('created_at', { ascending: false })
+        .limit(6)
+    : { data: [] };
   // owner comes back from PostgREST as a single object, not an array (projects.owner_id
   // is a many-to-one FK into alumni_db) — ProjectCard expects an array, same normalization
   // as the main projects list page.

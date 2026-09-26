@@ -25,7 +25,10 @@ import {
   PlusCircle,
   Clock,
   Briefcase,
-  Loader2
+  Loader2,
+  Mail,
+  Check,
+  X
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -109,6 +112,15 @@ interface CohortMember {
   angkatan: number | null;
 }
 
+interface CohortInvitation {
+  id: number;
+  cohort_id: number;
+  cohort_name: string;
+  cohort_description: string | null;
+  invited_by_name: string;
+  created_at: string;
+}
+
 interface HomeFeedClientProps {
   initialPosts: Post[];
   userProfile: UserProfile;
@@ -129,6 +141,10 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
 
   // Cohorts UI State
   const [showCreateModal, setShowCreateModal] = useState(false);
+
+  // Pending community invitations awaiting this user's accept/decline
+  const [invitations, setInvitations] = useState<CohortInvitation[]>([]);
+  const [respondingInvitationId, setRespondingInvitationId] = useState<number | null>(null);
 
   // Cohort Members State
   const [members, setMembers] = useState<CohortMember[]>([]);
@@ -195,7 +211,46 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
       }
     };
     fetchCohorts();
+
+    const fetchInvitations = async () => {
+      try {
+        const res = await fetch('/api/cohorts/invitations');
+        if (res.ok) {
+          setInvitations(await res.json());
+        }
+      } catch (err) {
+        console.error('Error fetching invitations:', err);
+      }
+    };
+    fetchInvitations();
   }, []);
+
+  const handleRespondInvitation = async (invitationId: number, action: 'accept' | 'decline') => {
+    playClickSound();
+    setRespondingInvitationId(invitationId);
+    try {
+      const res = await fetch('/api/cohorts/invitations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ invitationId, action }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Gagal memproses undangan.');
+
+      setInvitations((prev) => prev.filter((i) => i.id !== invitationId));
+      toast.success(data.message);
+
+      if (action === 'accept') {
+        // Reload the cohorts list so the newly-joined community shows up right away.
+        const res2 = await fetch('/api/cohorts');
+        if (res2.ok) setCohorts(await res2.json());
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Gagal memproses undangan.');
+    } finally {
+      setRespondingInvitationId(null);
+    }
+  };
 
   // Fetch feed and members when activeCohort changes
   useEffect(() => {
@@ -775,6 +830,53 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
 
       {/* COLUMN MIDDLE: Posting Composer & Social Feed */}
       <div className="lg:col-span-6 space-y-6">
+        {/* Pending community invitations — require this user's own accept/decline,
+            never auto-joined by whoever invited them. */}
+        {invitations.length > 0 && (
+          <div className="space-y-2">
+            {invitations.map((inv) => (
+              <Card key={inv.id} className="premium-light-card liquid-glass-border border-amber-200 dark:border-amber-500/20 bg-amber-50/40 dark:bg-amber-500/5 p-4">
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="h-9 w-9 rounded-full bg-amber-100 dark:bg-amber-500/15 flex items-center justify-center flex-shrink-0">
+                      <Mail className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-slate-900 dark:text-white">
+                        Undangan bergabung: {inv.cohort_name}
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        Diundang oleh {inv.invited_by_name}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 flex-shrink-0">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={respondingInvitationId === inv.id}
+                      onClick={() => handleRespondInvitation(inv.id, 'decline')}
+                      className="h-8 text-xs rounded-full gap-1"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                      Tolak
+                    </Button>
+                    <Button
+                      size="sm"
+                      disabled={respondingInvitationId === inv.id}
+                      onClick={() => handleRespondInvitation(inv.id, 'accept')}
+                      className="h-8 text-xs rounded-full gap-1 bg-primary hover:bg-primary/95 text-white"
+                    >
+                      {respondingInvitationId === inv.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                      Terima
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
+
         {/* Cohort Workspace (If active) */}
         {activeCohort && (
           <Card className="premium-light-card liquid-glass-border border-slate-200 dark:border-white/5 p-4 relative overflow-hidden">

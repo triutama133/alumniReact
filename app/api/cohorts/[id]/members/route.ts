@@ -5,7 +5,7 @@ import { headers } from 'next/headers';
 import * as z from 'zod';
 
 const addMemberSchema = z.object({
-  emailOrUsername: z.string().min(3, 'Email atau username minimal 3 karakter.'),
+  emailsOrUsernames: z.array(z.string().min(3, 'Email atau username minimal 3 karakter.')).min(1, 'Masukkan minimal satu email atau username.'),
 });
 
 export async function GET(
@@ -156,36 +156,77 @@ export async function POST(
       return NextResponse.json({ error: 'Hanya Admin kelompok yang dapat menambahkan anggota.' }, { status: 403 });
     }
 
-    // 2. Cari user target di database
-    const emailOrUsername = validationResult.data.emailOrUsername.trim().toLowerCase();
-    const { data: targetUser } = await supabaseAdmin
-      .from('user')
-      .select('id, email')
-      .or(`email.eq.${emailOrUsername},username.eq.${emailOrUsername}`)
-      .maybeSingle();
+    // 2. Fetch the cohort's name for the notification text, and existing
+    // members/invitations so we can skip anyone already in one of those states.
+    const { data: cohortRow } = await supabaseAdmin.from('cohorts').select('name').eq('id', cohortId).maybeSingle();
+    const { data: existingMembers } = await supabaseAdmin.from('cohort_members').select('user_id').eq('cohort_id', cohortId);
+    const existingMemberIds = new Set((existingMembers || []).map((m) => m.user_id));
+    const { data: existingInvites } = await supabaseAdmin.from('cohort_invitations').select('invited_user_id').eq('cohort_id', cohortId);
+    const existingInviteIds = new Set((existingInvites || []).map((i) => i.invited_user_id));
 
-    if (!targetUser) {
-      return NextResponse.json({ error: 'Talenta dengan email atau username tersebut tidak ditemukan.' }, { status: 404 });
-    }
+    const invited: string[] = [];
+    const skipped: Array<{ input: string; reason: string }> = [];
+    const identifiers = [...new Set(validationResult.data.emailsOrUsernames.map((v) => v.trim().toLowerCase()).filter(Boolean))];
 
-    // 3. Tambahkan ke cohort_members
-    const { error: insertError } = await supabaseAdmin
-      .from('cohort_members')
-      .insert({
-        cohort_id: cohortId,
-        user_id: targetUser.id,
-        role: 'member'
-      });
+    for (const identifier of identifiers) {
+      const { data: targetUser } = await supabaseAdmin
+        .from('user')
+        .select('id, email')
+        .or(`email.eq.${identifier},username.eq.${identifier}`)
+        .maybeSingle();
 
-    if (insertError) {
-      if (insertError.message.includes('unique_conflict') || insertError.message.includes('duplicate key')) {
-        return NextResponse.json({ error: 'Pengguna tersebut sudah menjadi anggota kelompok ini.' }, { status: 400 });
+      if (!targetUser) {
+        skipped.push({ input: identifier, reason: 'Tidak ditemukan' });
+        continue;
       }
-      console.error('[COHORT_MEMBERS_POST] Error adding member:', insertError.message);
-      return NextResponse.json({ error: 'Gagal menambahkan anggota.' }, { status: 500 });
+      if (existingMemberIds.has(targetUser.id)) {
+        skipped.push({ input: identifier, reason: 'Sudah menjadi anggota' });
+        continue;
+      }
+      if (existingInviteIds.has(targetUser.id)) {
+        skipped.push({ input: identifier, reason: 'Sudah diundang, menunggu respons' });
+        continue;
+      }
+
+      const { error: inviteInsertError } = await supabaseAdmin
+        .from('cohort_invitations')
+        .insert({ cohort_id: cohortId, invited_user_id: targetUser.id, invited_by: userId });
+
+      if (inviteInsertError) {
+        console.error('[COHORT_MEMBERS_POST] Error inviting', identifier, inviteInsertError.message);
+        skipped.push({ input: identifier, reason: 'Gagal mengundang' });
+        continue;
+      }
+
+      existingInviteIds.add(targetUser.id);
+      invited.push(identifier);
+
+      // Best-effort notification — an invite is still considered sent even if this fails.
+      await supabaseAdmin.from('notifications').insert({
+        user_id: targetUser.id,
+        title: 'Undangan Komunitas',
+        content: `Anda diundang untuk bergabung dengan komunitas "${cohortRow?.name || 'sebuah komunitas'}".`,
+        type: 'cohort_invite',
+        related_id: cohortId,
+        is_read: false,
+      });
     }
 
-    return NextResponse.json({ message: 'Anggota berhasil ditambahkan ke kelompok!' }, { status: 201 });
+    if (invited.length === 0) {
+      return NextResponse.json(
+        { error: 'Tidak ada undangan yang berhasil dikirim.', invited, skipped },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        message: `Undangan berhasil dikirim ke ${invited.length} orang. Mereka perlu menerima undangan sebelum menjadi anggota.`,
+        invited,
+        skipped,
+      },
+      { status: 201 }
+    );
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     return NextResponse.json({ error: message }, { status: 500 });
