@@ -222,7 +222,7 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
     { href: '/search', label: 'Cari Talenta', icon: Search },
     { href: '/jobs', label: 'Jobs', icon: Briefcase },
     { href: '/messages', label: 'Pesan', icon: MessageCircle },
-    { href: '/community/discover', label: 'Jelajahi Komunitas', icon: Compass },
+    { href: '/community/discover', label: 'Komunitas', icon: Compass },
   ];
 
   return (
@@ -299,8 +299,8 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
             )}
           </div>
 
-          {/* Navigation Links */}
-          <div className="hidden items-center gap-1 lg:flex">
+          {/* Navigation Links — icon on top, label below, LinkedIn-style */}
+          <div className="hidden items-stretch gap-1 lg:flex">
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
@@ -308,12 +308,12 @@ export default function Navbar({ userEmail, userId }: NavbarProps) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-semibold transition-all duration-300 ${isActive
-                    ? 'bg-slate-100 text-slate-900 border border-slate-200 dark:bg-white/10 dark:text-white dark:border-white/10 shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-white/5 border border-transparent'
+                  className={`flex flex-col items-center justify-center gap-0.5 px-3 pt-1.5 pb-1 rounded-lg text-[10px] font-bold whitespace-nowrap border-b-2 transition-all duration-300 ${isActive
+                    ? 'text-slate-900 dark:text-white border-primary'
+                    : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-white/5 border-transparent'
                     }`}
                 >
-                  <Icon className="h-3.5 w-3.5" />
+                  <Icon className={`h-5 w-5 ${isActive ? 'text-primary' : ''}`} />
                   {item.label}
                 </Link>
               );

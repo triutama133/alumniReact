@@ -40,6 +40,7 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import CreateCohortModal, { CreatedCohort } from '@/components/community/CreateCohortModal';
+import { EnvironmentSelect } from '@/components/community/EnvironmentSelect';
 
 interface Post {
   id: string | number;
@@ -119,6 +120,7 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
   const [mediaUrl, setMediaUrl] = useState('');
   const [showMediaInput, setShowMediaInput] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
+  const [selectedPostCohortIds, setSelectedPostCohortIds] = useState<number[]>([]);
 
   // Cohorts State
   const [cohorts, setCohorts] = useState<Cohort[]>([]);
@@ -265,6 +267,7 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
     fetchFeed();
     fetchMembers();
     fetchAIRecommendation();
+    setSelectedPostCohortIds(activeCohort ? [activeCohort.id] : []);
   }, [activeCohort, userProfile.id]);
 
   // Handle cohort creation
@@ -322,7 +325,7 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
         body: JSON.stringify({
           content: content,
           media_url: mediaUrl || null,
-          cohortId: activeCohort?.id || null,
+          cohortIds: selectedPostCohortIds,
         }),
       });
 
@@ -338,11 +341,18 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
         aktivitas: userProfile.aktivitas,
       };
 
-      setPosts([newPost, ...posts]);
+      // Only show it immediately in the feed if it's still visible from here
+      // (global feed shows global posts; a cohort feed shows that cohort's posts).
+      const visibleHere = activeCohort
+        ? selectedPostCohortIds.includes(activeCohort.id)
+        : selectedPostCohortIds.length === 0;
+      if (visibleHere) {
+        setPosts([newPost, ...posts]);
+      }
       setContent('');
       setMediaUrl('');
       setShowMediaInput(false);
-      toast.success(activeCohort ? 'Postingan dibagikan ke kelompok!' : 'Postingan publik berhasil dibagikan!');
+      toast.success(selectedPostCohortIds.length > 0 ? 'Postingan dibagikan ke komunitas terpilih!' : 'Postingan publik berhasil dibagikan!');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Gagal membagikan postingan.');
     } finally {
@@ -850,6 +860,14 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
                 </div>
               </div>
             )}
+
+            <div className="pl-13">
+              <EnvironmentSelect
+                cohorts={cohorts.map((c) => ({ id: c.id, name: c.name }))}
+                selectedCohortIds={selectedPostCohortIds}
+                onChange={setSelectedPostCohortIds}
+              />
+            </div>
 
             <div className="flex items-center justify-between border-t border-slate-200 dark:border-white/5 pt-3 pl-13">
               <div className="flex gap-2">

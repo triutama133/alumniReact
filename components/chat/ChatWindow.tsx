@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { createClient } from '@supabase/supabase-js';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Send, MessageCircle, Users, ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,7 +38,17 @@ interface ChatWindowProps {
     userEmail: string | null;
 }
 
+// Polling interval for new messages. Realtime via Supabase's anon-key postgres_changes
+// was dropped here: conversations/messages have no RLS policies, so any client with the
+// anon key could subscribe to an arbitrary conversation's channel and read its content —
+// this app's own authenticated API route (which does verify participant membership
+// server-side) is the only safe way to read messages, hence polling instead of a direct
+// client-to-Supabase subscription.
+const POLL_INTERVAL_MS = 4000;
+
 export function ChatWindow({ currentUserId, userEmail }: ChatWindowProps) {
+    const searchParams = useSearchParams();
+    const router = useRouter();
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
@@ -46,10 +56,8 @@ export function ChatWindow({ currentUserId, userEmail }: ChatWindowProps) {
     const [isLoadingConvs, setIsLoadingConvs] = useState(true);
     const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     const [isSending, setIsSending] = useState(false);
+    const [isStartingConversation, setIsStartingConversation] = useState(false);
     const bottomRef = useRef<HTMLDivElement | null>(null);
-
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
     const scrollToBottom = useCallback(() => {
         setTimeout(() => {
@@ -75,19 +83,53 @@ export function ChatWindow({ currentUserId, userEmail }: ChatWindowProps) {
         loadConversations();
     }, [loadConversations]);
 
+    // If arriving via /messages?userId=X (e.g. "Kirim Pesan" on a profile), start or find
+    // the direct conversation with that user and open it, then clean the URL.
+    useEffect(() => {
+        const targetUserId = searchParams.get('userId');
+        if (!targetUserId) return;
+
+        setIsStartingConversation(true);
+        fetch('/api/conversations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ targetUserId: Number(targetUserId) }),
+        })
+            .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
+            .then(({ ok, data }) => {
+                if (ok && data.conversationId) {
+                    setActiveConversationId(data.conversationId);
+                    loadConversations();
+                }
+            })
+            .catch((err) => console.error('Error starting conversation:', err))
+            .finally(() => {
+                setIsStartingConversation(false);
+                router.replace('/messages');
+            });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchParams]);
+
     // Load pesan saat conversation dipilih
-    const loadMessages = useCallback(async (conversationId: number) => {
-        setIsLoadingMessages(true);
+    const loadMessages = useCallback(async (conversationId: number, silent = false) => {
+        if (!silent) setIsLoadingMessages(true);
         try {
             const res = await fetch(`/api/conversations/${conversationId}/messages`);
             if (res.ok) {
-                setMessages(await res.json());
-                scrollToBottom();
+                const data: Message[] = await res.json();
+                setMessages((prev) => {
+                    // Preserve optimistic messages that haven't round-tripped into the
+                    // server response yet (e.g. a very recent send between polls).
+                    const serverIds = new Set(data.map((m) => m.id));
+                    const stillPending = prev.filter((m) => m.id < 0 && !serverIds.has(m.id));
+                    return [...data, ...stillPending];
+                });
+                if (!silent) scrollToBottom();
             }
         } catch (err) {
             console.error('Error loading messages:', err);
         } finally {
-            setIsLoadingMessages(false);
+            if (!silent) setIsLoadingMessages(false);
         }
     }, [scrollToBottom]);
 
@@ -99,37 +141,14 @@ export function ChatWindow({ currentUserId, userEmail }: ChatWindowProps) {
         }
     }, [activeConversationId, loadMessages]);
 
-    // Subscribe ke Supabase Realtime untuk pesan baru
+    // Poll for new messages while a conversation is open.
     useEffect(() => {
         if (!activeConversationId) return;
-
-        const supabase = createClient(supabaseUrl, supabaseAnonKey);
-        const channel = supabase
-            .channel(`room:${activeConversationId}`)
-            .on(
-                'postgres_changes',
-                {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'messages',
-                    filter: `conversation_id=eq.${activeConversationId}`,
-                },
-                (payload) => {
-                    const newMsg = payload.new as Message;
-                    setMessages((prev) => {
-                        // Hindari duplikasi
-                        if (prev.some((m) => m.id === newMsg.id)) return prev;
-                        return [...prev, newMsg];
-                    });
-                    scrollToBottom();
-                }
-            )
-            .subscribe();
-
-        return () => {
-            supabase.removeChannel(channel);
-        };
-    }, [activeConversationId, supabaseUrl, supabaseAnonKey, scrollToBottom]);
+        const interval = setInterval(() => {
+            loadMessages(activeConversationId, true);
+        }, POLL_INTERVAL_MS);
+        return () => clearInterval(interval);
+    }, [activeConversationId, loadMessages]);
 
     // Kirim pesan
     const sendMessage = async () => {
@@ -137,6 +156,22 @@ export function ChatWindow({ currentUserId, userEmail }: ChatWindowProps) {
         if (!content || !activeConversationId || isSending) return;
 
         setIsSending(true);
+        setInput('');
+
+        // Optimistic append so the sender sees their own message immediately, instead of
+        // waiting for the next poll cycle.
+        const optimisticId = -Date.now();
+        setMessages((prev) => [...prev, {
+            id: optimisticId,
+            conversation_id: activeConversationId,
+            sender_id: currentUserId,
+            content,
+            content_type: 'text',
+            created_at: new Date().toISOString(),
+            alumni_db: null,
+        }]);
+        scrollToBottom();
+
         try {
             const res = await fetch(`/api/conversations/${activeConversationId}/messages`, {
                 method: 'POST',
@@ -149,11 +184,13 @@ export function ChatWindow({ currentUserId, userEmail }: ChatWindowProps) {
                 throw new Error(data?.error || 'Gagal mengirim pesan.');
             }
 
-            setInput('');
-            // Pesan akan muncul via Realtime subscription
-            scrollToBottom();
+            // Replace the optimistic row with the confirmed one from the server.
+            const sent: Message = await res.json();
+            setMessages((prev) => prev.map((m) => (m.id === optimisticId ? sent : m)));
         } catch (err) {
             console.error('Error sending message:', err);
+            setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
+            setInput(content);
         } finally {
             setIsSending(false);
         }
@@ -192,14 +229,16 @@ export function ChatWindow({ currentUserId, userEmail }: ChatWindowProps) {
                     </Badge>
                 </div>
                 <div className="flex-1 overflow-y-auto">
-                    {isLoadingConvs ? (
-                        <p className="text-center text-xs text-slate-400 py-8">Memuat percakapan...</p>
+                    {isLoadingConvs || isStartingConversation ? (
+                        <p className="text-center text-xs text-slate-400 py-8">
+                            {isStartingConversation ? 'Membuka percakapan...' : 'Memuat percakapan...'}
+                        </p>
                     ) : conversations.length === 0 ? (
                         <div className="text-center py-10 px-6">
                             <MessageCircle className="h-10 w-10 mx-auto text-slate-300 dark:text-slate-600 mb-2" />
                             <p className="text-xs text-slate-500 dark:text-slate-400">Belum ada percakapan.</p>
                             <p className="text-[10px] text-slate-400 mt-1">
-                                Kunjungi halaman Cari Talenta dan klik "Kirim Pesan" untuk memulai.
+                                Kunjungi halaman Cari Talenta atau profil seseorang dan klik &quot;Kirim Pesan&quot; untuk memulai.
                             </p>
                             <Button asChild size="sm" className="mt-4 bg-primary hover:bg-primary/95 text-white text-xs font-bold">
                                 <Link href="/search">Cari Talenta</Link>

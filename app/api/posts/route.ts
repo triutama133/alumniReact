@@ -8,7 +8,9 @@ import { sanitizeContent } from '@/lib/sanitize';
 const postSchema = z.object({
   content: z.string().min(1, 'Postingan tidak boleh kosong.').max(5000, 'Postingan terlalu panjang.'),
   media_url: z.string().url().or(z.literal('')).optional().nullable(),
-  cohortId: z.number().int().optional().nullable(),
+  // A post is global when this is empty/omitted, or scoped to every cohort listed here
+  // (migration 025 — post_cohorts). The single cohortId field is deprecated.
+  cohortIds: z.array(z.number().int()).optional().default([]),
 });
 
 interface FeedPost {
@@ -47,14 +49,41 @@ export async function GET(req: NextRequest) {
             likes_count,
             comments_count,
             created_at,
-            cohort_id,
             alumni_db ( nama_lengkap, nama_panggilan, aktivitas )
         `);
 
     if (cohortId && !Number.isNaN(cohortId)) {
-      dbQuery = dbQuery.eq('cohort_id', cohortId);
+      // Scoped to a specific community: verify the requester is actually a member
+      // before returning anything cohort-tagged — the cohortId query param is
+      // client-supplied (mirrors the active_cohort_id cookie) and must never be
+      // trusted on its own.
+      if (!userId || Number.isNaN(userId)) {
+        return NextResponse.json({ error: 'Autentikasi gagal.' }, { status: 401 });
+      }
+      const { data: membership } = await supabase
+        .from('cohort_members')
+        .select('cohort_id')
+        .eq('user_id', userId)
+        .eq('cohort_id', cohortId)
+        .maybeSingle();
+      if (!membership) {
+        return NextResponse.json({ error: 'Anda bukan anggota komunitas ini.' }, { status: 403 });
+      }
+
+      // Posts tagged with this cohort (migration 025).
+      const { data: taggedRows } = await supabase
+        .from('post_cohorts')
+        .select('post_id')
+        .eq('cohort_id', cohortId);
+      const taggedIds = (taggedRows || []).map((r) => r.post_id);
+      dbQuery = dbQuery.in('id', taggedIds.length > 0 ? taggedIds : [-1]);
     } else {
-      dbQuery = dbQuery.is('cohort_id', null);
+      // Global feed: posts with no cohort tags at all.
+      const { data: allTaggedRows } = await supabase.from('post_cohorts').select('post_id');
+      const allTaggedIds = [...new Set((allTaggedRows || []).map((r) => r.post_id))];
+      if (allTaggedIds.length > 0) {
+        dbQuery = dbQuery.not('id', 'in', `(${allTaggedIds.join(',')})`);
+      }
     }
 
     const { data: posts, error } = await dbQuery
@@ -98,7 +127,7 @@ export async function GET(req: NextRequest) {
         likes_count: p.likes_count ?? 0,
         comments_count: p.comments_count ?? 0,
         created_at: p.created_at,
-        cohort_id: p.cohort_id,
+        cohort_id: cohortId,
         nama_lengkap: alumni?.nama_lengkap ?? null,
         nama_panggilan: alumni?.nama_panggilan ?? null,
         aktivitas: alumni?.aktivitas ?? null,
@@ -136,10 +165,27 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Sanitasi konten dari HTML berbahaya
-    const cleanContent = sanitizeContent(validationResult.data.content, 5000);
+    const cohortIds = [...new Set(validationResult.data.cohortIds)];
 
     const supabase = getAdminClient();
+
+    // Only allow tagging communities the author actually belongs to — the client
+    // supplies which cohorts to tag, so this has to be re-verified server-side.
+    if (cohortIds.length > 0) {
+      const { data: memberships } = await supabase
+        .from('cohort_members')
+        .select('cohort_id')
+        .eq('user_id', userId)
+        .in('cohort_id', cohortIds);
+      const memberCohortIds = new Set((memberships || []).map((m) => m.cohort_id));
+      const notMember = cohortIds.filter((id) => !memberCohortIds.has(id));
+      if (notMember.length > 0) {
+        return NextResponse.json({ error: 'Anda bukan anggota salah satu komunitas yang dipilih.' }, { status: 403 });
+      }
+    }
+
+    // Sanitasi konten dari HTML berbahaya
+    const cleanContent = sanitizeContent(validationResult.data.content, 5000);
 
     const { data: newPost, error } = await supabase
       .from('posts')
@@ -147,7 +193,6 @@ export async function POST(req: NextRequest) {
         user_id: userId,
         content: cleanContent,
         media_url: validationResult.data.media_url || null,
-        cohort_id: validationResult.data.cohortId || null,
       })
       .select(`
                 id,
@@ -157,7 +202,6 @@ export async function POST(req: NextRequest) {
                 likes_count,
                 comments_count,
                 created_at,
-                cohort_id,
                 alumni_db ( nama_lengkap, nama_panggilan, aktivitas )
             `)
       .single();
@@ -165,6 +209,15 @@ export async function POST(req: NextRequest) {
     if (error) {
       console.error('[POSTS_API] Error inserting post:', error.message);
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    if (cohortIds.length > 0) {
+      const { error: tagErr } = await supabase
+        .from('post_cohorts')
+        .insert(cohortIds.map((cohortId) => ({ post_id: newPost.id, cohort_id: cohortId })));
+      if (tagErr) {
+        console.error('[POSTS_API] Error tagging post cohorts:', tagErr.message);
+      }
     }
 
     const alumni = newPost.alumni_db as unknown as {
@@ -184,7 +237,7 @@ export async function POST(req: NextRequest) {
           likes_count: newPost.likes_count ?? 0,
           comments_count: newPost.comments_count ?? 0,
           created_at: newPost.created_at,
-          cohort_id: newPost.cohort_id,
+          cohort_id: cohortIds[0] ?? null,
           nama_lengkap: alumni?.nama_lengkap ?? null,
           nama_panggilan: alumni?.nama_panggilan ?? null,
           aktivitas: alumni?.aktivitas ?? null,

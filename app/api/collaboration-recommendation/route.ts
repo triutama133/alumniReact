@@ -56,6 +56,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Profil pengguna tidak ditemukan untuk rekomendasi.' }, { status: 404 });
     }
 
+    // cohortId scopes the recommendation search to one community's members —
+    // verify membership before scoping to it, since it's client-supplied.
+    if (cohortId) {
+      const { data: membership } = await supabaseAdmin
+        .from('cohort_members')
+        .select('cohort_id')
+        .eq('user_id', userId)
+        .eq('cohort_id', Number(cohortId))
+        .maybeSingle();
+      if (!membership) {
+        return NextResponse.json({ error: 'Anda bukan anggota komunitas ini.' }, { status: 403 });
+      }
+    }
+
     if (source === 'home') {
       console.log('[REC_API] Menghitung wawasan partner kolaborasi secara lokal (Tanpa LLM)...');
       

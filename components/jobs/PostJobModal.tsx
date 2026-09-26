@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { EnvironmentSelect, EnvironmentCohortOption } from '@/components/community/EnvironmentSelect'
 
 export interface PostedJob {
   id: number
@@ -30,6 +31,7 @@ export interface PostedJob {
   owner_id: number
   source: string
   is_active: boolean
+  cohort_ids?: number[]
 }
 
 interface PostJobModalProps {
@@ -54,8 +56,19 @@ export default function PostJobModal({ open, onOpenChange, onCreated, editingJob
   const [jobUrl, setJobUrl] = useState('')
   const [salary, setSalary] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [cohorts, setCohorts] = useState<EnvironmentCohortOption[]>([])
+  const [selectedCohortIds, setSelectedCohortIds] = useState<number[]>([])
 
   const isEditing = Boolean(editingJob)
+
+  // Load the communities this user belongs to, so they can tag the posting.
+  useEffect(() => {
+    if (!open) return
+    fetch('/api/cohorts')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data: EnvironmentCohortOption[]) => setCohorts(data))
+      .catch(() => {})
+  }, [open])
 
   // Pre-fill the form when opening in edit mode.
   useEffect(() => {
@@ -68,6 +81,9 @@ export default function PostJobModal({ open, onOpenChange, onCreated, editingJob
       setRequirements(arrayToLines(editingJob.requirements))
       setJobUrl(editingJob.job_url || '')
       setSalary(editingJob.salary || '')
+      setSelectedCohortIds(editingJob.cohort_ids || [])
+    } else if (open && !editingJob) {
+      setSelectedCohortIds([])
     }
   }, [open, editingJob])
 
@@ -80,6 +96,7 @@ export default function PostJobModal({ open, onOpenChange, onCreated, editingJob
     setRequirements('')
     setJobUrl('')
     setSalary('')
+    setSelectedCohortIds([])
     onOpenChange(false)
   }
 
@@ -101,6 +118,7 @@ export default function PostJobModal({ open, onOpenChange, onCreated, editingJob
           requirements: linesToArray(requirements),
           job_url: jobUrl || null,
           salary: salary || null,
+          cohortIds: selectedCohortIds,
         }),
       })
 
@@ -177,6 +195,11 @@ export default function PostJobModal({ open, onOpenChange, onCreated, editingJob
               <Input value={jobUrl} onChange={(e) => setJobUrl(e.target.value)} placeholder="https://... (kosongkan jika cukup hubungi langsung)" />
             </div>
           </div>
+          <EnvironmentSelect
+            cohorts={cohorts}
+            selectedCohortIds={selectedCohortIds}
+            onChange={setSelectedCohortIds}
+          />
           <DialogFooter className="pt-2">
             <Button type="button" variant="ghost" size="sm" onClick={resetAndClose} className="rounded-md text-xs">Batal</Button>
             <Button type="submit" size="sm" disabled={isSubmitting || !jobTitle.trim() || !company.trim() || !description.trim()} className="bg-primary hover:bg-primary/95 text-white font-semibold text-xs rounded-md px-5 shadow-sm gap-1.5">

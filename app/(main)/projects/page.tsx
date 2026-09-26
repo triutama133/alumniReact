@@ -47,16 +47,39 @@ export default async function ProjectsPage({
 
   let projects: ProjectWithOwner[] = [];
   if (currentTab === 'jelajah') {
-    const activeCohortId = cookieStore.get('active_cohort_id')?.value;
-    
+    const activeCohortIdRaw = cookieStore.get('active_cohort_id')?.value;
+    const activeCohortId = activeCohortIdRaw && activeCohortIdRaw !== 'global' ? Number(activeCohortIdRaw) : null;
+
     let dbQuery = supabase
       .from('projects')
       .select(`id, created_at, title, description, required_skills, status, owner:alumni_db (id, nama_lengkap)`);
-      
-    if (activeCohortId && activeCohortId !== 'global') {
-      dbQuery = dbQuery.eq('cohort_id', Number(activeCohortId));
+
+    if (activeCohortId && !Number.isNaN(activeCohortId)) {
+      // The active_cohort_id cookie is client-writable — never trust it to scope
+      // results without re-verifying the requester is actually a member.
+      let isMember = false;
+      if (userId) {
+        const { data: membership } = await supabase
+          .from('cohort_members')
+          .select('cohort_id')
+          .eq('user_id', userId)
+          .eq('cohort_id', activeCohortId)
+          .maybeSingle();
+        isMember = !!membership;
+      }
+      const { data: taggedRows } = await supabase
+        .from('project_cohorts')
+        .select('project_id')
+        .eq('cohort_id', activeCohortId);
+      const taggedIds = isMember ? (taggedRows || []).map((r) => r.project_id) : [];
+      dbQuery = dbQuery.in('id', taggedIds.length > 0 ? taggedIds : [-1]);
     } else {
-      dbQuery = dbQuery.is('cohort_id', null);
+      // Global: projects with no community tags at all.
+      const { data: allTaggedRows } = await supabase.from('project_cohorts').select('project_id');
+      const allTaggedIds = [...new Set((allTaggedRows || []).map((r) => r.project_id))];
+      if (allTaggedIds.length > 0) {
+        dbQuery = dbQuery.not('id', 'in', `(${allTaggedIds.join(',')})`);
+      }
     }
 
     const { data, error } = await dbQuery.order('created_at', { ascending: false });

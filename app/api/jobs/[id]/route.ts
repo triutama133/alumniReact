@@ -15,6 +15,9 @@ const updateJobSchema = z.object({
   category: z.string().optional().default('Others / General'),
   job_url: z.string().url().or(z.literal('')).optional().nullable(),
   salary: z.string().optional().nullable(),
+  // A job is global when this is empty/omitted, or scoped to every cohort
+  // listed here (migration 025 — job_cohorts).
+  cohortIds: z.array(z.number().int()).optional().default([]),
 });
 
 export async function PATCH(
@@ -59,6 +62,20 @@ export async function PATCH(
       return NextResponse.json({ error: 'Anda bukan pemilik lowongan ini.' }, { status: 403 });
     }
 
+    const cohortIds = [...new Set(validationResult.data.cohortIds)];
+    if (cohortIds.length > 0) {
+      const { data: memberships } = await supabase
+        .from('cohort_members')
+        .select('cohort_id')
+        .eq('user_id', userId)
+        .in('cohort_id', cohortIds);
+      const memberCohortIds = new Set((memberships || []).map((m) => m.cohort_id));
+      const notMember = cohortIds.filter((cid) => !memberCohortIds.has(cid));
+      if (notMember.length > 0) {
+        return NextResponse.json({ error: 'Anda bukan anggota salah satu komunitas yang dipilih.' }, { status: 403 });
+      }
+    }
+
     const { data: updated, error: updateErr } = await supabase
       .from('jobs')
       .update({
@@ -78,6 +95,20 @@ export async function PATCH(
     if (updateErr || !updated) {
       console.error('[JOBS_PATCH] Error updating job:', updateErr?.message);
       return NextResponse.json({ error: updateErr?.message || 'Gagal memperbarui lowongan.' }, { status: 500 });
+    }
+
+    // Replace this job's cohort tags wholesale with the submitted set.
+    const { error: clearTagsErr } = await supabase.from('job_cohorts').delete().eq('job_id', jobId);
+    if (clearTagsErr) {
+      console.error('[JOBS_PATCH] Error clearing job cohorts:', clearTagsErr.message);
+    }
+    if (cohortIds.length > 0) {
+      const { error: tagErr } = await supabase
+        .from('job_cohorts')
+        .insert(cohortIds.map((cohortId) => ({ job_id: jobId, cohort_id: cohortId })));
+      if (tagErr) {
+        console.error('[JOBS_PATCH] Error tagging job cohorts:', tagErr.message);
+      }
     }
 
     return NextResponse.json({ message: 'Lowongan berhasil diperbarui!', job: updated }, { status: 200 });

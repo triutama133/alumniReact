@@ -10,7 +10,6 @@ import { playClickSound, playScanSound, playSuccessSound } from '@/lib/audio';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { createClient } from '@/lib/supabaseClient';
 import { AlumniSearchResult } from '@/lib/types';
 import { AlumniCard } from '@/components/search/AlumniCard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -122,8 +121,6 @@ export default function SearchPage() {
     }
   };
 
-  const supabase = createClient();
-
   const promptStarters = [
     "Cari desainer UI/UX domisili Bogor yang ahli Figma dan prototyping",
     "Butuh developer mobile app Flutter/React Native di Bandung untuk kerja sama tim",
@@ -151,30 +148,17 @@ export default function SearchPage() {
       return null;
     };
     const activeCohortId = getCookie('active_cohort_id');
+    const cohortIdParam = activeCohortId && activeCohortId !== 'global' ? Number(activeCohortId) : null;
 
     try {
-      let memberIds: number[] = [];
-      if (activeCohortId && activeCohortId !== 'global') {
-        const { data: memberRows, error: memberErr } = await supabase
-          .from('cohort_members')
-          .select('user_id')
-          .eq('cohort_id', Number(activeCohortId));
-        if (!memberErr && memberRows) {
-          memberIds = memberRows.map(r => Number(r.user_id));
-        }
+      const params = new URLSearchParams({ q: searchTerm });
+      if (cohortIdParam) params.set('cohortId', String(cohortIdParam));
+
+      const res = await fetch(`/api/search/standard?${params.toString()}`);
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Gagal melakukan pencarian standar.');
       }
-
-      let dbQuery = supabase
-        .from('alumni_db')
-        .select('id, nama_lengkap, nama_panggilan, aktivitas, skill_gabungan, fakultas_jurusan');
-      
-      if (activeCohortId && activeCohortId !== 'global') {
-        dbQuery = dbQuery.in('id', memberIds);
-      }
-
-      const { data, error } = await dbQuery.or(`nama_lengkap.ilike.%${searchTerm}%,skill_gabungan.ilike.%${searchTerm}%`);
-
-      if (error) throw error;
       setSearchResults(data || []);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);

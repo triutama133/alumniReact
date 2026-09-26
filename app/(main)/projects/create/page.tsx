@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
 
@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { LoadingOverlay } from "@/components/ui/loading-overlay"
+import { EnvironmentSelect, EnvironmentCohortOption } from "@/components/community/EnvironmentSelect"
 
 const formSchema = z.object({
   title: z.string().min(10, "Judul harus lebih dari 10 karakter."),
@@ -24,17 +25,10 @@ const formSchema = z.object({
 export default function CreateProjectPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [cohorts, setCohorts] = useState<EnvironmentCohortOption[]>([])
+  const [selectedCohortIds, setSelectedCohortIds] = useState<number[]>([])
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: { title: "", description: "", required_skills: "" },
-  })
-
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    setLoading(true);
-    
-    const skillsArray = values.required_skills.split(',').map(skill => skill.trim());
-
+  useEffect(() => {
     const getCookie = (name: string) => {
       if (typeof document === 'undefined') return null;
       const value = `; ${document.cookie}`;
@@ -43,6 +37,28 @@ export default function CreateProjectPage() {
       return null;
     };
     const activeCohortId = getCookie('active_cohort_id');
+
+    fetch('/api/cohorts')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data: EnvironmentCohortOption[]) => {
+        setCohorts(data);
+        if (activeCohortId && activeCohortId !== 'global') {
+          const id = Number(activeCohortId);
+          if (data.some((c) => c.id === id)) setSelectedCohortIds([id]);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: { title: "", description: "", required_skills: "" },
+  })
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setLoading(true);
+
+    const skillsArray = values.required_skills.split(',').map(skill => skill.trim());
 
     try {
       const response = await fetch('/api/projects', {
@@ -54,7 +70,7 @@ export default function CreateProjectPage() {
           title: values.title,
           description: values.description,
           required_skills: skillsArray,
-          cohortId: activeCohortId ? Number(activeCohortId) : null,
+          cohortIds: selectedCohortIds,
         }),
       });
 
@@ -86,6 +102,11 @@ export default function CreateProjectPage() {
               <FormField control={form.control} name="title" render={({ field }) => ( <FormItem><FormLabel>Judul Proyek</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
               <FormField control={form.control} name="description" render={({ field }) => ( <FormItem><FormLabel>Deskripsi Lengkap Proyek</FormLabel><FormControl><Textarea rows={8} {...field} /></FormControl><FormMessage /></FormItem> )} />
               <FormField control={form.control} name="required_skills" render={({ field }) => ( <FormItem><FormLabel>Skill yang Dibutuhkan</FormLabel><FormControl><Input {...field} /></FormControl><FormDescription>Pisahkan setiap skill dengan koma ( , ).</FormDescription><FormMessage /></FormItem> )} />
+              <EnvironmentSelect
+                cohorts={cohorts}
+                selectedCohortIds={selectedCohortIds}
+                onChange={setSelectedCohortIds}
+              />
               <Button type="submit" className="w-full gap-1.5" disabled={loading}>
                 {loading && <Loader2 className="h-4 w-4 animate-spin" />}
                 {loading ? "Menyimpan..." : "Publikasikan Proyek"}

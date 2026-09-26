@@ -43,13 +43,18 @@ export default async function HomePage() {
     redirect('/complete-profile');
   }
 
-  const activeCohortId = cookieStore.get('active_cohort_id')?.value;
-  
+  // The active_cohort_id cookie is client-writable and cannot be trusted to scope
+  // which community's posts get server-rendered here without re-verifying
+  // membership. Rather than duplicate that check in two places, this initial
+  // server render always shows the global feed (posts with no community tags);
+  // HomeFeedClient's own effect re-fetches from the properly membership-checked
+  // GET /api/posts?cohortId=... the moment a specific community becomes active.
+  const { data: allTaggedRows } = await supabase.from('post_cohorts').select('post_id');
+  const allTaggedIds = [...new Set((allTaggedRows || []).map((r) => r.post_id))];
+
   let dbQuery = supabase.from('posts_feed').select('*');
-  if (activeCohortId && activeCohortId !== 'global') {
-    dbQuery = dbQuery.eq('cohort_id', Number(activeCohortId));
-  } else {
-    dbQuery = dbQuery.is('cohort_id', null);
+  if (allTaggedIds.length > 0) {
+    dbQuery = dbQuery.not('id', 'in', `(${allTaggedIds.join(',')})`);
   }
 
   const { data: posts, error: postsError } = await dbQuery

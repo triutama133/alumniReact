@@ -5,7 +5,6 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@supabase/supabase-js';
 import { Send, MessageSquare, ChevronUp, ChevronDown, User, MessageCircle, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,8 +53,6 @@ export function FloatingChat({ currentUserId, userEmail }: FloatingChatProps) {
     const [totalUnread, setTotalUnread] = useState(0);
 
     const bottomRef = useRef<HTMLDivElement | null>(null);
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
     const scrollToBottom = useCallback(() => {
         setTimeout(() => {
@@ -109,26 +106,37 @@ export function FloatingChat({ currentUserId, userEmail }: FloatingChatProps) {
         }
     }, [isOpen, loadConversations]);
 
-    // Load messages for selected conversation
-    const loadMessages = useCallback(async (conversationId: number) => {
-        setIsLoadingMessages(true);
+    // Load messages for selected conversation. Realtime via the anon-key Supabase
+    // client was dropped here — conversations/messages have no RLS, so any client with
+    // the anon key could subscribe to an arbitrary conversation channel and read its
+    // content. Polling this app's own authenticated API route (which verifies
+    // participant membership server-side) is the safe alternative.
+    const loadMessages = useCallback(async (conversationId: number, silent = false) => {
+        if (!silent) setIsLoadingMessages(true);
         try {
             const res = await fetch(`/api/conversations/${conversationId}/messages`);
             if (res.ok) {
-                setMessages(await res.json());
-                scrollToBottom();
-                
-                // Clear unread count locally
-                setConversations(prev => 
-                    prev.map(c => c.id === conversationId ? { ...c, unread_count: 0 } : c)
-                );
-                // Trigger refresh of total unread
-                setTotalUnread(prev => Math.max(0, prev - (conversations.find(c => c.id === conversationId)?.unread_count || 0)));
+                const data: Message[] = await res.json();
+                setMessages((prev) => {
+                    const serverIds = new Set(data.map((m) => m.id));
+                    const stillPending = prev.filter((m) => m.id < 0 && !serverIds.has(m.id));
+                    return [...data, ...stillPending];
+                });
+                if (!silent) scrollToBottom();
+
+                if (!silent) {
+                    // Clear unread count locally
+                    setConversations(prev =>
+                        prev.map(c => c.id === conversationId ? { ...c, unread_count: 0 } : c)
+                    );
+                    // Trigger refresh of total unread
+                    setTotalUnread(prev => Math.max(0, prev - (conversations.find(c => c.id === conversationId)?.unread_count || 0)));
+                }
             }
         } catch (err) {
             console.error('Error loading messages in floating chat:', err);
         } finally {
-            setIsLoadingMessages(false);
+            if (!silent) setIsLoadingMessages(false);
         }
     }, [conversations, scrollToBottom]);
 
@@ -138,38 +146,18 @@ export function FloatingChat({ currentUserId, userEmail }: FloatingChatProps) {
         } else {
             setMessages([]);
         }
-    }, [activeConversationId, loadMessages]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeConversationId]);
 
-    // Subscribe to realtime messages
+    // Poll for new messages while a conversation is open.
     useEffect(() => {
         if (!activeConversationId) return;
-
-        const supabase = createClient(supabaseUrl, supabaseAnonKey);
-        const channel = supabase
-            .channel(`floating-room:${activeConversationId}`)
-            .on(
-                'postgres_changes',
-                {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'messages',
-                    filter: `conversation_id=eq.${activeConversationId}`,
-                },
-                (payload) => {
-                    const newMsg = payload.new as Message;
-                    setMessages((prev) => {
-                        if (prev.some((m) => m.id === newMsg.id)) return prev;
-                        return [...prev, newMsg];
-                    });
-                    scrollToBottom();
-                }
-            )
-            .subscribe();
-
-        return () => {
-            supabase.removeChannel(channel);
-        };
-    }, [activeConversationId, supabaseUrl, supabaseAnonKey, scrollToBottom]);
+        const interval = setInterval(() => {
+            loadMessages(activeConversationId, true);
+        }, 4000);
+        return () => clearInterval(interval);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeConversationId]);
 
     // Send message
     const sendMessage = async () => {
@@ -177,6 +165,20 @@ export function FloatingChat({ currentUserId, userEmail }: FloatingChatProps) {
         if (!content || !activeConversationId || isSending) return;
 
         setIsSending(true);
+        setInput('');
+
+        const optimisticId = -Date.now();
+        setMessages((prev) => [...prev, {
+            id: optimisticId,
+            conversation_id: activeConversationId,
+            sender_id: currentUserId,
+            content,
+            content_type: 'text',
+            created_at: new Date().toISOString(),
+            alumni_db: null,
+        }]);
+        scrollToBottom();
+
         try {
             const res = await fetch(`/api/conversations/${activeConversationId}/messages`, {
                 method: 'POST',
@@ -184,11 +186,16 @@ export function FloatingChat({ currentUserId, userEmail }: FloatingChatProps) {
                 body: JSON.stringify({ content }),
             });
             if (res.ok) {
-                setInput('');
-                scrollToBottom();
+                const sent: Message = await res.json();
+                setMessages((prev) => prev.map((m) => (m.id === optimisticId ? sent : m)));
+            } else {
+                setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
+                setInput(content);
             }
         } catch (err) {
             console.error('Error sending message:', err);
+            setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
+            setInput(content);
         } finally {
             setIsSending(false);
         }

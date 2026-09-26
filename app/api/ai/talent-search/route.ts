@@ -1,5 +1,7 @@
 // app/api/ai/talent-search/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import { headers } from 'next/headers';
+import { getAdminClient } from '@/lib/adminClient';
 
 export async function POST(req: NextRequest) {
   try {
@@ -7,6 +9,28 @@ export async function POST(req: NextRequest) {
 
     if (!prompt) {
       return NextResponse.json({ error: 'Prompt pencarian wajib diisi.' }, { status: 400 });
+    }
+
+    // cohortId scopes the AI search to one community's members — verify the
+    // requester actually belongs to it before forwarding to the AI engine,
+    // since a client could otherwise request any community's roster.
+    if (cohortId) {
+      const headersList = await headers();
+      const userIdString = headersList.get('x-user-id');
+      const userId = userIdString ? Number(userIdString) : null;
+      if (!userId || Number.isNaN(userId)) {
+        return NextResponse.json({ error: 'Autentikasi gagal.' }, { status: 401 });
+      }
+      const supabase = getAdminClient();
+      const { data: membership } = await supabase
+        .from('cohort_members')
+        .select('cohort_id')
+        .eq('user_id', userId)
+        .eq('cohort_id', Number(cohortId))
+        .maybeSingle();
+      if (!membership) {
+        return NextResponse.json({ error: 'Anda bukan anggota komunitas ini.' }, { status: 403 });
+      }
     }
 
     const fastApiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.FASTAPI_URL || 'http://127.0.0.1:8000';

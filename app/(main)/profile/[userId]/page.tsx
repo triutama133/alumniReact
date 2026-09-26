@@ -35,7 +35,8 @@ import {
   ArrowRight,
   Shield,
   MapPinned,
-  Sparkles
+  Sparkles,
+  MessageSquare
 } from 'lucide-react';
 
 interface ExtendedAlumniProfile {
@@ -364,7 +365,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
               )}
             </div>
             
-            {isOwnProfile && (
+            {isOwnProfile ? (
               <div className="flex flex-col sm:flex-row gap-2">
                 <Button asChild variant="outline" className="text-xs py-2 px-5 rounded-md border-slate-300 dark:border-white/10">
                   <Link href="/settings">Pengaturan Akun</Link>
@@ -373,6 +374,13 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
                   <Link href={`/profile/edit/${profileIdAsString}`}>Pengaturan Profil</Link>
                 </Button>
               </div>
+            ) : currentUser && (
+              <Button asChild className="bg-primary hover:bg-primary/95 text-white font-bold text-xs py-2 px-6 rounded-md shadow-sm gap-1.5">
+                <Link href={`/messages?userId=${profileIdAsString}`}>
+                  <MessageSquare className="h-3.5 w-3.5" />
+                  Kirim Pesan
+                </Link>
+              </Button>
             )}
           </div>
         </CardContent>
