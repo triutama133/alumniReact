@@ -3,14 +3,13 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
 import { Cpu, Loader2, Radar } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { CandidateOrbit } from '@/components/ai/CandidateOrbit'
 import { TalentPreviewDialog } from '@/components/ai/TalentPreviewDialog'
+import { CandidateAwareMarkdown } from '@/components/ai/CandidateAwareMarkdown'
 import { playClickSound, playScanSound, playSuccessSound } from '@/lib/audio'
 import type { RecommendedCandidate } from '@/lib/api'
 
@@ -142,8 +141,13 @@ export function ProjectScoutTab({ myProjects }: ProjectScoutTabProps) {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-bold">Ringkasan Analisis AI</CardTitle>
           </CardHeader>
-          <CardContent className="prose prose-sm dark:prose-invert max-w-none text-xs">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{reportText}</ReactMarkdown>
+          <CardContent>
+            <CandidateAwareMarkdown
+              text={reportText}
+              candidates={candidates}
+              onSelectCandidate={setPreviewCandidate}
+              className="prose prose-sm dark:prose-invert max-w-none text-xs"
+            />
           </CardContent>
         </Card>
       )}

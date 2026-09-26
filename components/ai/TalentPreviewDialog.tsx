@@ -71,6 +71,19 @@ export function TalentPreviewDialog({ candidate, onOpenChange, inviteProjectId, 
               {TIER_LABEL[candidate.tier]} &middot; {candidate.match_strength}% kecocokan
             </Badge>
 
+            {candidate.matched_skills.length > 0 && (
+              <div className="space-y-1.5">
+                <p className="text-[10px] font-bold text-slate-400 uppercase">Kecocokan dengan Kebutuhan</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {candidate.matched_skills.map((skill) => (
+                    <Badge key={skill} className="text-[10px] font-semibold px-2 py-0.5 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 capitalize">
+                      {skill}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {candidate.skills && (
               <div className="space-y-1">
                 <p className="text-[10px] font-bold text-slate-400 uppercase">Keahlian</p>

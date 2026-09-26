@@ -10,12 +10,12 @@ interface CandidateOrbitProps {
 }
 
 const TIER_CONFIG = {
-  kuat: { radius: 70, color: '#059669', ring: 'Rekomendasi Kuat' },
-  sedang: { radius: 135, color: '#d97706', ring: 'Rekomendasi Sedang' },
-  lemah: { radius: 200, color: '#64748b', ring: 'Rekomendasi Lemah' },
+  kuat: { radius: 130, color: '#059669', ring: 'Rekomendasi Kuat' },
+  sedang: { radius: 260, color: '#d97706', ring: 'Rekomendasi Sedang' },
+  lemah: { radius: 390, color: '#64748b', ring: 'Rekomendasi Lemah' },
 } as const
 
-const VIEW_SIZE = 460
+const VIEW_SIZE = 940
 const CENTER = VIEW_SIZE / 2
 
 function initials(name: string) {
@@ -46,8 +46,8 @@ export function CandidateOrbit({ candidates, centerLabel, onSelect }: CandidateO
   if (candidates.length === 0) return null
 
   return (
-    <div className="flex flex-col items-center gap-4">
-      <svg viewBox={`0 0 ${VIEW_SIZE} ${VIEW_SIZE}`} className="w-full max-w-md">
+    <div className="flex flex-col items-center gap-5">
+      <svg viewBox={`0 0 ${VIEW_SIZE} ${VIEW_SIZE}`} className="w-full max-w-2xl">
         {(Object.keys(TIER_CONFIG) as Array<keyof typeof TIER_CONFIG>).map((tier) => (
           <circle
             key={tier}
@@ -56,14 +56,15 @@ export function CandidateOrbit({ candidates, centerLabel, onSelect }: CandidateO
             r={TIER_CONFIG[tier].radius}
             fill="none"
             stroke="currentColor"
-            strokeOpacity={0.15}
-            strokeDasharray="4 4"
-            className="text-slate-400 dark:text-slate-600"
+            strokeOpacity={0.35}
+            strokeWidth={2}
+            strokeDasharray="8 8"
+            className="text-slate-400 dark:text-slate-500"
           />
         ))}
 
-        <circle cx={CENTER} cy={CENTER} r={26} className="fill-primary/10 stroke-primary" strokeWidth={1.5} />
-        <text x={CENTER} y={CENTER} textAnchor="middle" dominantBaseline="central" className="fill-primary text-[9px] font-bold">
+        <circle cx={CENTER} cy={CENTER} r={54} className="fill-primary/10 stroke-primary" strokeWidth={2.5} />
+        <text x={CENTER} y={CENTER} textAnchor="middle" dominantBaseline="central" className="fill-primary text-[15px] font-bold">
           {centerLabel}
         </text>
 
@@ -86,22 +87,22 @@ export function CandidateOrbit({ candidates, centerLabel, onSelect }: CandidateO
                 className="cursor-pointer"
               >
                 <circle
-                  r={isHovered ? 20 : 17}
+                  r={isHovered ? 40 : 34}
                   fill={TIER_CONFIG[tier].color}
-                  fillOpacity={isHovered ? 1 : 0.85}
+                  fillOpacity={isHovered ? 1 : 0.9}
                   stroke="white"
-                  strokeWidth={2}
+                  strokeWidth={3.5}
                   className="transition-all"
                 />
-                <text textAnchor="middle" dominantBaseline="central" className="fill-white text-[9px] font-bold select-none pointer-events-none">
+                <text textAnchor="middle" dominantBaseline="central" className="fill-white text-[18px] font-bold select-none pointer-events-none">
                   {initials(candidate.nama_lengkap)}
                 </text>
                 <text
-                  y={32}
+                  y={62}
                   textAnchor="middle"
-                  className="fill-slate-700 dark:fill-slate-300 text-[9px] font-semibold select-none pointer-events-none"
+                  className="fill-slate-700 dark:fill-slate-200 text-[16px] font-bold select-none pointer-events-none"
                 >
-                  {candidate.nama_lengkap.length > 16 ? candidate.nama_lengkap.slice(0, 15) + '…' : candidate.nama_lengkap}
+                  {candidate.nama_lengkap.length > 20 ? candidate.nama_lengkap.slice(0, 19) + '…' : candidate.nama_lengkap}
                 </text>
               </g>
             )
@@ -109,10 +110,10 @@ export function CandidateOrbit({ candidates, centerLabel, onSelect }: CandidateO
         )}
       </svg>
 
-      <div className="flex flex-wrap items-center justify-center gap-4 text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+      <div className="flex flex-wrap items-center justify-center gap-5 text-xs font-semibold text-slate-500 dark:text-slate-400">
         {(Object.keys(TIER_CONFIG) as Array<keyof typeof TIER_CONFIG>).map((tier) => (
-          <span key={tier} className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: TIER_CONFIG[tier].color }} />
+          <span key={tier} className="flex items-center gap-2">
+            <span className="h-3 w-3 rounded-full" style={{ backgroundColor: TIER_CONFIG[tier].color }} />
             {TIER_CONFIG[tier].ring}
           </span>
         ))}

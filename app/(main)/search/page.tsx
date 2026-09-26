@@ -3,8 +3,6 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Sparkles, Search, User, Terminal, BookOpen, AlertCircle, Cpu, CheckCircle, Users2, Loader2 } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { JarvisScanHUD } from '@/components/ui/JarvisScanHUD';
 import { TypewriterReveal } from '@/components/ui/TypewriterReveal';
 import { playClickSound, playScanSound, playSuccessSound } from '@/lib/audio';
@@ -18,6 +16,7 @@ import { AlumniCard } from '@/components/search/AlumniCard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CandidateOrbit } from '@/components/ai/CandidateOrbit';
 import { TalentPreviewDialog } from '@/components/ai/TalentPreviewDialog';
+import { CandidateAwareMarkdown } from '@/components/ai/CandidateAwareMarkdown';
 import type { RecommendedCandidate } from '@/lib/api';
 
 export default function SearchPage() {
@@ -288,8 +287,13 @@ export default function SearchPage() {
                   )}
 
                   {myRecText && !isLoadingMyRec && (
-                    <div className="prose prose-sm dark:prose-invert max-w-none text-xs pt-2 border-t border-slate-100 dark:border-white/5">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{myRecText}</ReactMarkdown>
+                    <div className="pt-2 border-t border-slate-100 dark:border-white/5">
+                      <CandidateAwareMarkdown
+                        text={myRecText}
+                        candidates={myRecCandidates}
+                        onSelectCandidate={setPreviewCandidate}
+                        className="prose prose-sm dark:prose-invert max-w-none text-xs"
+                      />
                     </div>
                   )}
                 </CardContent>

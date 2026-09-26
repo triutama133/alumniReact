@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CandidateOrbit } from "@/components/ai/CandidateOrbit";
 import { TalentPreviewDialog } from "@/components/ai/TalentPreviewDialog";
+import { CandidateAwareMarkdown } from "@/components/ai/CandidateAwareMarkdown";
 import type { RecommendedCandidate } from "@/lib/api";
 
 interface AIPromptHubProps {
@@ -104,7 +105,17 @@ export function AIPromptHub({ userId, userFullName }: AIPromptHubProps) {
         </div>
       )}
 
-      {result && !isLoading && (<div className="bg-white dark:bg-slate-900 p-6 rounded-xl border shadow-sm"><h3 className="text-lg font-bold mb-4 flex items-center"><span className="text-2xl mr-2">✨</span> Alasan Rekomendasi AI</h3><div className="prose dark:prose-invert max-w-none whitespace-pre-wrap">{result}</div></div>)}
+      {result && !isLoading && (
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border shadow-sm">
+          <h3 className="text-lg font-bold mb-4 flex items-center"><span className="text-2xl mr-2">✨</span> Alasan Rekomendasi AI</h3>
+          <CandidateAwareMarkdown
+            text={result}
+            candidates={candidates}
+            onSelectCandidate={setPreviewCandidate}
+            className="prose dark:prose-invert max-w-none"
+          />
+        </div>
+      )}
 
       <TalentPreviewDialog candidate={previewCandidate} onOpenChange={(open) => { if (!open) setPreviewCandidate(null); }} />
     </div>

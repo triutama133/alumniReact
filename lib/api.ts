@@ -6,6 +6,9 @@ export interface RecommendedCandidate {
   nama_lengkap: string;
   aktivitas: string | null;
   skills: string;
+  /** The actual overlapping keywords between the candidate and the project/profile that
+   * produced this recommendation — computed from the same scoring logic, not guessed. */
+  matched_skills: string[];
   match_score: number;
   match_strength: number;
   tier: 'kuat' | 'sedang' | 'lemah';
