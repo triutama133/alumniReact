@@ -6,6 +6,29 @@ import { getAuthSessionVersionForMiddleware } from '@/lib/authSessionVersion';
 
 const IP_RATE_LIMIT_MAP = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT_WINDOW_MS = 60_000;
+
+// getAuthSessionVersionForMiddleware makes a network round-trip to Supabase's REST
+// API. Every authenticated request — every page navigation AND every client-side
+// fetch() the page fires afterward — passes through this middleware, so calling it
+// unconditionally on every request put a synchronous external network call in front
+// of literally everything in the app, dominating perceived latency site-wide. It only
+// exists to force-invalidate a session soon after a password change / explicit
+// logout-everywhere action, which doesn't need per-request precision — a short cache
+// keeps that within a few seconds of real-time while cutting this to roughly one
+// lookup per user per TTL window instead of one per request.
+const AUTH_VERSION_CACHE_TTL_MS = 30_000;
+const authVersionCache = new Map<string, { version: number | null; checkedAt: number }>();
+
+async function getCachedAuthSessionVersion(userId: string): Promise<number | null> {
+  const cached = authVersionCache.get(userId);
+  const now = Date.now();
+  if (cached && now - cached.checkedAt < AUTH_VERSION_CACHE_TTL_MS) {
+    return cached.version;
+  }
+  const version = await getAuthSessionVersionForMiddleware(userId);
+  authVersionCache.set(userId, { version, checkedAt: now });
+  return version;
+}
 const RATE_LIMITS: Record<string, number> = {
   '/api/login': 5,
   '/api/register': 3,
@@ -83,7 +106,6 @@ const publicPaths = [
 
 export async function middleware(request: NextRequest) {
   const currentPath = request.nextUrl.pathname;
-  console.log(`[MIDDLEWARE] Mencegat permintaan untuk: ${currentPath}`);
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? '127.0.0.1';
 
   if (!checkRateLimit(ip, currentPath)) {
@@ -92,24 +114,11 @@ export async function middleware(request: NextRequest) {
     );
   }
 
-  // Log semua cookie yang diterima oleh middleware
-  console.log('[MIDDLEWARE] Semua Cookie yang diterima oleh Middleware:');
-  const allCookies = request.cookies.getAll();
-  if (allCookies.length > 0) {
-    allCookies.forEach(cookie => {
-      // Log hanya beberapa karakter pertama dari nilai cookie untuk keamanan
-      console.log(`  - ${cookie.name}: ${cookie.value.substring(0, Math.min(cookie.value.length, 10))}...`);
-    });
-  } else {
-    console.log('  - Tidak ada cookie yang diterima.');
-  }
-
   // Periksa apakah path adalah public (tidak perlu autentikasi)
   const isPublicPath = publicPaths.some(path => currentPath === path || currentPath.startsWith(path + '/'));
 
   // Ambil token dari HTTP-only cookie yang Anda set di /api/login
   const authToken = request.cookies.get('auth_token')?.value;
-  console.log(`[MIDDLEWARE] Menerima cookie 'auth_token': ${authToken ? 'Ada' : 'Tidak Ada'}`);
 
   let isAuthenticated = false;
   let decodedToken: Awaited<ReturnType<typeof verifyAuthToken>> | null = null;
@@ -119,7 +128,6 @@ export async function middleware(request: NextRequest) {
     try {
       decodedToken = await verifyAuthToken(authToken);
       isAuthenticated = true;
-      console.log('[MIDDLEWARE] Token berhasil diverifikasi oleh JOSE. Payload:', decodedToken);
     } catch (error: unknown) {
       // Jika token tidak valid (kadaluwarsa, tanda tangan salah, dll.)
       const message = error instanceof Error ? error.message : String(error);
@@ -131,7 +139,7 @@ export async function middleware(request: NextRequest) {
 
   if (isAuthenticated && decodedToken?.sub) {
     const tokenAuthVersion = Number(decodedToken.auth_version ?? 1);
-    const currentAuthVersion = await getAuthSessionVersionForMiddleware(String(decodedToken.sub));
+    const currentAuthVersion = await getCachedAuthSessionVersion(String(decodedToken.sub));
 
     if (currentAuthVersion !== null && tokenAuthVersion < currentAuthVersion) {
       console.log('[MIDDLEWARE] Auth token version outdated. Invalidating session cookie.');
@@ -208,10 +216,8 @@ export async function middleware(request: NextRequest) {
     }
     requestHeaders.set('x-user-profile-completed', String(profileCompleted));
     requestHeaders.set('x-user-must-change-password', String(mustChangePassword));
-    console.log(`[MIDDLEWARE] Pengguna terautentikasi (ID: ${decodedToken.sub}). Lanjutkan ke ${currentPath}.`);
   }
 
-  console.log('--- MIDDLEWARE FINISHED (No redirect) ---');
   const response = NextResponse.next({
     request: {
       headers: requestHeaders,

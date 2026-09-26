@@ -141,10 +141,12 @@ export function ChatWindow({ currentUserId, userEmail }: ChatWindowProps) {
         }
     }, [activeConversationId, loadMessages]);
 
-    // Poll for new messages while a conversation is open.
+    // Poll for new messages while a conversation is open. Skips ticks while the tab is
+    // hidden so a forgotten background tab doesn't keep polling indefinitely.
     useEffect(() => {
         if (!activeConversationId) return;
         const interval = setInterval(() => {
+            if (document.visibilityState === 'hidden') return;
             loadMessages(activeConversationId, true);
         }, POLL_INTERVAL_MS);
         return () => clearInterval(interval);

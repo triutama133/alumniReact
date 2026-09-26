@@ -61,27 +61,30 @@ export async function GET() {
             return NextResponse.json({ error: 'Gagal memuat percakapan.' }, { status: 500 });
         }
 
-        // Ambil pesan terakhir per percakapan + unread count
+        // Ambil pesan terakhir per percakapan + unread count. The two queries per
+        // conversation are independent, so they run in parallel with each other (not
+        // just across conversations) — halves the round-trip count for this endpoint.
         const results = await Promise.all((conversations || []).map(async (conv) => {
-            const { data: lastMessage } = await supabase
-                .from('messages')
-                .select('content, created_at, sender_id')
-                .eq('conversation_id', conv.id)
-                .order('created_at', { ascending: false })
-                .limit(1)
-                .maybeSingle();
-
             const myParticipant = (conv.conversation_participants || []).find(
                 (p: any) => Number(p.user_id) === userId
             );
             const lastReadAt = myParticipant?.last_read_at || new Date(0).toISOString();
 
-            const { count: unreadCount } = await supabase
-                .from('messages')
-                .select('id', { count: 'exact', head: true })
-                .eq('conversation_id', conv.id)
-                .neq('sender_id', userId)
-                .gt('created_at', lastReadAt);
+            const [{ data: lastMessage }, { count: unreadCount }] = await Promise.all([
+                supabase
+                    .from('messages')
+                    .select('content, created_at, sender_id')
+                    .eq('conversation_id', conv.id)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .maybeSingle(),
+                supabase
+                    .from('messages')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('conversation_id', conv.id)
+                    .neq('sender_id', userId)
+                    .gt('created_at', lastReadAt),
+            ]);
 
             // Nama lawan bicara (untuk direct)
             const otherParticipant = (conv.conversation_participants || []).find(

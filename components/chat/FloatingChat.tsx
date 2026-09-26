@@ -84,20 +84,30 @@ export function FloatingChat({ currentUserId, userEmail }: FloatingChatProps) {
         }
     }, [isOpen]);
 
-    // Poll conversations periodically for unread badges when closed
+    // Poll for the unread badge count in the background on every page, for as long as
+    // the user is logged in. Uses the lightweight unread-count-only endpoint (2 queries
+    // total) instead of the full conversations list (2 extra queries PER conversation)
+    // — this poll runs continuously for every active user regardless of whether they're
+    // even looking at the tab, so it's the single most-repeated request in the app and
+    // worth keeping cheap. Also skips polling while the tab is hidden.
     useEffect(() => {
         const checkUnread = async () => {
+            if (document.visibilityState === 'hidden') return;
             try {
-                const res = await fetch('/api/conversations');
+                const res = await fetch('/api/conversations/unread-count');
                 if (res.ok) {
                     const data = await res.json();
-                    setTotalUnread(data.reduce((acc: number, c: Conversation) => acc + c.unread_count, 0));
+                    setTotalUnread(data.unread_count ?? 0);
                 }
             } catch {}
         };
         checkUnread();
         const interval = setInterval(checkUnread, 15000);
-        return () => clearInterval(interval);
+        document.addEventListener('visibilitychange', checkUnread);
+        return () => {
+            clearInterval(interval);
+            document.removeEventListener('visibilitychange', checkUnread);
+        };
     }, []);
 
     useEffect(() => {
@@ -149,10 +159,12 @@ export function FloatingChat({ currentUserId, userEmail }: FloatingChatProps) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeConversationId]);
 
-    // Poll for new messages while a conversation is open.
+    // Poll for new messages while a conversation is open. Skips ticks while the tab is
+    // hidden so a forgotten background tab doesn't keep polling indefinitely.
     useEffect(() => {
         if (!activeConversationId) return;
         const interval = setInterval(() => {
+            if (document.visibilityState === 'hidden') return;
             loadMessages(activeConversationId, true);
         }, 4000);
         return () => clearInterval(interval);
