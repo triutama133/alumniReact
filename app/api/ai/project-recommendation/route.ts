@@ -20,9 +20,10 @@ export async function POST(req: NextRequest) {
         'Content-Type': 'application/json',
         'X-API-KEY': apiKey,
       },
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         user_id: userId ? Number(userId) : null,
         nama_lengkap: nama_lengkap || null,
+        prompt_tambahan: prompt_tambahan || null,
         language: 'id',
       }),
     });

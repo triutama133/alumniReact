@@ -155,10 +155,10 @@ export async function POST(req: NextRequest) {
     }
 
     console.log(`[REC_API] Profil ditemukan: ${profile.nama_lengkap}. Menghasilkan rekomendasi...`);
-    const recommendation = await getProfileRecommendation(profile, cohortId, source);
+    const { text, candidates } = await getProfileRecommendation(profile, cohortId, source);
     console.log('[REC_API] Rekomendasi berhasil dihasilkan.');
 
-    return NextResponse.json({ recommendation: recommendation }, { status: 200 });
+    return NextResponse.json({ recommendation: text, candidates }, { status: 200 });
 
   } catch (error: unknown) { // Perbaikan: Ganti 'any' dengan 'unknown'
     console.error('[REC_API] ERROR FATAL di Rekomendasi Kolaborasi API Route:', (error as Error).message); // Perbaikan: Type assertion

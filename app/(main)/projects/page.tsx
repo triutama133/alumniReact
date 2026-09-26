@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ProjectCard } from '@/components/projects/ProjectCard';
 import { ProjectWithOwner } from '@/lib/types';
 import { AIPromptHub } from '@/components/projects/AIPromptHub';
+import { ProjectScoutTab } from '@/components/projects/ProjectScoutTab';
 
 interface CustomUserForProjectCard {
   id: string;
@@ -92,6 +93,16 @@ export default async function ProjectsPage({
     if (data) userFullName = data.nama_lengkap;
   }
 
+  let myProjects: Array<{ id: string; title: string; description: string; required_skills: string[] | null }> = [];
+  if (currentTab === 'scout' && userId) {
+    const { data } = await supabase
+      .from('projects')
+      .select('id, title, description, required_skills')
+      .eq('owner_id', userId)
+      .order('created_at', { ascending: false });
+    myProjects = data || [];
+  }
+
   return (
     <div className="container mx-auto py-8 px-4 md:px-6 max-w-6xl stagger-children">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
@@ -114,6 +125,11 @@ export default async function ProjectsPage({
         <Link href="/projects?tab=ai" className={`px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${currentTab === 'ai' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:border-border hover:text-foreground'}`}>
           Pencarian Cerdas AI
         </Link>
+        {userId && (
+          <Link href="/projects?tab=scout" className={`px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${currentTab === 'scout' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:border-border hover:text-foreground'}`}>
+            Scout Talenta AI
+          </Link>
+        )}
       </div>
 
       {currentTab === 'jelajah' && (
@@ -134,6 +150,10 @@ export default async function ProjectsPage({
 
       {currentTab === 'ai' && (
         <AIPromptHub userId={userId || ''} userFullName={userFullName} />
+      )}
+
+      {currentTab === 'scout' && userId && (
+        <ProjectScoutTab myProjects={myProjects} />
       )}
     </div>
   );

@@ -9,8 +9,6 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import CollaborationRecommendationButton from '@/components/profile/CollaborationRecommendationButton';
-import CareerRecommendationButton from '@/components/profile/CareerRecommendationButton';
 import { CustomUserForProjectCard } from '@/lib/types';
 import { formatDateRange, sortByRecency } from '@/lib/formatDateRange';
 import { 
@@ -965,14 +963,6 @@ export default async function ProfilePage({ params }: { params: Promise<{ userId
         
       </div>
 
-      {/* 4. AI INSIGHTS WIDGET */}
-      {isOwnProfile && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 stagger-children">
-          <CollaborationRecommendationButton profile={profile as any} currentUser={currentUser} />
-          <CareerRecommendationButton profile={profile as any} currentUser={currentUser} />
-        </div>
-      )}
-      
     </div>
   );
 }

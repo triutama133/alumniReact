@@ -355,39 +355,6 @@ export function ProjectDetailClient({ project, userId, isOwner, isCollaborator, 
     }
   };
 
-  // AI Scout / Search
-  const handleOwnerAISearch = async () => {
-    playClickSound();
-    setAiLoading(true);
-    setAiError(null);
-    setAiReport(null);
-
-    const scanSound = playScanSound(8.0);
-    const prompt = `Pencarian talenta untuk proyek: ${project.title}. Kebutuhan Keahlian: ${project.required_skills?.join(', ') || 'Semua keahlian'}. Deskripsi Proyek: ${project.description}`;
-
-    try {
-      const res = await fetch('/api/ai/talent-search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: prompt }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Gagal mencari talenta.');
-
-      setAiReport(data.rekomendasi_proyek);
-      playSuccessSound();
-      toast.success("Rekomendasi AI berhasil didapatkan!");
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Koneksi ke AI Engine terputus.';
-      setAiError(msg);
-      toast.error("AI Scout Error", { description: msg });
-    } finally {
-      setAiLoading(false);
-      if (scanSound) scanSound.stop();
-    }
-  };
-
   const handleUserAIMatch = async () => {
     playClickSound();
     setAiLoading(true);
@@ -925,57 +892,32 @@ Berikan analisis dalam format rapi:
             </Card>
           )}
 
-          {/* AI Scouts */}
-          {userId !== null && (
-            <>
-              {isOwner ? (
-                <Card className="bg-white dark:bg-[#1b1f23] border-slate-200 dark:border-slate-800 shadow-sm">
-                  <CardHeader className="flex flex-row items-center gap-2 pb-3 border-b border-slate-200 dark:border-white/5">
-                    <Sparkles className="h-4 w-4 text-primary" />
-                    <div>
-                      <CardTitle className="text-sm font-bold text-slate-900 dark:text-white">Scout Talenta AI</CardTitle>
-                      <CardDescription className="text-[10px] text-slate-500">Pencocokan kandidat otomatis</CardDescription>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-4 space-y-4">
-                    <p className="text-xs text-slate-700 dark:text-slate-350 leading-normal">
-                      Temukan kandidat alumni terbaik dari database yang memiliki keahlian dan minat yang cocok untuk menyukseskan proyek ini.
-                    </p>
-                    <Button
-                      onClick={handleOwnerAISearch}
-                      disabled={aiLoading}
-                      className="w-full bg-primary hover:bg-primary/95 text-white font-bold text-xs py-2 rounded-md shadow-sm transition-all gap-1.5"
-                    >
-                      <Cpu className="h-3.5 w-3.5" />
-                      Cari Talenta via AI
-                    </Button>
-                  </CardContent>
-                </Card>
-              ) : (
-                <Card className="bg-white dark:bg-[#1b1f23] border-slate-200 dark:border-slate-800 shadow-sm">
-                  <CardHeader className="flex flex-row items-center gap-2 pb-3 border-b border-slate-200 dark:border-white/5">
-                    <Cpu className="h-4 w-4 text-primary animate-pulse" />
-                    <div>
-                      <CardTitle className="text-sm font-bold text-slate-900 dark:text-white">Analisis Kecocokan AI</CardTitle>
-                      <CardDescription className="text-[10px] text-slate-500">Pencocokan profil cerdas</CardDescription>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-4 space-y-4">
-                    <p className="text-xs text-slate-700 dark:text-slate-350 leading-normal">
-                      Gunakan AI Engine untuk menganalisis kecocokan profil, keahlian, dan aktivitas Anda dengan kebutuhan spesifik proyek ini.
-                    </p>
-                    <Button
-                      onClick={handleUserAIMatch}
-                      disabled={aiLoading}
-                      className="w-full bg-primary hover:bg-primary/95 text-white font-bold text-xs py-2 rounded-md shadow-sm transition-all gap-1.5"
-                    >
-                      <Sparkles className="h-3.5 w-3.5" />
-                      Apakah Saya Cocok?
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
-            </>
+          {/* AI self-match (non-owner only — the owner's scouting tool now lives on the
+              Hub Proyek "Scout Talenta AI" tab, where they can search across all of
+              their projects instead of one at a time). */}
+          {userId !== null && !isOwner && (
+            <Card className="bg-white dark:bg-[#1b1f23] border-slate-200 dark:border-slate-800 shadow-sm">
+              <CardHeader className="flex flex-row items-center gap-2 pb-3 border-b border-slate-200 dark:border-white/5">
+                <Cpu className="h-4 w-4 text-primary animate-pulse" />
+                <div>
+                  <CardTitle className="text-sm font-bold text-slate-900 dark:text-white">Analisis Kecocokan AI</CardTitle>
+                  <CardDescription className="text-[10px] text-slate-500">Pencocokan profil cerdas</CardDescription>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-4 space-y-4">
+                <p className="text-xs text-slate-700 dark:text-slate-350 leading-normal">
+                  Gunakan AI Engine untuk menganalisis kecocokan profil, keahlian, dan aktivitas Anda dengan kebutuhan spesifik proyek ini.
+                </p>
+                <Button
+                  onClick={handleUserAIMatch}
+                  disabled={aiLoading}
+                  className="w-full bg-primary hover:bg-primary/95 text-white font-bold text-xs py-2 rounded-md shadow-sm transition-all gap-1.5"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Apakah Saya Cocok?
+                </Button>
+              </CardContent>
+            </Card>
           )}
 
           {/* AI Result Card */}

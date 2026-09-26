@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { Sparkles, Search, User, Terminal, BookOpen, AlertCircle, Cpu, CheckCircle } from 'lucide-react';
+import { Sparkles, Search, User, Terminal, BookOpen, AlertCircle, Cpu, CheckCircle, Users2, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { JarvisScanHUD } from '@/components/ui/JarvisScanHUD';
@@ -16,6 +16,9 @@ import { createClient } from '@/lib/supabaseClient';
 import { AlumniSearchResult } from '@/lib/types';
 import { AlumniCard } from '@/components/search/AlumniCard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { CandidateOrbit } from '@/components/ai/CandidateOrbit';
+import { TalentPreviewDialog } from '@/components/ai/TalentPreviewDialog';
+import type { RecommendedCandidate } from '@/lib/api';
 
 export default function SearchPage() {
   const [activeTab, setActiveTab] = useState<'ai' | 'standard'>('ai');
@@ -29,8 +32,59 @@ export default function SearchPage() {
   // States for AI Search
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiResult, setAiResult] = useState<string | null>(null);
+  const [aiCandidates, setAiCandidates] = useState<RecommendedCandidate[]>([]);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+
+  // States for "Rekomendasi Kolaborasi untuk Anda" (moved here from the profile page —
+  // finds ideal collaboration partners based on the viewer's own profile, not a prompt).
+  const [myUserId, setMyUserId] = useState<string | null>(null);
+  const [isLoadingMyRec, setIsLoadingMyRec] = useState(false);
+  const [myRecCandidates, setMyRecCandidates] = useState<RecommendedCandidate[]>([]);
+  const [myRecText, setMyRecText] = useState<string | null>(null);
+
+  const [previewCandidate, setPreviewCandidate] = useState<RecommendedCandidate | null>(null);
+
+  useEffect(() => {
+    const fetchMe = async () => {
+      try {
+        const res = await fetch('/api/me');
+        if (res.ok) {
+          const data = await res.json();
+          setMyUserId(data.userId ? String(data.userId) : null);
+        }
+      } catch {
+        // Not critical — the collaboration-recommendation card simply won't render.
+      }
+    };
+    fetchMe();
+  }, []);
+
+  const handleGetMyRecommendation = async () => {
+    if (!myUserId) return;
+    playClickSound();
+    setIsLoadingMyRec(true);
+    setMyRecCandidates([]);
+    setMyRecText(null);
+    try {
+      const res = await fetch('/api/collaboration-recommendation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: myUserId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Gagal mendapatkan rekomendasi kolaborasi.');
+
+      setMyRecText(data.recommendation);
+      setMyRecCandidates(data.candidates || []);
+      playSuccessSound();
+      toast.success('Rekomendasi kolaborasi berhasil didapatkan!');
+    } catch (err) {
+      toast.error('Gagal mendapatkan rekomendasi', { description: err instanceof Error ? err.message : undefined });
+    } finally {
+      setIsLoadingMyRec(false);
+    }
+  };
 
   const supabase = createClient();
 
@@ -107,6 +161,7 @@ export default function SearchPage() {
     setAiLoading(true);
     setAiError(null);
     setAiResult(null);
+    setAiCandidates([]);
 
     const scanSound = playScanSound(8.0);
 
@@ -135,6 +190,7 @@ export default function SearchPage() {
       }
 
       setAiResult(data.rekomendasi_proyek);
+      setAiCandidates(data.candidates || []);
       playSuccessSound();
       toast.success("Rekomendasi AI berhasil didapatkan!");
     } catch (err) {
@@ -197,6 +253,49 @@ export default function SearchPage() {
       <div className="stagger-children min-h-[400px]">
         {activeTab === 'ai' ? (
           <div className="space-y-6">
+            {/* Collaboration Recommendation Card — moved here from the profile page */}
+            {myUserId && (
+              <Card className="premium-light-card liquid-glass-border shadow-sm text-slate-800 dark:text-slate-200">
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Users2 className="h-5 w-5 text-emerald-600" />
+                    <CardTitle className="text-slate-900 dark:text-white text-base">Rekomendasi Kolaborasi untuk Anda</CardTitle>
+                  </div>
+                  <CardDescription className="text-xs text-slate-500 dark:text-slate-400">
+                    Berdasarkan profil dan keahlian Anda sendiri, temukan talenta lain yang paling cocok diajak berkolaborasi.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Button
+                    onClick={handleGetMyRecommendation}
+                    disabled={isLoadingMyRec}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs rounded-full px-6 py-2 shadow-sm gap-2"
+                  >
+                    {isLoadingMyRec ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                    Dapatkan Rekomendasi Kolaborasi
+                  </Button>
+
+                  {isLoadingMyRec && (
+                    <div className="flex items-center gap-2 text-xs text-slate-400 py-4">
+                      <Loader2 className="h-4 w-4 animate-spin" /> Menganalisis profil Anda...
+                    </div>
+                  )}
+
+                  {myRecCandidates.length > 0 && !isLoadingMyRec && (
+                    <div className="pt-2">
+                      <CandidateOrbit candidates={myRecCandidates} centerLabel="Anda" onSelect={setPreviewCandidate} />
+                    </div>
+                  )}
+
+                  {myRecText && !isLoadingMyRec && (
+                    <div className="prose prose-sm dark:prose-invert max-w-none text-xs pt-2 border-t border-slate-100 dark:border-white/5">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{myRecText}</ReactMarkdown>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             {/* AI Search Card */}
             <Card className="premium-light-card liquid-glass-border shadow-sm text-slate-800 dark:text-slate-200">
               <CardHeader>
@@ -276,6 +375,18 @@ export default function SearchPage() {
               </div>
             )}
 
+            {aiCandidates.length > 0 && !aiLoading && (
+              <Card className="premium-light-card liquid-glass-border text-slate-800 dark:text-slate-200 shadow-sm">
+                <CardHeader className="border-b border-slate-200 dark:border-white/5">
+                  <CardTitle className="text-slate-900 dark:text-white text-base">Peta Rekomendasi Talenta</CardTitle>
+                  <CardDescription className="text-[10px] text-slate-500 dark:text-slate-400">Klik salah satu talenta untuk melihat pratinjau profilnya.</CardDescription>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <CandidateOrbit candidates={aiCandidates} centerLabel="Kebutuhan Anda" onSelect={setPreviewCandidate} />
+                </CardContent>
+              </Card>
+            )}
+
             {aiResult && !aiLoading && (
               <Card className="premium-light-card liquid-glass-border text-slate-800 dark:text-slate-200 shadow-xl">
                 <CardHeader className="border-b border-slate-200 dark:border-white/5 flex flex-row items-center gap-2">
@@ -343,6 +454,8 @@ export default function SearchPage() {
           </div>
         )}
       </div>
+
+      <TalentPreviewDialog candidate={previewCandidate} onOpenChange={(open) => { if (!open) setPreviewCandidate(null); }} />
     </div>
   );
 }

@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { CandidateOrbit } from "@/components/ai/CandidateOrbit";
+import { TalentPreviewDialog } from "@/components/ai/TalentPreviewDialog";
+import type { RecommendedCandidate } from "@/lib/api";
 
 interface AIPromptHubProps {
   userId: string;
@@ -12,6 +15,8 @@ export function AIPromptHub({ userId, userFullName }: AIPromptHubProps) {
   const [prompt, setPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+  const [candidates, setCandidates] = useState<RecommendedCandidate[]>([]);
+  const [previewCandidate, setPreviewCandidate] = useState<RecommendedCandidate | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const promptStarters = [
@@ -26,15 +31,16 @@ export function AIPromptHub({ userId, userFullName }: AIPromptHubProps) {
     setIsLoading(true);
     setError(null);
     setResult(null);
+    setCandidates([]);
 
     try {
       const response = await fetch('/api/ai/project-recommendation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           userId: userId,
           nama_lengkap: userFullName,
-          prompt_tambahan: prompt 
+          prompt_tambahan: prompt
         }),
       });
 
@@ -44,6 +50,7 @@ export function AIPromptHub({ userId, userFullName }: AIPromptHubProps) {
 
       const data = await response.json();
       setResult(data.rekomendasi);
+      setCandidates(data.candidates || []);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Terjadi kesalahan yang tidak diketahui.");
     } finally {
@@ -88,7 +95,18 @@ export function AIPromptHub({ userId, userFullName }: AIPromptHubProps) {
 
       {error && <div className="p-4 bg-red-50 text-red-700 rounded-lg border border-red-200">{error}</div>}
       {isLoading && <div className="space-y-4 animate-pulse"><div className="h-4 bg-slate-200 rounded w-3/4"></div><div className="h-4 bg-slate-200 rounded w-full"></div></div>}
+
+      {candidates.length > 0 && !isLoading && (
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border shadow-sm">
+          <h3 className="text-lg font-bold mb-1 flex items-center"><span className="text-2xl mr-2">🛰️</span> Peta Rekomendasi Kolaborasi</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">Klik salah satu talenta untuk melihat pratinjau profilnya.</p>
+          <CandidateOrbit candidates={candidates} centerLabel="Anda" onSelect={setPreviewCandidate} />
+        </div>
+      )}
+
       {result && !isLoading && (<div className="bg-white dark:bg-slate-900 p-6 rounded-xl border shadow-sm"><h3 className="text-lg font-bold mb-4 flex items-center"><span className="text-2xl mr-2">✨</span> Alasan Rekomendasi AI</h3><div className="prose dark:prose-invert max-w-none whitespace-pre-wrap">{result}</div></div>)}
+
+      <TalentPreviewDialog candidate={previewCandidate} onOpenChange={(open) => { if (!open) setPreviewCandidate(null); }} />
     </div>
   );
 }
