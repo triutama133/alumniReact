@@ -424,11 +424,12 @@ export default function JobsPage() {
           </div>
         </div>
 
-        {/* Tab Switcher */}
-        <div className="flex gap-2 bg-slate-100 dark:bg-slate-900/60 p-1 rounded-md border border-slate-200 dark:border-white/5 shadow-sm">
+        {/* Tab Switcher — scrolls horizontally instead of squishing/clipping tabs off-screen
+            once there are more of them than a narrow viewport can show at once. */}
+        <div className="flex gap-2 bg-slate-100 dark:bg-slate-900/60 p-1 rounded-md border border-slate-200 dark:border-white/5 shadow-sm w-full sm:w-auto overflow-x-auto">
           <button
             onClick={() => { playClickSound(); setActiveTab('jobs'); }}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-xs font-bold transition-all ${
+            className={`flex flex-shrink-0 items-center gap-1.5 px-4 py-2 rounded-md text-xs font-bold whitespace-nowrap transition-all ${
               activeTab === 'jobs'
                 ? 'bg-slate-900 text-white border border-slate-950 dark:bg-white dark:text-slate-950 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
@@ -439,7 +440,7 @@ export default function JobsPage() {
           </button>
           <button
             onClick={() => { playClickSound(); setActiveTab('smart-match'); }}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-xs font-bold transition-all ${
+            className={`flex flex-shrink-0 items-center gap-1.5 px-4 py-2 rounded-md text-xs font-bold whitespace-nowrap transition-all ${
               activeTab === 'smart-match'
                 ? 'bg-slate-900 text-white border border-slate-950 dark:bg-white dark:text-slate-950 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
@@ -450,7 +451,7 @@ export default function JobsPage() {
           </button>
           <button
             onClick={() => { playClickSound(); setActiveTab('learning-path'); }}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-xs font-bold transition-all ${
+            className={`flex flex-shrink-0 items-center gap-1.5 px-4 py-2 rounded-md text-xs font-bold whitespace-nowrap transition-all ${
               activeTab === 'learning-path'
                 ? 'bg-slate-900 text-white border border-slate-950 dark:bg-white dark:text-slate-950 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
@@ -461,7 +462,7 @@ export default function JobsPage() {
           </button>
           <button
             onClick={() => { playClickSound(); setActiveTab('cv-creator'); }}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-xs font-bold transition-all ${
+            className={`flex flex-shrink-0 items-center gap-1.5 px-4 py-2 rounded-md text-xs font-bold whitespace-nowrap transition-all ${
               activeTab === 'cv-creator'
                 ? 'bg-slate-900 text-white border border-slate-950 dark:bg-white dark:text-slate-950 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
@@ -472,7 +473,7 @@ export default function JobsPage() {
           </button>
           <button
             onClick={() => { playClickSound(); setActiveTab('interview'); }}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-xs font-bold transition-all ${
+            className={`flex flex-shrink-0 items-center gap-1.5 px-4 py-2 rounded-md text-xs font-bold whitespace-nowrap transition-all ${
               activeTab === 'interview'
                 ? 'bg-slate-900 text-white border border-slate-950 dark:bg-white dark:text-slate-950 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'

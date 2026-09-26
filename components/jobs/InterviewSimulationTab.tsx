@@ -106,14 +106,14 @@ export function InterviewSimulationTab({ savedRoles = [] }: InterviewSimulationT
     }
   }
 
-  const requestNextTurn = async (history_: Turn[]) => {
+  const requestNextTurn = async (role: string, history_: Turn[]) => {
     setIsLoading(true)
     setLastError(null)
     try {
       const res = await fetch('/api/ai/interview-simulation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ targetRole, conversationHistory: history_ }),
+        body: JSON.stringify({ targetRole: role, conversationHistory: history_ }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Gagal memproses simulasi wawancara.')
@@ -142,8 +142,8 @@ export function InterviewSimulationTab({ savedRoles = [] }: InterviewSimulationT
   }
 
   const handleStart = async (roleOverride?: string) => {
-    const role = roleOverride ?? targetRole
-    if (!role.trim()) return
+    const role = (roleOverride ?? targetRole).trim()
+    if (!role) return
     playClickSound()
     setTargetRole(role)
     setViewingHistoryId(null)
@@ -151,7 +151,7 @@ export function InterviewSimulationTab({ savedRoles = [] }: InterviewSimulationT
     setMessages([])
     setFeedback(null)
     setLastError(null)
-    await requestNextTurn([])
+    await requestNextTurn(role, [])
   }
 
   const handleAnswer = async () => {
@@ -160,12 +160,12 @@ export function InterviewSimulationTab({ savedRoles = [] }: InterviewSimulationT
     const nextHistory: Turn[] = [...messages, { role: 'user', content }]
     setMessages(nextHistory)
     setAnswerInput('')
-    await requestNextTurn(nextHistory)
+    await requestNextTurn(targetRole, nextHistory)
   }
 
   const handleRetry = async () => {
     playClickSound()
-    await requestNextTurn(messages)
+    await requestNextTurn(targetRole, messages)
   }
 
   const handleReset = () => {
