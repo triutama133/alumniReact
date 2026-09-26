@@ -4,6 +4,11 @@ import { createClient } from '@supabase/supabase-js';
 import { getProfileRecommendation } from '@/lib/api';
 import { AlumniProfileType } from '@/lib/types';
 
+// The AI engine runs on Render's free tier and can take 15-30s+ to respond on a cold
+// start (observed live) on top of Gemini's own response time — raise the serverless
+// timeout ceiling as far as the hosting plan allows (a no-op on plans that cap lower).
+export const maxDuration = 60;
+
 // Supabase admin client will be created at runtime inside the handler to avoid
 // build-time failures if environment variables are not present during static
 // analysis.

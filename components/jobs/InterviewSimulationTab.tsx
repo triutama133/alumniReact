@@ -51,8 +51,20 @@ export function InterviewSimulationTab({ savedRoles = [] }: InterviewSimulationT
   const [history, setHistory] = useState<HistoryEntry[]>([])
   const [isLoadingHistory, setIsLoadingHistory] = useState(true)
   const [viewingHistoryId, setViewingHistoryId] = useState<number | null>(null)
+  const [lastError, setLastError] = useState<string | null>(null)
 
   const bottomRef = useRef<HTMLDivElement | null>(null)
+
+  // The AI engine runs on a free-tier host that spins down when idle and can take
+  // 15-30s+ to wake back up. Pinging it as soon as this tab opens — well before the
+  // user has picked a role and clicked "Mulai Latihan" — gives it a head start so the
+  // actual first question is less likely to hit that cold-start delay.
+  useEffect(() => {
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL
+    if (apiBase) {
+      fetch(apiBase, { method: 'GET' }).catch(() => {})
+    }
+  }, [])
 
   const loadHistory = async () => {
     try {
@@ -96,6 +108,7 @@ export function InterviewSimulationTab({ savedRoles = [] }: InterviewSimulationT
 
   const requestNextTurn = async (history_: Turn[]) => {
     setIsLoading(true)
+    setLastError(null)
     try {
       const res = await fetch('/api/ai/interview-simulation', {
         method: 'POST',
@@ -115,7 +128,14 @@ export function InterviewSimulationTab({ savedRoles = [] }: InterviewSimulationT
         setTotalQuestions(data.total_questions || 5)
       }
     } catch (err) {
-      toast.error('Gagal melanjutkan sesi', { description: err instanceof Error ? err.message : undefined })
+      // Most common cause: the AI engine's host spun down from inactivity and the
+      // wake-up + response took longer than the request was willing to wait — a plain
+      // retry a few seconds later (now that it's warm) almost always succeeds. Shown
+      // as an inline banner rather than just a toast, since a toast can be missed and
+      // otherwise this state looks identical to an empty, stuck chat.
+      const message = err instanceof Error ? err.message : 'Gagal melanjutkan sesi.'
+      setLastError(message)
+      toast.error('Gagal melanjutkan sesi', { description: message })
     } finally {
       setIsLoading(false)
     }
@@ -130,6 +150,7 @@ export function InterviewSimulationTab({ savedRoles = [] }: InterviewSimulationT
     setIsStarted(true)
     setMessages([])
     setFeedback(null)
+    setLastError(null)
     await requestNextTurn([])
   }
 
@@ -142,6 +163,11 @@ export function InterviewSimulationTab({ savedRoles = [] }: InterviewSimulationT
     await requestNextTurn(nextHistory)
   }
 
+  const handleRetry = async () => {
+    playClickSound()
+    await requestNextTurn(messages)
+  }
+
   const handleReset = () => {
     playClickSound()
     setIsStarted(false)
@@ -149,6 +175,7 @@ export function InterviewSimulationTab({ savedRoles = [] }: InterviewSimulationT
     setMessages([])
     setFeedback(null)
     setTargetRole('')
+    setLastError(null)
   }
 
   const handleViewHistory = (entry: HistoryEntry) => {
@@ -316,13 +343,25 @@ export function InterviewSimulationTab({ savedRoles = [] }: InterviewSimulationT
           {isLoading && (
             <div className="flex justify-start">
               <div className="px-3 py-2 rounded-2xl border bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 flex items-center gap-1.5 text-xs text-slate-400">
-                <Loader2 className="h-3 w-3 animate-spin" /> AI sedang berpikir...
+                <Loader2 className="h-3 w-3 animate-spin" /> AI sedang berpikir... (bisa sampai 30 detik jika baru pertama kali dipakai hari ini)
               </div>
             </div>
           )}
           <div ref={bottomRef} />
         </CardContent>
       </Card>
+
+      {lastError && !isLoading && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/5 px-4 py-3">
+          <p className="text-xs text-amber-700 dark:text-amber-400">
+            Sesi sempat gagal merespons (server AI mungkin sedang bangun dari mode hemat daya). Coba lagi.
+          </p>
+          <Button onClick={handleRetry} size="sm" variant="outline" className="text-xs gap-1.5 flex-shrink-0 border-amber-300 dark:border-amber-500/30">
+            <RefreshCw className="h-3.5 w-3.5" />
+            Coba Lagi
+          </Button>
+        </div>
+      )}
 
       {!feedback && (
         <div className="flex items-center gap-2">

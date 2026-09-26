@@ -3,6 +3,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 
+// The AI engine runs on Render's free tier and can take 15-30s+ to respond on a cold
+// start (observed live) on top of Gemini's own response time — raise the serverless
+// timeout ceiling as far as the hosting plan allows (a no-op on plans that cap lower).
+export const maxDuration = 60;
+
 // GET handler to retrieve the user's active/saved learning path
 export async function GET(req: NextRequest) {
   try {

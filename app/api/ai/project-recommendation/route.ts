@@ -1,6 +1,11 @@
 // app/api/ai/project-recommendation/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 
+// The AI engine runs on Render's free tier and can take 15-30s+ to respond on a cold
+// start (observed live) on top of Gemini's own response time — raise the serverless
+// timeout ceiling as far as the hosting plan allows (a no-op on plans that cap lower).
+export const maxDuration = 60;
+
 export async function POST(req: NextRequest) {
   try {
     const { userId, nama_lengkap, prompt_tambahan } = await req.json();

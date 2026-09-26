@@ -5,6 +5,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 
+// The AI engine runs on Render's free tier, which spins the service down after
+// inactivity — the first request after a cold spell can take 15-30s+ (observed live)
+// while it wakes back up, on top of Gemini's own response time. Vercel's default
+// serverless timeout is shorter than that, so this raises the ceiling as far as the
+// hosting plan allows; on plans that don't honor a higher value this is a harmless no-op.
+export const maxDuration = 60;
+
 interface InterviewTurn {
   role: 'ai' | 'user';
   content: string;

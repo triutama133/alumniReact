@@ -7,6 +7,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminClient } from '@/lib/adminClient';
 
+// Raises the serverless timeout ceiling for this Gemini call as far as the hosting
+// plan allows (a no-op on plans that cap lower), consistent with the other AI routes.
+export const maxDuration = 60;
+
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
 
 // ── In-memory rate limit (short-lived, per-user, 1 menit window) ──

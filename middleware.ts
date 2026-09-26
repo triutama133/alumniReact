@@ -104,6 +104,13 @@ const publicPaths = [
   '/preview',
 ];
 
+// A project detail page (/projects/<uuid>) is allowed through even when logged out —
+// the page itself already checks projects.is_public and redirects to /landing for
+// anything private, so the actual access decision stays with the page, not here. Only
+// the bare /projects list and /projects/create stay gated, since this pattern matches
+// the id segment specifically (a UUID) and nothing else under /projects/*.
+const PROJECT_DETAIL_PATH = /^\/projects\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function middleware(request: NextRequest) {
   const currentPath = request.nextUrl.pathname;
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? '127.0.0.1';
@@ -115,7 +122,9 @@ export async function middleware(request: NextRequest) {
   }
 
   // Periksa apakah path adalah public (tidak perlu autentikasi)
-  const isPublicPath = publicPaths.some(path => currentPath === path || currentPath.startsWith(path + '/'));
+  const isPublicPath =
+    publicPaths.some(path => currentPath === path || currentPath.startsWith(path + '/')) ||
+    PROJECT_DETAIL_PATH.test(currentPath);
 
   // Ambil token dari HTTP-only cookie yang Anda set di /api/login
   const authToken = request.cookies.get('auth_token')?.value;
