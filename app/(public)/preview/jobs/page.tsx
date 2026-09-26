@@ -50,7 +50,7 @@ export default function PreviewJobsPage() {
                     <div>
                         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Portal Karir</h1>
                         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                            Login untuk mengakses Learning Path, CV Creator, & Smart Job Aggregator AI.
+                            Login untuk mengakses Learning Path, CV Creator, Smart Job Aggregator, & Latihan Interview AI.
                         </p>
                     </div>
                     <Link
@@ -151,7 +151,7 @@ export default function PreviewJobsPage() {
                 )}
 
                 {activeTab === 'ai' && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {/* Card Learning Path AI (Locked) */}
                         <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 relative overflow-hidden">
                             <div className="opacity-20 pointer-events-none select-none space-y-3">
@@ -214,6 +214,29 @@ export default function PreviewJobsPage() {
                             </div>
                             <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-50/80 dark:bg-slate-950/80 z-10">
                                 <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Smart Job Aggregator</p>
+                                <p className="text-xs text-slate-500 mt-1">Login untuk akses fitur ini</p>
+                                <div className="flex gap-2 mt-4">
+                                    <Link href="/register" className="rounded-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-1.5">
+                                        Daftar Gratis
+                                    </Link>
+                                    <Link href="/login" className="rounded-full border border-slate-200 dark:border-slate-700 text-xs font-semibold px-4 py-1.5 text-slate-600 dark:text-slate-300">
+                                        Masuk
+                                    </Link>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Card Latihan Interview AI (Locked) */}
+                        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 relative overflow-hidden">
+                            <div className="opacity-20 pointer-events-none select-none space-y-2">
+                                <h3 className="font-bold text-sm">Simulasi: Frontend Developer</h3>
+                                <div className="space-y-2">
+                                    <p className="text-xs">Pewawancara: Ceritakan pengalaman Anda dengan React...</p>
+                                    <p className="text-xs">Kandidat: Saya sudah 2 tahun membangun aplikasi...</p>
+                                </div>
+                            </div>
+                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-50/80 dark:bg-slate-950/80 z-10">
+                                <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Latihan Interview AI</p>
                                 <p className="text-xs text-slate-500 mt-1">Login untuk akses fitur ini</p>
                                 <div className="flex gap-2 mt-4">
                                     <Link href="/register" className="rounded-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-1.5">

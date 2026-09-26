@@ -2,16 +2,17 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
-import { 
-  Award, 
-  BookOpen, 
-  CheckSquare, 
-  Cpu, 
-  MapPin, 
-  Play, 
-  RefreshCw, 
-  TrendingUp, 
+import {
+  Award,
+  BookOpen,
+  CheckSquare,
+  Cpu,
+  MapPin,
+  Play,
+  RefreshCw,
+  TrendingUp,
   CheckCircle,
   Square,
   Briefcase,
@@ -21,7 +22,8 @@ import {
   ExternalLink,
   FileText,
   Wallet,
-  Target
+  Target,
+  MessageSquare
 } from 'lucide-react';
 import { CVCreatorTab } from '@/components/jobs/CVCreatorTab';
 import PostJobModal, { PostedJob } from '@/components/jobs/PostJobModal';
@@ -29,6 +31,7 @@ import ApplyJobModal from '@/components/jobs/ApplyJobModal';
 import JobApplicantsModal from '@/components/jobs/JobApplicantsModal';
 import { JobCandidateScout } from '@/components/jobs/JobCandidateScout';
 import { SmartJobAggregatorTab } from '@/components/jobs/SmartJobAggregatorTab';
+import { InterviewSimulationTab } from '@/components/jobs/InterviewSimulationTab';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -90,8 +93,22 @@ interface Job {
   applied_status: 'pending' | 'accepted' | 'rejected' | null;
 }
 
+const VALID_TABS = ['jobs', 'learning-path', 'cv-creator', 'smart-match', 'interview'] as const;
+type JobsTab = (typeof VALID_TABS)[number];
+
 export default function JobsPage() {
-  const [activeTab, setActiveTab] = useState<'jobs' | 'learning-path' | 'cv-creator' | 'smart-match'>('jobs');
+  const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState<JobsTab>('jobs');
+
+  // Deep-link support, e.g. the Home feed's "Latihan Interview AI" card links to
+  // /jobs?tab=interview so it actually opens the right tab instead of just /jobs.
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && (VALID_TABS as readonly string[]).includes(tabParam)) {
+      setActiveTab(tabParam as JobsTab);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   // --- JOBS TAB STATE ---
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -453,6 +470,17 @@ export default function JobsPage() {
           >
             <FileText className="h-3.5 w-3.5" />
             <span>CV CREATOR</span>
+          </button>
+          <button
+            onClick={() => { playClickSound(); setActiveTab('interview'); }}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-xs font-bold transition-all ${
+              activeTab === 'interview'
+                ? 'bg-slate-900 text-white border border-slate-950 dark:bg-white dark:text-slate-950 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
+            }`}
+          >
+            <MessageSquare className="h-3.5 w-3.5" />
+            <span>Latihan Interview AI</span>
           </button>
         </div>
       </div>
@@ -1082,6 +1110,13 @@ export default function JobsPage() {
       {activeTab === 'smart-match' && (
         <div className="animate-fadeIn">
           <SmartJobAggregatorTab onImproveFit={handleUseRoleForLearningPath} />
+        </div>
+      )}
+
+      {/* --- TAB CONTENT: AI INTERVIEW SIMULATION --- */}
+      {activeTab === 'interview' && (
+        <div className="animate-fadeIn">
+          <InterviewSimulationTab />
         </div>
       )}
 

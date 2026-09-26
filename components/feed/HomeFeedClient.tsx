@@ -643,7 +643,7 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
             </p>
           </div>
           <Button asChild size="sm" variant="outline" className="w-full border-slate-200 text-slate-900 font-bold text-xs rounded-md dark:border-slate-800 dark:text-white">
-            <Link href="/jobs">Mulai Latihan</Link>
+            <Link href="/jobs?tab=interview">Mulai Latihan</Link>
           </Button>
         </Card>
 
