@@ -41,6 +41,7 @@ export default function SearchPage() {
   const [isLoadingMyRec, setIsLoadingMyRec] = useState(false);
   const [myRecCandidates, setMyRecCandidates] = useState<RecommendedCandidate[]>([]);
   const [myRecText, setMyRecText] = useState<string | null>(null);
+  const [myRecSavedAt, setMyRecSavedAt] = useState<string | null>(null);
 
   const [previewCandidate, setPreviewCandidate] = useState<RecommendedCandidate | null>(null);
 
@@ -59,6 +60,28 @@ export default function SearchPage() {
     fetchMe();
   }, []);
 
+  // Reload the last-saved collaboration recommendation, if any, so a past result
+  // survives leaving the page instead of requiring a re-run to see it again.
+  useEffect(() => {
+    if (!myUserId) return;
+    const loadSaved = async () => {
+      try {
+        const res = await fetch('/api/ai/recommendations?contextType=collaboration&contextId=_self');
+        if (res.ok) {
+          const saved = await res.json();
+          if (saved) {
+            setMyRecText(saved.recommendation_text);
+            setMyRecCandidates(saved.candidates || []);
+            setMyRecSavedAt(saved.updated_at);
+          }
+        }
+      } catch {
+        // Not critical — the card just starts empty until the user runs it.
+      }
+    };
+    loadSaved();
+  }, [myUserId]);
+
   const handleGetMyRecommendation = async () => {
     if (!myUserId) return;
     playClickSound();
@@ -76,8 +99,22 @@ export default function SearchPage() {
 
       setMyRecText(data.recommendation);
       setMyRecCandidates(data.candidates || []);
+      setMyRecSavedAt(new Date().toISOString());
       playSuccessSound();
       toast.success('Rekomendasi kolaborasi berhasil didapatkan!');
+
+      fetch('/api/ai/recommendations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contextType: 'collaboration',
+          contextId: '_self',
+          recommendationText: data.recommendation,
+          candidates: data.candidates || [],
+        }),
+      }).catch(() => {
+        // Best-effort — the result is already shown even if saving it fails.
+      });
     } catch (err) {
       toast.error('Gagal mendapatkan rekomendasi', { description: err instanceof Error ? err.message : undefined });
     } finally {
@@ -265,14 +302,21 @@ export default function SearchPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <Button
-                    onClick={handleGetMyRecommendation}
-                    disabled={isLoadingMyRec}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs rounded-full px-6 py-2 shadow-sm gap-2"
-                  >
-                    {isLoadingMyRec ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-                    Dapatkan Rekomendasi Kolaborasi
-                  </Button>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <Button
+                      onClick={handleGetMyRecommendation}
+                      disabled={isLoadingMyRec}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs rounded-full px-6 py-2 shadow-sm gap-2"
+                    >
+                      {isLoadingMyRec ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                      {myRecSavedAt ? 'Perbarui Rekomendasi' : 'Dapatkan Rekomendasi Kolaborasi'}
+                    </Button>
+                    {myRecSavedAt && !isLoadingMyRec && (
+                      <span className="text-[10px] text-slate-400">
+                        Tersimpan {new Date(myRecSavedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    )}
+                  </div>
 
                   {isLoadingMyRec && (
                     <div className="flex items-center gap-2 text-xs text-slate-400 py-4">

@@ -1,7 +1,7 @@
 // lib/notifications.ts
 // Helper untuk membuat notifikasi in-app ke tabel notifications
 
-type NotificationType = 'post_like' | 'post_comment' | 'project_apply' | 'project_status' | 'project_invite' | 'job_apply' | 'job_status' | 'chat' | 'system';
+type NotificationType = 'post_like' | 'post_comment' | 'project_apply' | 'project_status' | 'project_invite' | 'job_apply' | 'job_status' | 'job_offer' | 'chat' | 'system';
 
 interface CreateNotificationInput {
     userId: number;

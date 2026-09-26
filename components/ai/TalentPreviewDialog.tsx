@@ -22,34 +22,40 @@ const TIER_LABEL: Record<RecommendedCandidate['tier'], string> = {
   lemah: 'Rekomendasi Lemah',
 }
 
+interface InviteAction {
+  /** POSTed with { targetUserId: candidate.id } */
+  endpoint: string
+  label: string
+}
+
 interface TalentPreviewDialogProps {
   candidate: RecommendedCandidate | null
   onOpenChange: (open: boolean) => void
-  /** Only present when previewing from a project's AI Scout — lets the owner invite the candidate directly. */
-  inviteProjectId?: string
+  /** Only present when previewing from a context with a direct action (invite to project, offer a job). */
+  invite?: InviteAction
   onInvited?: (candidateId: number) => void
 }
 
-export function TalentPreviewDialog({ candidate, onOpenChange, inviteProjectId, onInvited }: TalentPreviewDialogProps) {
+export function TalentPreviewDialog({ candidate, onOpenChange, invite, onInvited }: TalentPreviewDialogProps) {
   const [isInviting, setIsInviting] = useState(false)
 
   const handleInvite = async () => {
-    if (!candidate || !inviteProjectId) return
+    if (!candidate || !invite) return
     setIsInviting(true)
     try {
-      const res = await fetch(`/api/projects/${inviteProjectId}/invite`, {
+      const res = await fetch(invite.endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ targetUserId: candidate.id }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Gagal mengundang talenta.')
+      if (!res.ok) throw new Error(data.error || 'Gagal memproses tindakan.')
 
-      toast.success(data.message || `${candidate.nama_lengkap} berhasil diundang!`)
+      toast.success(data.message || `${candidate.nama_lengkap} berhasil diproses!`)
       onInvited?.(candidate.id)
       onOpenChange(false)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Gagal mengundang talenta.')
+      toast.error(err instanceof Error ? err.message : 'Gagal memproses tindakan.')
     } finally {
       setIsInviting(false)
     }
@@ -93,14 +99,14 @@ export function TalentPreviewDialog({ candidate, onOpenChange, inviteProjectId, 
           </div>
 
           <DialogFooter className="pt-2 flex-col sm:flex-col gap-2">
-            {inviteProjectId && (
+            {invite && (
               <Button
                 onClick={handleInvite}
                 disabled={isInviting}
                 className="w-full bg-primary hover:bg-primary/95 text-white font-semibold text-xs rounded-md gap-1.5"
               >
                 {isInviting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserPlus className="h-3.5 w-3.5" />}
-                {isInviting ? 'Mengundang...' : 'Undang ke Proyek'}
+                {isInviting ? 'Memproses...' : invite.label}
               </Button>
             )}
             <Button asChild variant="outline" className="w-full text-xs rounded-md gap-1.5">

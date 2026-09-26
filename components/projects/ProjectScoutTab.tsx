@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { Cpu, Loader2, Radar } from 'lucide-react'
@@ -30,8 +30,36 @@ export function ProjectScoutTab({ myProjects }: ProjectScoutTabProps) {
   const [reportText, setReportText] = useState<string | null>(null)
   const [candidates, setCandidates] = useState<RecommendedCandidate[]>([])
   const [previewCandidate, setPreviewCandidate] = useState<RecommendedCandidate | null>(null)
+  const [savedAt, setSavedAt] = useState<string | null>(null)
+  const [isLoadingSaved, setIsLoadingSaved] = useState(false)
 
   const selectedProject = myProjects.find((p) => p.id === selectedProjectId)
+
+  // Reload the last-saved scout result for whichever project is selected, so switching
+  // between projects (or coming back later) doesn't lose a previous run.
+  useEffect(() => {
+    if (!selectedProjectId) return
+    let cancelled = false
+    setIsLoadingSaved(true)
+    setReportText(null)
+    setCandidates([])
+    setSavedAt(null)
+    fetch(`/api/ai/recommendations?contextType=project_scout&contextId=${selectedProjectId}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((saved) => {
+        if (cancelled || !saved) return
+        setReportText(saved.recommendation_text)
+        setCandidates(saved.candidates || [])
+        setSavedAt(saved.updated_at)
+      })
+      .catch(() => {
+        // Not critical — the tab just starts empty until the user runs a search.
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingSaved(false)
+      })
+    return () => { cancelled = true }
+  }, [selectedProjectId])
 
   const handleSearch = async () => {
     if (!selectedProject) return
@@ -54,8 +82,22 @@ export function ProjectScoutTab({ myProjects }: ProjectScoutTabProps) {
 
       setReportText(data.rekomendasi_proyek)
       setCandidates(data.candidates || [])
+      setSavedAt(new Date().toISOString())
       playSuccessSound()
       toast.success('Rekomendasi talenta berhasil ditemukan!')
+
+      fetch('/api/ai/recommendations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contextType: 'project_scout',
+          contextId: selectedProject.id,
+          recommendationText: data.rekomendasi_proyek,
+          candidates: data.candidates || [],
+        }),
+      }).catch(() => {
+        // Best-effort — the result is already shown even if saving it fails.
+      })
     } catch (err) {
       toast.error('AI Scout Error', { description: err instanceof Error ? err.message : 'Koneksi ke AI Engine terputus.' })
     } finally {
@@ -107,11 +149,22 @@ export function ProjectScoutTab({ myProjects }: ProjectScoutTabProps) {
               className="h-9 bg-primary hover:bg-primary/95 text-white font-bold text-xs px-5 rounded-md gap-1.5 flex-shrink-0"
             >
               {isSearching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Cpu className="h-3.5 w-3.5" />}
-              Cari Talenta via AI
+              {savedAt ? 'Perbarui Pencarian' : 'Cari Talenta via AI'}
             </Button>
           </div>
+          {savedAt && !isSearching && !isLoadingSaved && (
+            <p className="text-[10px] text-slate-400 mt-2">
+              Hasil tersimpan {new Date(savedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+            </p>
+          )}
         </CardContent>
       </Card>
+
+      {isLoadingSaved && !isSearching && (
+        <div className="flex items-center gap-2 text-xs text-slate-400 py-2">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Memuat hasil tersimpan...
+        </div>
+      )}
 
       {isSearching && (
         <div className="min-h-[200px] flex flex-col items-center justify-center text-slate-400">
@@ -155,7 +208,7 @@ export function ProjectScoutTab({ myProjects }: ProjectScoutTabProps) {
       <TalentPreviewDialog
         candidate={previewCandidate}
         onOpenChange={(open) => { if (!open) setPreviewCandidate(null) }}
-        inviteProjectId={selectedProjectId}
+        invite={{ endpoint: `/api/projects/${selectedProjectId}/invite`, label: 'Undang ke Proyek' }}
       />
     </div>
   )

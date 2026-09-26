@@ -139,15 +139,6 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
 
-  // State for the "Lowongan Kerja Terpilih" sidebar widget (real, latest active jobs)
-  const [recommendedJobs, setRecommendedJobs] = useState<Array<{
-    id: number;
-    job_title: string;
-    company: string;
-    platform: string;
-    job_url: string | null;
-  }>>([]);
-
   // Calculate profile completeness
   const computeCompleteness = () => {
     const fields = [
@@ -202,22 +193,6 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
       }
     };
     fetchCohorts();
-  }, []);
-
-  // Load a couple of real active job listings for the "Lowongan Kerja Terpilih" widget
-  useEffect(() => {
-    const fetchRecommendedJobs = async () => {
-      try {
-        const res = await fetch('/api/jobs?limit=2');
-        if (res.ok) {
-          const data = await res.json();
-          setRecommendedJobs(data.jobs || []);
-        }
-      } catch (err) {
-        console.error('Error fetching recommended jobs:', err);
-      }
-    };
-    fetchRecommendedJobs();
   }, []);
 
   // Fetch feed and members when activeCohort changes
@@ -1112,41 +1087,6 @@ export function HomeFeedClient({ initialPosts, userProfile }: HomeFeedClientProp
                   </Link>
                 </Button>
               </div>
-            </Card>
-
-            {/* 5. Section Job Aggregator (Rekomendasi Loker) */}
-            <Card className="premium-light-card liquid-glass-border p-4 space-y-3 bg-white dark:bg-[#1b1f23] border border-slate-200 dark:border-slate-800 shadow-sm">
-              <div className="border-b border-slate-200/80 dark:border-white/5 pb-2">
-                <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
-                  <Briefcase className="h-4 w-4 text-emerald-500" />
-                  Lowongan Kerja Terpilih
-                </h4>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-normal">
-                  Lowongan aktif terbaru yang tersedia di portal Jobs.
-                </p>
-              </div>
-
-              {recommendedJobs.length > 0 ? (
-                recommendedJobs.map((job) => (
-                  <div key={job.id} className="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20 space-y-2">
-                    <div className="flex justify-between items-start gap-1">
-                      <div>
-                        <h5 className="font-bold text-xs text-slate-900 dark:text-white line-clamp-1">{job.job_title}</h5>
-                        <p className="text-[9px] text-slate-450 mt-0.5">{job.company} • {job.platform}</p>
-                      </div>
-                    </div>
-                    <Button asChild size="sm" className="w-full h-7 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] rounded-md">
-                      {job.job_url ? (
-                        <a href={job.job_url} target="_blank" rel="noopener noreferrer">Lamar Sekarang</a>
-                      ) : (
-                        <Link href="/jobs">Lihat Detail</Link>
-                      )}
-                    </Button>
-                  </div>
-                ))
-              ) : (
-                <p className="text-[10px] text-slate-500 text-center py-2">Belum ada lowongan aktif saat ini.</p>
-              )}
             </Card>
 
             {/* 6. Community & Engagement Footer Widget */}

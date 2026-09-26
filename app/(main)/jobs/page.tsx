@@ -20,12 +20,15 @@ import {
   ChevronUp,
   ExternalLink,
   FileText,
-  Wallet
+  Wallet,
+  Target
 } from 'lucide-react';
 import { CVCreatorTab } from '@/components/jobs/CVCreatorTab';
 import PostJobModal, { PostedJob } from '@/components/jobs/PostJobModal';
 import ApplyJobModal from '@/components/jobs/ApplyJobModal';
 import JobApplicantsModal from '@/components/jobs/JobApplicantsModal';
+import { JobCandidateScout } from '@/components/jobs/JobCandidateScout';
+import { SmartJobAggregatorTab } from '@/components/jobs/SmartJobAggregatorTab';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -82,7 +85,7 @@ interface Job {
 }
 
 export default function JobsPage() {
-  const [activeTab, setActiveTab] = useState<'jobs' | 'learning-path' | 'cv-creator'>('jobs');
+  const [activeTab, setActiveTab] = useState<'jobs' | 'learning-path' | 'cv-creator' | 'smart-match'>('jobs');
 
   // --- JOBS TAB STATE ---
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -230,8 +233,8 @@ export default function JobsPage() {
   };
 
   // Start AI Analysis
-  const startAnalysis = async () => {
-    const finalRole = selectedRole === 'custom' ? customRole : selectedRole;
+  const startAnalysis = async (roleOverride?: string) => {
+    const finalRole = roleOverride || (selectedRole === 'custom' ? customRole : selectedRole);
     if (!finalRole || !finalRole.trim()) {
       toast.info('Tentukan target peran karir terlebih dahulu.');
       return;
@@ -261,6 +264,16 @@ export default function JobsPage() {
     } finally {
       setLoadingAnalysis(false);
     }
+  };
+
+  // Smart Job Aggregator "improve your fit" hand-off: feeds a job's category straight
+  // into the existing Learning Path generator instead of building a second, separate
+  // gap-analysis feature.
+  const handleUseRoleForLearningPath = (role: string) => {
+    setSelectedRole(POPULAR_ROLES.includes(role) ? role : 'custom');
+    setCustomRole(role);
+    setActiveTab('learning-path');
+    startAnalysis(role);
   };
 
   // --- FETCH JOBS ---
@@ -386,6 +399,17 @@ export default function JobsPage() {
           >
             <Briefcase className="h-3.5 w-3.5" />
             <span>Lowongan Pekerjaan</span>
+          </button>
+          <button
+            onClick={() => { playClickSound(); setActiveTab('smart-match'); }}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-xs font-bold transition-all ${
+              activeTab === 'smart-match'
+                ? 'bg-slate-900 text-white border border-slate-950 dark:bg-white dark:text-slate-950 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
+            }`}
+          >
+            <Target className="h-3.5 w-3.5" />
+            <span>Smart Job Agregator</span>
           </button>
           <button
             onClick={() => { playClickSound(); setActiveTab('learning-path'); }}
@@ -645,6 +669,16 @@ export default function JobsPage() {
                             </ul>
                           </div>
                         )}
+
+                        {job.source === 'user' && job.owner_id === currentUserId && (
+                          <JobCandidateScout
+                            jobId={job.id}
+                            jobTitle={job.job_title}
+                            description={job.description}
+                            jobDesk={job.job_desk || []}
+                            requirements={job.requirements || []}
+                          />
+                        )}
                       </CardContent>
                     )}
                   </Card>
@@ -741,7 +775,7 @@ export default function JobsPage() {
                 )}
 
                 <Button
-                  onClick={startAnalysis}
+                  onClick={() => startAnalysis()}
                   className="w-full h-10 bg-primary hover:bg-primary/95 text-white text-sm font-bold rounded-md mt-2 flex gap-2 items-center justify-center shadow-sm"
                 >
                   <Cpu className="h-4 w-4" />
@@ -980,6 +1014,13 @@ export default function JobsPage() {
       {activeTab === 'cv-creator' && (
         <div className="animate-fadeIn">
           <CVCreatorTab />
+        </div>
+      )}
+
+      {/* --- TAB CONTENT: SMART JOB AGGREGATOR --- */}
+      {activeTab === 'smart-match' && (
+        <div className="animate-fadeIn">
+          <SmartJobAggregatorTab onImproveFit={handleUseRoleForLearningPath} />
         </div>
       )}
 
