@@ -107,7 +107,6 @@ export default function JobsPage() {
     if (tabParam && (VALID_TABS as readonly string[]).includes(tabParam)) {
       setActiveTab(tabParam as JobsTab);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   // --- JOBS TAB STATE ---
@@ -1116,7 +1115,7 @@ export default function JobsPage() {
       {/* --- TAB CONTENT: AI INTERVIEW SIMULATION --- */}
       {activeTab === 'interview' && (
         <div className="animate-fadeIn">
-          <InterviewSimulationTab />
+          <InterviewSimulationTab savedRoles={savedPaths.map((p) => p.target_role)} />
         </div>
       )}
 
