@@ -20,7 +20,6 @@ export default function PreviewJobsPage() {
     const [activeTab, setActiveTab] = useState<'jobs' | 'ai'>('jobs');
     const [jobs, setJobs] = useState<Job[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [expandedJob, setExpandedJob] = useState<number | null>(null);
 
     useEffect(() => {
         const loadJobs = async () => {
@@ -51,7 +50,7 @@ export default function PreviewJobsPage() {
                     <div>
                         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Portal Karir</h1>
                         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                            Login untuk mengakses Learning Path & CV Creator AI.
+                            Login untuk mengakses Learning Path, CV Creator, & Smart Job Aggregator AI.
                         </p>
                     </div>
                     <Link
@@ -125,38 +124,13 @@ export default function PreviewJobsPage() {
                                             <span className="text-[10px] text-slate-500 mb-2">{job.category}</span>
                                         )}
 
-                                        {/* Expand/Collapse Detail */}
-                                        {expandedJob === job.id && (
-                                            <div className="text-xs text-slate-600 dark:text-slate-400 space-y-2 mb-3 border-t border-slate-100 dark:border-slate-800 pt-3">
-                                                {job.description && (
-                                                    <p className="leading-relaxed">{job.description}</p>
-                                                )}
-                                                {job.job_desk && job.job_desk.length > 0 && (
-                                                    <div>
-                                                        <p className="font-bold text-slate-700 dark:text-slate-300 mb-1">Job Desk:</p>
-                                                        <ul className="list-disc list-inside space-y-0.5">
-                                                            {job.job_desk.slice(0, 6).map((d, i) => <li key={i}>{d}</li>)}
-                                                        </ul>
-                                                    </div>
-                                                )}
-                                                {job.requirements && job.requirements.length > 0 && (
-                                                    <div>
-                                                        <p className="font-bold text-slate-700 dark:text-slate-300 mb-1">Requirements:</p>
-                                                        <ul className="list-disc list-inside space-y-0.5">
-                                                            {job.requirements.slice(0, 6).map((r, i) => <li key={i}>{r}</li>)}
-                                                        </ul>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-
                                         <div className="mt-auto flex items-center gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
-                                            <button
-                                                onClick={() => setExpandedJob(expandedJob === job.id ? null : job.id)}
+                                            <Link
+                                                href={`/preview/jobs/${job.id}`}
                                                 className="text-[10px] font-semibold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
                                             >
-                                                {expandedJob === job.id ? 'Sembunyikan Detail' : 'Lihat Detail'}
-                                            </button>
+                                                Lihat Detail Lengkap
+                                            </Link>
 
                                             {job.job_url && (
                                                 <a
@@ -177,7 +151,7 @@ export default function PreviewJobsPage() {
                 )}
 
                 {activeTab === 'ai' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {/* Card Learning Path AI (Locked) */}
                         <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 relative overflow-hidden">
                             <div className="opacity-20 pointer-events-none select-none space-y-3">
@@ -216,6 +190,30 @@ export default function PreviewJobsPage() {
                             </div>
                             <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-50/80 dark:bg-slate-950/80 z-10">
                                 <p className="text-sm font-bold text-slate-700 dark:text-slate-300">CV Creator AI</p>
+                                <p className="text-xs text-slate-500 mt-1">Login untuk akses fitur ini</p>
+                                <div className="flex gap-2 mt-4">
+                                    <Link href="/register" className="rounded-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-1.5">
+                                        Daftar Gratis
+                                    </Link>
+                                    <Link href="/login" className="rounded-full border border-slate-200 dark:border-slate-700 text-xs font-semibold px-4 py-1.5 text-slate-600 dark:text-slate-300">
+                                        Masuk
+                                    </Link>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Card Smart Job Aggregator (Locked) */}
+                        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 relative overflow-hidden">
+                            <div className="opacity-20 pointer-events-none select-none space-y-2">
+                                <h3 className="font-bold text-sm">Rekomendasi Lowongan Untukmu</h3>
+                                <ul className="space-y-1 text-xs">
+                                    <li>• Frontend Developer — 92% cocok dengan profilmu</li>
+                                    <li>• Product Designer — 87% cocok dengan profilmu</li>
+                                    <li>• Data Analyst — 81% cocok dengan profilmu</li>
+                                </ul>
+                            </div>
+                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-50/80 dark:bg-slate-950/80 z-10">
+                                <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Smart Job Aggregator</p>
                                 <p className="text-xs text-slate-500 mt-1">Login untuk akses fitur ini</p>
                                 <div className="flex gap-2 mt-4">
                                     <Link href="/register" className="rounded-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-1.5">

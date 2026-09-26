@@ -69,8 +69,9 @@ export default async function PreviewProjectsPage() {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                         {projectList.map((project) => (
-                            <div
+                            <Link
                                 key={project.id}
+                                href={`/preview/projects/${project.id}`}
                                 className="flex flex-col justify-between rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 hover:shadow-md transition-shadow"
                             >
                                 <div>
@@ -110,13 +111,10 @@ export default async function PreviewProjectsPage() {
                                     </p>
                                 </div>
 
-                                <Link
-                                    href={`/register?from=preview-projects`}
-                                    className="mt-4 w-full text-center rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold py-2 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                                >
-                                    Lamar Proyek
-                                </Link>
-                            </div>
+                                <span className="mt-4 w-full text-center rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold py-2 block">
+                                    Lihat Detail &amp; Lamar
+                                </span>
+                            </Link>
                         ))}
                     </div>
                 )}

@@ -3,7 +3,6 @@
 
 import Link from 'next/link';
 import { Rocket, Bot, Briefcase, ChevronRight } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 
 const pillars = [
     {
@@ -36,14 +35,14 @@ const pillars = [
         icon: Briefcase,
         title: 'Smart Job Aggregator',
         tagline: 'Ribuan Peluang Karir Terkurasi dalam Satu Pintu.',
-        desc: 'Kami mengkurasi lowongan dari berbagai platform ternama agar kamu tidak perlu membuka puluhan tab portal kerja.',
+        desc: 'AI menganalisis profilmu dan menyaring lowongan dari berbagai platform ternama menjadi rekomendasi yang paling relevan untukmu.',
         points: [
-            'Update Real-time — Informasi lowongan terpercaya yang selalu diperbarui',
+            'Analisis AI Personal — Lowongan diberi skor kecocokan berdasarkan profil dan skill-mu',
+            'Riwayat Tersimpan — Simpan dan bandingkan hasil analisis kapan saja',
             'Filter Spesifik — Filter cepat berdasarkan peran hingga opsi remote work',
         ],
         cta: 'Lihat Lowongan',
         href: '/preview/jobs',
-        comingSoon: true,
     },
 ];
 
@@ -64,11 +63,6 @@ export function FeaturePillars() {
                             key={p.title}
                             className="relative rounded-2xl border border-white/15 bg-white/8 backdrop-blur-sm p-6 hover:bg-white/12 transition-all duration-300 hover:-translate-y-1"
                         >
-                            {p.comingSoon && (
-                                <Badge className="absolute top-4 right-4 bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[9px] font-bold">
-                                    Segera Hadir
-                                </Badge>
-                            )}
                             <div className="inline-flex p-3 rounded-xl bg-white/10 text-white mb-4">
                                 <p.icon className="h-6 w-6" />
                             </div>
