@@ -27,7 +27,12 @@ export default async function PreviewProjectsPage() {
         .order('created_at', { ascending: false })
         .limit(12);
 
-    const projectList = (projects || []) as unknown as ProjectRow[];
+    // owner comes back from PostgREST as a single object, not an array (projects.owner_id
+    // is a many-to-one FK into alumni_db) — normalize it to the array shape this page reads.
+    const projectList = ((projects || []) as unknown as Array<Record<string, unknown> & { owner: { id: number; nama_lengkap: string } | null }>).map((p) => ({
+        ...p,
+        owner: p.owner ? [p.owner] : [],
+    })) as unknown as ProjectRow[];
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950">

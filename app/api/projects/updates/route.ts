@@ -28,7 +28,8 @@ export async function POST(req: NextRequest) {
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
 
-    // Fetch project to verify ownership
+    // Fetch project to verify the poster is either the owner or an accepted collaborator —
+    // progress updates are a team activity, not an owner-only broadcast.
     const { data: project, error: getErr } = await supabaseAdmin
       .from('projects')
       .select('owner_id')
@@ -39,8 +40,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Proyek tidak ditemukan.' }, { status: 404 });
     }
 
-    if (Number(project.owner_id) !== userId) {
-      return NextResponse.json({ error: 'Anda bukan pemilik proyek ini.' }, { status: 403 });
+    const isOwner = Number(project.owner_id) === userId;
+    if (!isOwner) {
+      const { data: application } = await supabaseAdmin
+        .from('project_applications')
+        .select('status')
+        .eq('project_id', projectId)
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (application?.status !== 'accepted') {
+        return NextResponse.json({ error: 'Anda bukan pemilik atau anggota proyek ini.' }, { status: 403 });
+      }
     }
 
     // Insert update log

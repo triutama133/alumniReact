@@ -68,14 +68,16 @@ export default async function ProjectDetailPage({
     application = appData;
   }
 
-  // Serialize BigInt or other non-serializable fields if any
+  // Serialize BigInt or other non-serializable fields if any.
+  // project.owner comes back as a single object (not an array) — projects.owner_id is a
+  // many-to-one FK into alumni_db, and PostgREST embeds belongs-to relationships as an
+  // object, not a list. Every consumer (ProjectCard, ProjectDetailClient, etc.) expects
+  // an array though, so wrap it here rather than changing every call site.
+  const ownerRow = project.owner as unknown as { id: number; nama_lengkap: string } | null;
   const serializedProject = {
     ...project,
     owner_id: Number(project.owner_id),
-    owner: (project.owner || []).map((o: any) => ({
-      ...o,
-      id: Number(o.id)
-    })),
+    owner: ownerRow ? [{ ...ownerRow, id: Number(ownerRow.id) }] : [],
     updates: (updates || []).map((u: any) => ({
       ...u,
       id: Number(u.id),
@@ -88,14 +90,16 @@ export default async function ProjectDetailPage({
   };
 
   const isOwner = userId !== null && userId === Number(project.owner_id);
+  const isCollaborator = application?.status === 'accepted';
 
   return (
     <div className="py-8 bg-slate-950/20 min-h-screen">
-      <ProjectDetailClient 
-        project={serializedProject} 
-        userId={userId} 
-        isOwner={isOwner} 
-        initialApplication={application} 
+      <ProjectDetailClient
+        project={serializedProject}
+        userId={userId}
+        isOwner={isOwner}
+        isCollaborator={isCollaborator}
+        initialApplication={application}
       />
     </div>
   );

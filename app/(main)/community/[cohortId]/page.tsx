@@ -93,6 +93,13 @@ export default async function CommunityPage({ params }: { params: Promise<{ coho
 
   const memberRows = (members || []) as unknown as CohortMemberRow[];
   const postRows = (posts || []) as unknown as CommunityPostRow[];
+  // owner comes back from PostgREST as a single object, not an array (projects.owner_id
+  // is a many-to-one FK into alumni_db) — ProjectCard expects an array, same normalization
+  // as the main projects list page.
+  const projectRows = ((projects || []) as unknown as Array<Record<string, unknown> & { owner: { id: number; nama_lengkap: string } | null }>).map((p) => ({
+    ...p,
+    owner: p.owner ? [p.owner] : [],
+  })) as unknown as ProjectWithOwner[];
   const isAdmin = membership.role === 'admin';
   const expiresAt = cohort.expires_at ? new Date(cohort.expires_at) : null;
   const daysLeft = expiresAt ? Math.max(0, Math.ceil((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : null;
@@ -146,10 +153,10 @@ export default async function CommunityPage({ params }: { params: Promise<{ coho
 
       <section>
         <h2 className="text-lg font-semibold text-foreground mb-3">Proyek Komunitas</h2>
-        {projects && projects.length > 0 ? (
+        {projectRows.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-            {projects.map((p) => (
-              <ProjectCard key={p.id} project={p as unknown as ProjectWithOwner} user={null} />
+            {projectRows.map((p) => (
+              <ProjectCard key={p.id} project={p} user={null} />
             ))}
           </div>
         ) : (

@@ -95,12 +95,15 @@ interface ProjectDetailClientProps {
   project: Project;
   userId: number | null; // Nullable to support guest public view
   isOwner: boolean;
+  /** An accepted collaborator — can post progress updates and manage milestones, but not the plan or applicants. */
+  isCollaborator: boolean;
   initialApplication: Application | null;
 }
 
-export function ProjectDetailClient({ project, userId, isOwner, initialApplication }: ProjectDetailClientProps) {
+export function ProjectDetailClient({ project, userId, isOwner, isCollaborator, initialApplication }: ProjectDetailClientProps) {
   const [application, setApplication] = useState<Application | null>(initialApplication);
   const [isApplying, setIsApplying] = useState(false);
+  const canManageProgress = isOwner || isCollaborator;
 
   // States for AI Search/Rec
   const [aiReport, setAiReport] = useState<string | null>(null);
@@ -284,7 +287,7 @@ export function ProjectDetailClient({ project, userId, isOwner, initialApplicati
   // Toggle Milestone Done
   const toggleMilestone = async (index: number) => {
     playClickSound();
-    if (!isOwner) return;
+    if (!canManageProgress) return;
     const updated = [...milestones];
     updated[index].done = !updated[index].done;
     setMilestones(updated);
@@ -636,8 +639,8 @@ Berikan analisis dalam format rapi:
                     </h4>
                   </div>
 
-                  {/* Add Milestone input (Owner only) */}
-                  {isOwner && (
+                  {/* Add Milestone input (Owner + accepted collaborators) */}
+                  {canManageProgress && (
                     <div className="flex gap-2 max-w-md">
                       <Input
                         value={newMilestoneTitle}
@@ -669,14 +672,14 @@ Berikan analisis dalam format rapi:
                             type="checkbox"
                             checked={m.done}
                             onChange={() => toggleMilestone(idx)}
-                            disabled={!isOwner || savingMilestones}
+                            disabled={!canManageProgress || savingMilestones}
                             className="h-4 w-4 rounded border-slate-300 dark:border-slate-800 text-emerald-600 focus:ring-emerald-500 cursor-pointer disabled:cursor-default"
                           />
                           <span className={`text-xs font-bold ${m.done ? 'line-through opacity-80' : ''}`}>
                             {m.title}
                           </span>
                         </div>
-                        {isOwner && (
+                        {canManageProgress && (
                           <Button onClick={() => removeMilestone(idx)} disabled={savingMilestones} variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-500 hover:text-red-700">
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
@@ -778,14 +781,14 @@ Berikan analisis dalam format rapi:
                     <h4 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
                       <Clock className="h-4 w-4 text-primary" /> Log & Perkembangan Harian
                     </h4>
-                    {isOwner && !showUpdateForm && (
+                    {canManageProgress && !showUpdateForm && (
                       <Button onClick={() => setShowUpdateForm(true)} className="bg-primary hover:bg-primary/95 text-white text-xs font-bold h-8 px-4 rounded-md">
                         Tulis Log Baru
                       </Button>
                     )}
                   </div>
 
-                  {/* Add Update log form (Owner only) */}
+                  {/* Add Update log form (Owner + accepted collaborators) */}
                   {showUpdateForm && (
                     <form onSubmit={postDailyUpdate} className="p-4 border border-slate-200 dark:border-slate-800 rounded-md bg-slate-50/50 dark:bg-slate-950/30 space-y-3 max-w-xl">
                       <h5 className="text-xs font-bold text-slate-850 dark:text-white uppercase tracking-wider">Tulis Log Harian</h5>

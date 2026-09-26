@@ -59,7 +59,15 @@ export default async function ProjectsPage({
     }
 
     const { data, error } = await dbQuery.order('created_at', { ascending: false });
-    if (!error && data) projects = data;
+    // owner comes back from PostgREST as a single object (projects.owner_id is a
+    // many-to-one FK into alumni_db, embedded as belongs-to, not as a list) — normalize
+    // it to the array shape ProjectCard/ProjectWithOwner expect, same as the detail page.
+    if (!error && data) {
+      projects = (data as unknown as Array<Record<string, unknown> & { owner: { id: number; nama_lengkap: string } | null }>).map((p) => ({
+        ...p,
+        owner: p.owner ? [p.owner] : [],
+      })) as unknown as ProjectWithOwner[];
+    }
 
     // Attach the viewing user's own application status per project, so cards can show
     // "Sudah Melamar" without needing to open every project's detail page to find out.
@@ -85,7 +93,7 @@ export default async function ProjectsPage({
   }
 
   return (
-    <div className="container mx-auto py-8 stagger-children">
+    <div className="container mx-auto py-8 px-4 md:px-6 max-w-6xl stagger-children">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h1 className="text-4xl font-bold tracking-tight">Hub Proyek & Kolaborasi</h1>
