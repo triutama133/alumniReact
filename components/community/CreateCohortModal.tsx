@@ -76,7 +76,11 @@ export default function CreateCohortModal({ open, onOpenChange, onCreated }: Cre
 
   return (
     <Dialog open={open} onOpenChange={(next) => (next ? onOpenChange(true) : resetAndClose())}>
-      <DialogContent className="relative sm:max-w-md bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white">
+      <DialogContent className="sm:max-w-md bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white">
+        {/* Radix's DialogContent must keep its base `fixed` positioning for viewport
+            centering — `relative` here would win the position conflict via
+            tailwind-merge and collapse it into normal document flow. */}
+        <div className="relative">
         {isCreating && <LoadingOverlay message="Membuat komunitas..." />}
         <DialogHeader>
           <DialogTitle className="text-lg font-bold">Buat Komunitas</DialogTitle>
@@ -113,6 +117,7 @@ export default function CreateCohortModal({ open, onOpenChange, onCreated }: Cre
             </Button>
           </DialogFooter>
         </form>
+        </div>
       </DialogContent>
     </Dialog>
   )

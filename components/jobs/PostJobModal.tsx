@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -36,11 +36,15 @@ interface PostJobModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onCreated: (job: PostedJob) => void
+  /** When present, the modal edits this job instead of creating a new one. */
+  editingJob?: PostedJob | null
+  onUpdated?: (job: PostedJob) => void
 }
 
 const linesToArray = (value: string) => value.split('\n').map((line) => line.trim()).filter(Boolean)
+const arrayToLines = (value: string[] | null | undefined) => (value || []).join('\n')
 
-export default function PostJobModal({ open, onOpenChange, onCreated }: PostJobModalProps) {
+export default function PostJobModal({ open, onOpenChange, onCreated, editingJob, onUpdated }: PostJobModalProps) {
   const [jobTitle, setJobTitle] = useState('')
   const [company, setCompany] = useState('')
   const [category, setCategory] = useState('')
@@ -50,6 +54,22 @@ export default function PostJobModal({ open, onOpenChange, onCreated }: PostJobM
   const [jobUrl, setJobUrl] = useState('')
   const [salary, setSalary] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const isEditing = Boolean(editingJob)
+
+  // Pre-fill the form when opening in edit mode.
+  useEffect(() => {
+    if (open && editingJob) {
+      setJobTitle(editingJob.job_title || '')
+      setCompany(editingJob.company || '')
+      setCategory(editingJob.category || '')
+      setDescription(editingJob.description || '')
+      setJobDesk(arrayToLines(editingJob.job_desk))
+      setRequirements(arrayToLines(editingJob.requirements))
+      setJobUrl(editingJob.job_url || '')
+      setSalary(editingJob.salary || '')
+    }
+  }, [open, editingJob])
 
   const resetAndClose = () => {
     setJobTitle('')
@@ -69,8 +89,8 @@ export default function PostJobModal({ open, onOpenChange, onCreated }: PostJobM
 
     setIsSubmitting(true)
     try {
-      const res = await fetch('/api/jobs', {
-        method: 'POST',
+      const res = await fetch(isEditing ? `/api/jobs/${editingJob!.id}` : '/api/jobs', {
+        method: isEditing ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           job_title: jobTitle,
@@ -86,14 +106,18 @@ export default function PostJobModal({ open, onOpenChange, onCreated }: PostJobM
 
       const data = await res.json()
       if (!res.ok) {
-        throw new Error(data.error || 'Gagal memasang lowongan.')
+        throw new Error(data.error || (isEditing ? 'Gagal memperbarui lowongan.' : 'Gagal memasang lowongan.'))
       }
 
-      toast.success('Lowongan berhasil dipasang!')
-      onCreated(data.job as PostedJob)
+      toast.success(isEditing ? 'Lowongan berhasil diperbarui!' : 'Lowongan berhasil dipasang!')
+      if (isEditing) {
+        onUpdated?.(data.job as PostedJob)
+      } else {
+        onCreated(data.job as PostedJob)
+      }
       resetAndClose()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Gagal memasang lowongan.')
+      toast.error(err instanceof Error ? err.message : (isEditing ? 'Gagal memperbarui lowongan.' : 'Gagal memasang lowongan.'))
     } finally {
       setIsSubmitting(false)
     }
@@ -101,12 +125,19 @@ export default function PostJobModal({ open, onOpenChange, onCreated }: PostJobM
 
   return (
     <Dialog open={open} onOpenChange={(next) => (next ? onOpenChange(true) : resetAndClose())}>
-      <DialogContent className="relative sm:max-w-lg bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white max-h-[85vh] overflow-y-auto">
-        {isSubmitting && <LoadingOverlay message="Memasang lowongan..." />}
+      <DialogContent className="sm:max-w-lg bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white max-h-[85vh] overflow-y-auto">
+        {/* Radix's DialogContent must keep its base `fixed` positioning for viewport
+            centering to work — `relative` here would win the position conflict via
+            tailwind-merge and collapse it into normal document flow, so the wrapper
+            below carries `relative` instead, just for the overlay's `absolute` anchor. */}
+        <div className="relative">
+        {isSubmitting && <LoadingOverlay message={isEditing ? 'Memperbarui lowongan...' : 'Memasang lowongan...'} />}
         <DialogHeader>
-          <DialogTitle className="text-lg font-bold">Pasang Lowongan</DialogTitle>
+          <DialogTitle className="text-lg font-bold">{isEditing ? 'Edit Lowongan' : 'Pasang Lowongan'}</DialogTitle>
           <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
-            Lowongan yang Anda pasang akan langsung tampil di daftar, ditandai sebagai lowongan komunitas. Anda bisa menonaktifkannya kapan saja.
+            {isEditing
+              ? 'Perbarui detail lowongan Anda. Perubahan langsung tampil di daftar.'
+              : 'Lowongan yang Anda pasang akan langsung tampil di daftar, ditandai sebagai lowongan komunitas. Anda bisa menonaktifkannya kapan saja.'}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -150,10 +181,11 @@ export default function PostJobModal({ open, onOpenChange, onCreated }: PostJobM
             <Button type="button" variant="ghost" size="sm" onClick={resetAndClose} className="rounded-md text-xs">Batal</Button>
             <Button type="submit" size="sm" disabled={isSubmitting || !jobTitle.trim() || !company.trim() || !description.trim()} className="bg-primary hover:bg-primary/95 text-white font-semibold text-xs rounded-md px-5 shadow-sm gap-1.5">
               {isSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-              {isSubmitting ? 'Memasang...' : 'Pasang Lowongan'}
+              {isSubmitting ? (isEditing ? 'Memperbarui...' : 'Memasang...') : (isEditing ? 'Simpan Perubahan' : 'Pasang Lowongan')}
             </Button>
           </DialogFooter>
         </form>
+        </div>
       </DialogContent>
     </Dialog>
   )

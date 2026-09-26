@@ -66,6 +66,12 @@ interface AnalysisResult {
   checklist: string[];
 }
 
+interface SavedLearningPath {
+  target_role: string;
+  path_data: AnalysisResult;
+  updated_at: string;
+}
+
 interface Job {
   id: number;
   job_title: string;
@@ -102,12 +108,14 @@ export default function JobsPage() {
   const [expandedJobId, setExpandedJobId] = useState<number | null>(null);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [showPostJobModal, setShowPostJobModal] = useState(false);
+  const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [togglingJobId, setTogglingJobId] = useState<number | null>(null);
   const [applyModalJob, setApplyModalJob] = useState<{ id: number; title: string } | null>(null);
   const [applicantsModalJob, setApplicantsModalJob] = useState<{ id: number; title: string } | null>(null);
 
   // --- LEARNING PATH TAB STATE ---
   const [selectedRole, setSelectedRole] = useState<string>('');
+  const [savedPaths, setSavedPaths] = useState<SavedLearningPath[]>([]);
   const [customRole, setCustomRole] = useState<string>('');
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
@@ -173,30 +181,37 @@ export default function JobsPage() {
     fetchSavedChecklist(target);
   }, [analysisResult, selectedRole, customRole]);
 
-  // Load saved learning path on page mount
-  useEffect(() => {
-    async function loadSavedPath() {
-      try {
-        const res = await fetch('/api/learning-path');
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.path_data) {
-            const role = data.target_role;
-            if (POPULAR_ROLES.includes(role)) {
-              setSelectedRole(role);
-            } else {
-              setSelectedRole('custom');
-              setCustomRole(role);
-            }
-            setAnalysisResult(data.path_data);
-          }
+  // Load saved learning paths on page mount — up to 5 can exist per user now.
+  const loadSavedPaths = useCallback(async () => {
+    try {
+      const res = await fetch('/api/learning-path');
+      if (res.ok) {
+        const data = await res.json();
+        const paths: SavedLearningPath[] = data.paths || [];
+        setSavedPaths(paths);
+        if (paths.length > 0) {
+          applySavedPath(paths[0]);
         }
-      } catch (err) {
-        console.error('Error loading saved learning path:', err);
       }
+    } catch (err) {
+      console.error('Error loading saved learning paths:', err);
     }
-    loadSavedPath();
   }, []);
+
+  useEffect(() => {
+    loadSavedPaths();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const applySavedPath = (path: SavedLearningPath) => {
+    if (POPULAR_ROLES.includes(path.target_role)) {
+      setSelectedRole(path.target_role);
+    } else {
+      setSelectedRole('custom');
+      setCustomRole(path.target_role);
+    }
+    setAnalysisResult(path.path_data);
+  };
 
   // Toggle Task Checklist
   const handleToggleTask = async (task: string) => {
@@ -259,6 +274,7 @@ export default function JobsPage() {
       setAnalysisResult(data);
       playSuccessSound();
       toast.success('Learning Path Persiapan Kerja Berhasil Dibuat!');
+      loadSavedPaths(); // Refresh the saved-paths list (server enforces the 5-path cap).
     } catch (err: any) {
       toast.error('Gagal memproses analisis', { description: err.message });
     } finally {
@@ -333,6 +349,11 @@ export default function JobsPage() {
     // Show the newly posted job immediately without waiting for a refetch.
     setJobs((prev) => [{ ...job, applied_status: null } as unknown as Job, ...prev]);
     setTotalJobs((prev) => prev + 1);
+  };
+
+  const handleJobUpdated = (job: PostedJob) => {
+    setJobs((prev) => prev.map((j) => (j.id === job.id ? { ...j, ...job } as unknown as Job : j)));
+    setEditingJob(null);
   };
 
   const handleJobApplied = (jobId: number) => {
@@ -468,7 +489,7 @@ export default function JobsPage() {
               </Button>
               {currentUserId && (
                 <Button
-                  onClick={() => { playClickSound(); setShowPostJobModal(true); }}
+                  onClick={() => { playClickSound(); setEditingJob(null); setShowPostJobModal(true); }}
                   variant="outline"
                   className="h-10 border-primary/30 text-primary hover:bg-primary/5 font-bold text-sm px-6"
                 >
@@ -510,7 +531,7 @@ export default function JobsPage() {
                     : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
                 }`}
               >
-                Dipasang Komunitas
+                HubTalent Original
               </button>
             </div>
 
@@ -558,7 +579,7 @@ export default function JobsPage() {
                           </Badge>
                           {job.source === 'user' && (
                             <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[8px] font-bold border border-emerald-500/20 uppercase tracking-wider">
-                              Dipasang Komunitas
+                              HubTalent Original
                             </Badge>
                           )}
                           {job.owner_id === currentUserId && !job.is_active && (
@@ -619,6 +640,16 @@ export default function JobsPage() {
                               Ajukan Diri
                             </Button>
                           )
+                        )}
+                        {job.source === 'user' && job.owner_id === currentUserId && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => { setEditingJob(job); setShowPostJobModal(true); }}
+                            className="h-8 text-xs font-bold border-slate-200 dark:border-slate-800"
+                          >
+                            Edit
+                          </Button>
                         )}
                         {job.owner_id === currentUserId && (
                           <Button
@@ -736,7 +767,37 @@ export default function JobsPage() {
       {/* --- TAB CONTENT: LEARNING PATH PREPARATION --- */}
       {activeTab === 'learning-path' && (
         <div className="space-y-6 animate-fadeIn">
-          
+
+          {/* Saved Learning Paths (up to 5) */}
+          {savedPaths.length > 0 && (
+            <div className="max-w-xl mx-auto flex flex-wrap items-center gap-2">
+              <span className="text-[10px] font-bold text-slate-400 uppercase">Rencana Tersimpan:</span>
+              {savedPaths.map((path) => {
+                const isActive = (selectedRole === 'custom' ? customRole : selectedRole) === path.target_role;
+                return (
+                  <button
+                    key={path.target_role}
+                    onClick={() => { playClickSound(); applySavedPath(path); }}
+                    className={`px-3 py-1.5 rounded-full text-[10px] font-bold border transition-all ${
+                      isActive
+                        ? 'bg-primary text-white border-primary'
+                        : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-white/5 text-slate-600 dark:text-slate-400 hover:border-primary/40'
+                    }`}
+                  >
+                    {path.target_role}
+                  </button>
+                );
+              })}
+              <button
+                onClick={() => { playClickSound(); setAnalysisResult(null); setSelectedRole(''); setCustomRole(''); }}
+                className="px-3 py-1.5 rounded-full text-[10px] font-bold border border-dashed border-slate-300 dark:border-slate-700 text-slate-500 hover:border-primary/40 hover:text-primary transition-all"
+                title={savedPaths.length >= 5 ? 'Rencana tersimpan sudah mencapai batas 5 — rencana lama akan digantikan.' : undefined}
+              >
+                + Rencana Baru
+              </button>
+            </div>
+          )}
+
           {/* Role Selection Form */}
           {!loadingAnalysis && !analysisResult && (
             <Card className="premium-light-card liquid-glass-border max-w-xl mx-auto shadow-sm bg-white dark:bg-[#1b1f23] border-slate-200 dark:border-slate-800">
@@ -1024,7 +1085,13 @@ export default function JobsPage() {
         </div>
       )}
 
-      <PostJobModal open={showPostJobModal} onOpenChange={setShowPostJobModal} onCreated={handleJobPosted} />
+      <PostJobModal
+        open={showPostJobModal}
+        onOpenChange={(open) => { setShowPostJobModal(open); if (!open) setEditingJob(null); }}
+        onCreated={handleJobPosted}
+        editingJob={editingJob as unknown as PostedJob | null}
+        onUpdated={handleJobUpdated}
+      />
 
       {applyModalJob && (
         <ApplyJobModal

@@ -33,18 +33,20 @@ export async function GET(req: NextRequest) {
       },
     });
 
+    // Up to 5 saved paths per user (see migration 023) — return the full list, most
+    // recently updated first, so the UI can offer a picker instead of just one path.
     const { data, error } = await supabaseAdmin
       .from('user_learning_paths')
-      .select('target_role, path_data')
+      .select('target_role, path_data, updated_at')
       .eq('user_id', userId)
-      .maybeSingle();
+      .order('updated_at', { ascending: false });
 
     if (error) {
-      console.error('[LEARNING_PATH_GET] Error fetching saved path:', error.message);
+      console.error('[LEARNING_PATH_GET] Error fetching saved paths:', error.message);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json(data || null);
+    return NextResponse.json({ paths: data || [] });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error: msg }, { status: 500 });
@@ -107,6 +109,21 @@ export async function POST(req: NextRequest) {
         },
       });
 
+      // Cap at 5 saved paths per user (migration 023 dropped the old user_id-only PK
+      // specifically to allow this) — if this is a new role and the user is already at
+      // the cap, evict the least-recently-updated one first.
+      const { data: existing } = await supabaseAdmin
+        .from('user_learning_paths')
+        .select('id, target_role, updated_at')
+        .eq('user_id', userId)
+        .order('updated_at', { ascending: true });
+
+      const isNewRole = !(existing || []).some((p) => p.target_role === targetRole.trim());
+      if (isNewRole && (existing || []).length >= 5) {
+        const oldest = existing![0];
+        await supabaseAdmin.from('user_learning_paths').delete().eq('id', oldest.id);
+      }
+
       const { error: saveError } = await supabaseAdmin
         .from('user_learning_paths')
         .upsert({
@@ -114,7 +131,7 @@ export async function POST(req: NextRequest) {
           target_role: targetRole.trim(),
           path_data: data,
           updated_at: new Date().toISOString()
-        }, { onConflict: 'user_id' });
+        }, { onConflict: 'user_id,target_role' });
 
       if (saveError) {
         console.error('[LEARNING_PATH_POST] Error saving path to DB:', saveError.message);

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
-import { Target, Loader2, Wallet, TrendingUp } from 'lucide-react'
+import { Target, Loader2, Wallet, TrendingUp, History } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -18,6 +18,12 @@ interface RankedJob {
   match_score: number
   match_strength: number
   tier: 'kuat' | 'sedang' | 'lemah'
+}
+
+interface HistoryEntry {
+  id: number
+  candidates: RankedJob[]
+  created_at: string
 }
 
 const TIER_LABEL: Record<RankedJob['tier'], string> = {
@@ -40,20 +46,30 @@ interface SmartJobAggregatorTabProps {
 export function SmartJobAggregatorTab({ onImproveFit }: SmartJobAggregatorTabProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingSaved, setIsLoadingSaved] = useState(true)
-  const [jobs, setJobs] = useState<RankedJob[]>([])
-  const [savedAt, setSavedAt] = useState<string | null>(null)
+  const [history, setHistory] = useState<HistoryEntry[]>([])
+  const [selectedHistoryId, setSelectedHistoryId] = useState<number | null>(null)
+
+  const selectedEntry = history.find((h) => h.id === selectedHistoryId) || null
+  const jobs = selectedEntry?.candidates || []
+
+  const loadHistory = async () => {
+    try {
+      const res = await fetch('/api/ai/recommendations?contextType=job_match&list=true')
+      if (res.ok) {
+        const data = await res.json()
+        const items: HistoryEntry[] = data.items || []
+        setHistory(items)
+        if (items.length > 0) setSelectedHistoryId(items[0].id)
+      }
+    } catch {
+      // Not critical — the tab just starts empty until the user runs an analysis.
+    } finally {
+      setIsLoadingSaved(false)
+    }
+  }
 
   useEffect(() => {
-    fetch('/api/ai/recommendations?contextType=job_match&contextId=_self')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((saved) => {
-        if (saved) {
-          setJobs(saved.candidates || [])
-          setSavedAt(saved.updated_at)
-        }
-      })
-      .catch(() => {})
-      .finally(() => setIsLoadingSaved(false))
+    loadHistory()
   }, [])
 
   const handleAnalyze = async () => {
@@ -64,20 +80,19 @@ export function SmartJobAggregatorTab({ onImproveFit }: SmartJobAggregatorTabPro
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Gagal menganalisis kecocokan lowongan.')
 
-      setJobs(data.jobs || [])
-      setSavedAt(new Date().toISOString())
       playSuccessSound()
       toast.success(`${(data.jobs || []).length} lowongan paling cocok ditemukan!`)
 
-      fetch('/api/ai/recommendations', {
+      await fetch('/api/ai/recommendations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contextType: 'job_match',
-          contextId: '_self',
           candidates: data.jobs || [],
+          append: true,
         }),
-      }).catch(() => {})
+      })
+      await loadHistory()
     } catch (err) {
       toast.error('Gagal menganalisis', { description: err instanceof Error ? err.message : undefined })
     } finally {
@@ -94,31 +109,43 @@ export function SmartJobAggregatorTab({ onImproveFit }: SmartJobAggregatorTabPro
             <CardTitle className="text-base font-bold">Smart Job Agregator</CardTitle>
           </div>
           <CardDescription className="text-xs">
-            AI menganalisis profil dan keahlian Anda, lalu memberi peringkat 10 lowongan aktif yang paling sesuai untuk Anda.
+            AI menganalisis profil dan keahlian Anda, lalu memberi peringkat 10 lowongan aktif yang paling sesuai untuk Anda. Setiap analisis disimpan sebagai riwayat terpisah (maks. 10 terakhir).
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-3 flex-wrap">
-            <Button
-              onClick={handleAnalyze}
-              disabled={isLoading}
-              className="bg-primary hover:bg-primary/95 text-white font-bold text-xs rounded-full px-6 py-2 shadow-sm gap-2"
-            >
-              {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Target className="h-3.5 w-3.5" />}
-              {savedAt ? 'Perbarui Analisis' : 'Analisis Kecocokan Lowongan'}
-            </Button>
-            {savedAt && !isLoading && !isLoadingSaved && (
-              <span className="text-[10px] text-slate-400">
-                Tersimpan {new Date(savedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-              </span>
-            )}
-          </div>
+          <Button
+            onClick={handleAnalyze}
+            disabled={isLoading}
+            className="bg-primary hover:bg-primary/95 text-white font-bold text-xs rounded-full px-6 py-2 shadow-sm gap-2"
+          >
+            {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Target className="h-3.5 w-3.5" />}
+            Jalankan Analisis Baru
+          </Button>
         </CardContent>
       </Card>
 
       {isLoadingSaved && (
         <div className="flex items-center gap-2 text-xs text-slate-400 py-2">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Memuat hasil tersimpan...
+          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Memuat riwayat tersimpan...
+        </div>
+      )}
+
+      {history.length > 0 && !isLoadingSaved && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1"><History className="h-3 w-3" /> Riwayat:</span>
+          {history.map((entry) => (
+            <button
+              key={entry.id}
+              onClick={() => setSelectedHistoryId(entry.id)}
+              className={`px-3 py-1.5 rounded-full text-[10px] font-bold border transition-all ${
+                selectedHistoryId === entry.id
+                  ? 'bg-primary text-white border-primary'
+                  : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-white/5 text-slate-600 dark:text-slate-400 hover:border-primary/40'
+              }`}
+            >
+              {new Date(entry.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+            </button>
+          ))}
         </div>
       )}
 
@@ -133,7 +160,7 @@ export function SmartJobAggregatorTab({ onImproveFit }: SmartJobAggregatorTabPro
         <Card className="premium-light-card liquid-glass-border p-8 text-center text-slate-500">
           <Target className="h-10 w-10 mx-auto text-slate-400 dark:text-slate-600 mb-3" />
           <h4 className="font-bold text-slate-900 dark:text-white text-sm">Belum ada analisis</h4>
-          <p className="text-xs mt-1">Klik &quot;Analisis Kecocokan Lowongan&quot; untuk melihat lowongan paling sesuai untuk Anda.</p>
+          <p className="text-xs mt-1">Klik &quot;Jalankan Analisis Baru&quot; untuk melihat lowongan paling sesuai untuk Anda.</p>
         </Card>
       )}
 
